@@ -1,24 +1,37 @@
 'use client'
 
 import React from 'react'
+import { usePathname } from 'next/navigation'
 
 import { Logo } from 'components/ui'
 import Navigation from 'compositions/Navigation/Navigation'
 import LiveSwitcher from 'compositions/LiveSwitcher/LiveSwitcher'
 
+import AppModeTabs from 'compositions/app/AppModeTabs/AppModeTabs'
+import PrediktsSidebar from 'compositions/app/PrediktsSidebar/PrediktsSidebar'
+
 
 const LeftSidebar: React.FC = () => {
+  const pathname = usePathname()
+  const isPredikts = pathname.startsWith('/predikts')
+
   return (
     <div className="h-full">
-      <div className="px-4 py-5 sticky top-0 flex items-center justify-between">
+      <div className="px-4 py-5 sticky top-0 bg-bg-l0/95 backdrop-blur">
         <Logo className="h-6" />
-        {/* <button className="text-grey-60 hover:text-grey-90 transition" onClick={() => openModal('SearchModal')}>
-          <Icon className="size-5" name="interface/search" />
-        </button> */}
+        <AppModeTabs className="mt-5" />
       </div>
       <div className="overflow-auto wd:h-[calc(100vh_-_4rem)] no-scrollbar">
-        <LiveSwitcher />
-        <Navigation className="mt-2" />
+        {
+          isPredikts ? (
+            <PrediktsSidebar />
+          ) : (
+            <>
+              <LiveSwitcher />
+              <Navigation className="mt-2" />
+            </>
+          )
+        }
       </div>
     </div>
   )

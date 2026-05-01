@@ -1,12 +1,15 @@
 export default {
   title: {
-    en: 'today’s',
+    en: 'Predikt',
   },
   top: {
-    en: 'Top',
+    en: 'Trade What Happens Next',
   },
-  events: {
-    en: 'Events',
+  markets: {
+    en: '',
+  },
+  subtitle: {
+    en: 'Real-time prediction markets powered by crowd intelligence, tokenized outcomes, and verified oracle settlement.',
   },
 
   // Sports
@@ -63,5 +66,8 @@ export default {
   },
   other: {
     en: 'Other',
+  },
+  unique: {
+    en: 'Featured',
   },
 }

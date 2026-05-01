@@ -22,7 +22,7 @@ const items = [
     text: messages.nav.faq,
     link: constants.links.faq,
   },
-]
+].filter(item => Boolean(item.link))
 
 const Navbar: React.FC = () => {
   return (

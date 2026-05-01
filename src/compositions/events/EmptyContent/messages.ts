@@ -1,8 +1,8 @@
 export default {
   title: {
-    en: 'No events',
+    en: 'No markets',
   },
   text: {
-    en: 'Oops, there is no events, try again later',
+    en: 'No open markets are available right now. Check back later or refresh your filters.',
   },
 }

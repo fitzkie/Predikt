@@ -7,6 +7,12 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL as string
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME as string
 const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID as string
 const isDevEnabled = Boolean(JSON.parse(process.env.AZURO_UNSTABLE_DEV_ENABLED || 'false'))
+const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || ''
+const termsUrl = process.env.NEXT_PUBLIC_TERMS_URL || ''
+const policyUrl = process.env.NEXT_PUBLIC_POLICY_URL || ''
+const faqUrl = process.env.NEXT_PUBLIC_FAQ_URL || ''
+const sportsAppUrl = process.env.NEXT_PUBLIC_SPORTS_APP_URL || '/bet'
+const prediktsAppUrl = process.env.NEXT_PUBLIC_PREDIKTS_APP_URL || '/predikts'
 
 const rpcByChains: Record<ChainId, string> = {
   [gnosis.id]: 'https://gnosis-rpc.publicnode.com',
@@ -47,15 +53,50 @@ const currencyIcons: Record<ChainId, IconName> = {
 const sportsOrder = [ 'politics', 'football', 'basketball', 'tennis', 'cricket', 'mma', 'boxing', 'ice-hockey', 'american-football', 'baseball', 'rugby-union', 'rugby-league' ]
 
 const links = {
-  docs: '',
-  terms: '',
-  policy: '',
-  faq: '',
+  docs: docsUrl,
+  terms: termsUrl,
+  policy: policyUrl,
+  faq: faqUrl,
+  sportsApp: sportsAppUrl,
+  prediktsApp: prediktsAppUrl,
   waves: 'https://azuro.org/app/waves',
 }
 
 const defaultSlippageValues = [ '5', '10', '15' ]
 const defaultQuickBetsValues = [ '50', '100' ]
+
+const prediktsTaxonomy = [
+  {
+    title: 'Politics',
+    slug: 'politics',
+    items: [ 'Elections', 'Policy', 'Geopolitics' ],
+  },
+  {
+    title: 'Finance',
+    slug: 'finance',
+    items: [ 'Fed', 'Rates', 'Stocks', 'Crypto' ],
+  },
+  {
+    title: 'Sports',
+    slug: 'sports',
+    items: [ 'NFL', 'UFC', 'Soccer' ],
+  },
+  {
+    title: 'Tech',
+    slug: 'tech',
+    items: [ 'AI', 'Product launches', 'M&A' ],
+  },
+  {
+    title: 'Culture',
+    slug: 'culture',
+    items: [ 'Movies', 'Music', 'Celebrity' ],
+  },
+  {
+    title: 'Black Swan',
+    slug: 'black-swan',
+    items: [ 'Pandemics', 'War', 'Space', 'Weather' ],
+  },
+] as const
 
 const localStorageKeys = {
   slippage: 'slippage',
@@ -80,4 +121,5 @@ export default {
   defaultQuickBetsValues,
   localStorageKeys,
   privyAppId,
+  prediktsTaxonomy,
 }

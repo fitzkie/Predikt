@@ -1,8 +1,8 @@
 export default {
   title: {
-    en: 'All Sports',
+    en: 'Sports Markets',
   },
   top: {
-    en: 'Top Events',
+    en: 'Top Sports',
   },
 }

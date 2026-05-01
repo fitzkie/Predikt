@@ -21,8 +21,11 @@ const inter = Inter({ subsets: [ 'latin' ] })
 
 export const metadata: Metadata = {
   metadataBase: new URL(constants.baseUrl),
-  title: 'Betting Example',
-  description: '',
+  title: {
+    default: constants.companyName,
+    template: `%s | ${constants.companyName}`,
+  },
+  description: 'Trade what happens next with real-time prediction markets, tokenized outcomes, and verified oracle settlement.',
 }
 
 export default async function RootLayout({

@@ -11,17 +11,29 @@ import { Icon, Logo } from 'components/ui'
 import { Button, buttonMessages } from 'components/inputs'
 import Navigation from 'compositions/Navigation/Navigation'
 import LiveSwitcher from 'compositions/LiveSwitcher/LiveSwitcher'
+import PrediktsSidebar from 'compositions/app/PrediktsSidebar/PrediktsSidebar'
+import AppModeTabs from 'compositions/app/AppModeTabs/AppModeTabs'
 
 import Controls from '../Controls/Controls'
 
 
 const Content: React.FC = () => {
   useFreezeBodyScroll()
+  const pathname = usePathname()
+  const isPredikts = pathname.startsWith('/predikts')
 
   return (
     <div className="fixed top-[54px] bottom-0 left-0 nr:w-[22.5rem] mb:w-full bg-bg-l0 overflow-auto no-scrollbar">
-      <LiveSwitcher />
-      <Navigation className="mt-2" />
+      {
+        isPredikts ? (
+          <PrediktsSidebar />
+        ) : (
+          <>
+            <LiveSwitcher />
+            <Navigation className="mt-2" />
+          </>
+        )
+      }
     </div>
   )
 }
@@ -71,6 +83,7 @@ const Header: React.FC = () => {
           </div>
           <Logo className="h-4" />
         </div>
+        <AppModeTabs className="mx-4 hidden min-w-[16rem] nr:grid" />
         {
           Boolean(account) ? (
             <Controls />

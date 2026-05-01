@@ -1,6 +1,6 @@
 export default {
   top: {
-    en: 'The On-Chain Crypto Bookmaker',
+    en: 'Sports Markets',
   },
   // Sports
   politics: {
@@ -52,6 +52,6 @@ export default {
     en: 'League of Legends',
   },
   unique: {
-    en: 'Unique Events',
+    en: 'Featured Markets',
   },
 }

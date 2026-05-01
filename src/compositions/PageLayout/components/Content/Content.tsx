@@ -2,6 +2,7 @@
 
 import React from 'react'
 import cx from 'classnames'
+import { usePathname } from 'next/navigation'
 
 import { Media } from 'components/layout'
 import MobileBetslipButton from 'compositions/MobileBetslipButton/MobileBetslipButton'
@@ -14,6 +15,8 @@ import ws from './Wide.module.scss'
 
 
 const Content: React.CFC = ({ children }) => {
+  const pathname = usePathname()
+  const isMarketingPage = pathname === '/'
 
   const rootClassName = cx('h-full flex flex-col wd:flex-row min-h-screen mx-auto wd:px-2 wd:pb-2', ws.root)
   const mainClassName = cx(ns.main, ws.main,
@@ -23,6 +26,14 @@ const Content: React.CFC = ({ children }) => {
     }
   )
   const sidebarClassName = 'sticky top-0 z-[100] shrink-0 no-scrollbar'
+
+  if (isMarketingPage) {
+    return (
+      <div className="min-h-screen bg-bg-l0">
+        <main>{children}</main>
+      </div>
+    )
+  }
 
   return (
     <div className={rootClassName}>
