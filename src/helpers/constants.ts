@@ -3,9 +3,9 @@ import { type ChainId } from '@azuro-org/toolkit'
 import { type IconName } from 'components/ui'
 
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL as string
-const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME as string
-const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID as string
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://prediktmarkets.com'
+const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || 'Predikt Markets'
+const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || ''
 const isDevEnabled = Boolean(JSON.parse(process.env.AZURO_UNSTABLE_DEV_ENABLED || 'false'))
 const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || ''
 const termsUrl = process.env.NEXT_PUBLIC_TERMS_URL || ''
