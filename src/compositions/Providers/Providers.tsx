@@ -7,6 +7,7 @@ import { type Address } from 'viem'
 import { IntlProvider } from '@locmod/intl'
 import { SvgProvider, SvgSprite } from 'svg-provider'
 import { AzuroSDKProvider, LiveProvider } from '@azuro-org/sdk'
+import { constants } from 'helpers'
 import { WagmiProvider } from 'wallet'
 import { DeviceProvider, OddsViewProvider } from 'contexts'
 
@@ -29,7 +30,7 @@ const Providers: React.CFC<Props> = (props) => {
       <SvgProvider>
         <IntlProvider locale="en">
           <WagmiProvider initialState={initialState}>
-            <AzuroSDKProvider initialChainId={initialChainId} affiliate={process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS as Address}>
+            <AzuroSDKProvider initialChainId={initialChainId} affiliate={constants.affiliateAddress as Address}>
               <LiveProvider initialLiveState={initialLiveState}>
                 <OddsViewProvider>
                   {children}
