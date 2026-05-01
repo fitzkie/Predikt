@@ -11,13 +11,12 @@ const Logo: React.FC<LogoProps> = (props) => {
   const { className } = props
 
   return (
-    <Href to="/" className={cx('flex items-baseline gap-2 text-grey-90', className)}>
-      <span className="text-lg font-semibold tracking-[0.14em] uppercase text-brand-50">
-        Predikt
-      </span>
-      <span className="text-[0.65rem] font-medium uppercase tracking-[0.22em] text-grey-60">
-        Markets
-      </span>
+    <Href to="/" className={cx('inline-flex items-center text-grey-90', className)}>
+      <img
+        className="block h-full w-auto object-contain"
+        src="/branding/predikt-wordmark.png"
+        alt="Predikt"
+      />
     </Href>
   )
 }

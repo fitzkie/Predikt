@@ -58,12 +58,10 @@ a {
   gap: 10px;
 }
 
-.wordmark-main {
-  color: var(--gold);
-  font-size: 1.125rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+.wordmark-image {
+  display: block;
+  height: 42px;
+  width: auto;
 }
 
 .wordmark-sub,
@@ -118,7 +116,7 @@ a {
 
 .button-secondary {
   background: rgba(255, 255, 255, 0.02);
-  color: var(--off-white);
+  color: var(--gold);
 }
 
 .button-secondary:hover {
@@ -128,9 +126,16 @@ a {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: 1fr;
   gap: 32px;
   padding: 56px 0 40px;
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .hero-copy h1,
@@ -154,6 +159,11 @@ a {
   flex-wrap: wrap;
   gap: 14px;
   margin-top: 34px;
+  justify-content: center;
+}
+
+.predikt-gold {
+  color: var(--gold);
 }
 
 .hero-panel,
