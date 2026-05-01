@@ -13,9 +13,10 @@ const Logo: React.FC<LogoProps> = (props) => {
   return (
     <Href to="/" className={cx('inline-flex items-center text-grey-90', className)}>
       <img
-        className="block h-full w-auto object-contain"
+        className="block h-auto w-auto max-h-full object-contain"
         src="/branding/predikt-wordmark.png"
         alt="Predikt"
+        style={{ height: '28px' }}
       />
     </Href>
   )
