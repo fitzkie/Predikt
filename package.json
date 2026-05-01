@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "npm run watch-icons & next dev",
     "build": "npm run build-icons && next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint-ts": "tsc --noEmit",
     "lint": "next lint && tsc --noEmit",
     "------  Icons --------------------------------------------------------------------------": "",
