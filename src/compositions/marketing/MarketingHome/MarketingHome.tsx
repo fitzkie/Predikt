@@ -102,7 +102,7 @@ const MarketingHome: React.FC = () => {
           <section className="grid gap-12 py-16 ds:grid-cols-[minmax(0,1fr)_24rem] ds:py-24">
             <div className="max-w-4xl">
               <div className="inline-flex items-center rounded-full border border-brand-50/30 bg-brand-50/10 px-4 py-2 text-caption-13 font-medium uppercase tracking-[0.18em] text-brand-50">
-                Predikt Markets
+                Predikt
               </div>
               <h1 className="mt-6 max-w-4xl text-[3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-grey-90 ds:text-[6rem]">
                 Trade What Happens Next

@@ -70,7 +70,7 @@ const AppDomainFallback = ({ hostname }: { hostname: string }) => {
 
             <section style={{ padding: '56px 0 32px', textAlign: 'center' }}>
               <p style={{ margin: 0, color: '#EBB437', fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-                Predikt Markets
+                Predikt
               </p>
               <h1 style={{ margin: '16px auto 0', maxWidth: '900px', fontSize: 'clamp(3rem, 7vw, 5.75rem)', lineHeight: 0.94, letterSpacing: '-0.06em' }}>
                 {heading}
