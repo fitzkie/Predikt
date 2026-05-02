@@ -44,16 +44,28 @@ const productCards = [
 
 const faqs = [
   {
-    question: 'Why split Sports and Predikts into two app surfaces?',
-    answer: 'It keeps the public brand unified while giving each product a cleaner user experience, clearer navigation, and its own optimized market taxonomy.',
+    question: 'How do I start using Predikt?',
+    answer: 'Open the Sports or Predikts app, connect your wallet, choose a market, and confirm your position directly from your wallet.',
   },
   {
-    question: 'Which domains map to which surfaces?',
-    answer: 'Use www.prediktmarkets.com for the public marketing site, bet.prediktmarkets.com for the sportsbook experience, and app.prediktmarkets.com for prediction-market flows.',
+    question: 'Why use an on-chain market platform instead of a traditional one?',
+    answer: 'Predikt keeps settlement logic on-chain, gives you wallet-native access, and removes the usual custodial deposit and withdrawal model.',
   },
   {
-    question: 'Does both product traffic still run on Azuro?',
-    answer: 'Yes. The frontends can differ, but both experiences can use Azuro for wallet integration, market data, and on-chain settlement.',
+    question: 'Which networks and assets does the platform support?',
+    answer: 'The product is designed for EVM-based access and wallet-connected usage, with chain support and market coverage expanding through the underlying Azuro stack.',
+  },
+  {
+    question: 'How can I trust market outcomes?',
+    answer: 'Market resolution depends on predefined conditions and verified settlement logic, so outcomes are not manually adjusted after the fact.',
+  },
+  {
+    question: 'What happens if an event is canceled or unresolved?',
+    answer: 'Canceled, voided, or unresolved events follow the applicable market rules for settlement, which is why resolution criteria and event status matter before you trade.',
+  },
+  {
+    question: 'Are there any geographic restrictions?',
+    answer: 'Availability depends on your jurisdiction. You should confirm whether access to sports betting or prediction markets is permitted where you are located.',
   },
 ]
 
@@ -66,7 +78,6 @@ const MarketingHome: React.FC = () => {
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-bg-l0/85 py-5 backdrop-blur">
             <Href to="/" className="flex items-baseline gap-2">
               <span className="text-lg font-semibold uppercase tracking-[0.14em] text-brand-50">Predikt</span>
-              <span className="text-[0.65rem] font-medium uppercase tracking-[0.22em] text-grey-60">Markets</span>
             </Href>
             <nav className="hidden items-center gap-6 ds:flex">
               {
@@ -99,39 +110,20 @@ const MarketingHome: React.FC = () => {
             </div>
           </header>
 
-          <section className="grid gap-12 py-16 ds:grid-cols-[minmax(0,1fr)_24rem] ds:py-24">
-            <div className="max-w-4xl">
+          <section className="py-16 ds:py-24">
+            <div className="mx-auto max-w-4xl text-center">
               <div className="inline-flex items-center rounded-full border border-brand-50/30 bg-brand-50/10 px-4 py-2 text-caption-13 font-medium uppercase tracking-[0.18em] text-brand-50">
                 Predikt
               </div>
-              <h1 className="mt-6 max-w-4xl text-[3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-grey-90 ds:text-[6rem]">
+              <h1 className="mt-6 text-[3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-grey-90 ds:text-[6rem]">
                 Trade What Happens Next
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-grey-70">
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-grey-70">
                 Real-time prediction markets powered by crowd intelligence, tokenized outcomes, and verified oracle settlement.
               </p>
-              <div className="mt-8 flex flex-col gap-3 ds:flex-row">
+              <div className="mt-8 flex flex-col gap-3 ds:flex-row ds:justify-center">
                 <Button href={constants.links.sportsApp} size={40} title="Open Sports App" />
                 <Button href={constants.links.prediktsApp} size={40} style="secondary" title="Open Predikt App" />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-              <div className="text-caption-12 font-medium uppercase tracking-[0.2em] text-grey-60">Platform split</div>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-md border border-brand-50/20 bg-brand-50/10 p-4">
-                  <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Public site</div>
-                  <div className="mt-2 text-heading-h4 font-semibold">www.prediktmarkets.com</div>
-                  <div className="mt-2 text-caption-14 text-grey-70">Brand, education, product positioning, and launch paths into both Azuro-powered apps.</div>
-                </div>
-                <div className="rounded-md border border-white/10 bg-bg-l2 p-4">
-                  <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Sportsbook app</div>
-                  <div className="mt-2 text-heading-h4 font-semibold">bet.prediktmarkets.com</div>
-                </div>
-                <div className="rounded-md border border-white/10 bg-bg-l2 p-4">
-                  <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Prediction app</div>
-                  <div className="mt-2 text-heading-h4 font-semibold">app.prediktmarkets.com</div>
-                </div>
               </div>
             </div>
           </section>
@@ -139,8 +131,8 @@ const MarketingHome: React.FC = () => {
           <section className="border-t border-white/10 py-8">
             <div className="flex flex-col items-start justify-between gap-4 ds:flex-row ds:items-center">
               <div>
-                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Start with the app surface that fits the market type</div>
-                <div className="mt-2 text-heading-h3 font-semibold">Sports and Predikts can share rails without sharing the same first impression.</div>
+                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Choose your market lane</div>
+                <div className="mt-2 text-heading-h3 font-semibold">Use Sports for live and prematch action. Use Predikts for politics, finance, tech, culture, and event-driven markets.</div>
               </div>
               <Button href={constants.links.sportsApp} size={40} title="Launch App" />
             </div>
@@ -174,7 +166,7 @@ const MarketingHome: React.FC = () => {
           <section id="faq" className="py-16">
             <div className="max-w-3xl">
               <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">FAQ</div>
-              <h2 className="mt-4 text-[2.5rem] font-semibold leading-tight tracking-[-0.05em]">A cleaner split between brand site and trading apps</h2>
+              <h2 className="mt-4 text-[2.5rem] font-semibold leading-tight tracking-[-0.05em]">Frequently asked questions</h2>
             </div>
             <div className="mt-10 grid gap-4">
               {

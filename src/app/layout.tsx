@@ -59,9 +59,6 @@ const AppDomainFallback = ({ hostname }: { hostname: string }) => {
                 <span style={{ color: '#EBB437', fontSize: '18px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                   Predikt
                 </span>
-                <span style={{ color: '#9EA4AB', fontSize: '11px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
-                  Markets
-                </span>
               </div>
               <div style={{ color: '#EBB437', fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
                 {title}
