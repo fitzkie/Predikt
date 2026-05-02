@@ -55,19 +55,14 @@ a {
 .wordmark {
   display: flex;
   align-items: baseline;
-  gap: 0;
 }
 
 .wordmark-main {
-  color: var(--off-white);
+  color: var(--gold);
   font-size: 1.125rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-}
-
-.wordmark-t {
-  color: var(--gold);
 }
 
 .wordmark-sub,
