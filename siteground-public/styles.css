@@ -58,6 +58,14 @@ a {
 }
 
 .wordmark-main {
+  color: var(--off-white);
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.wordmark-accent {
   color: var(--gold);
   font-size: 1.125rem;
   font-weight: 700;
@@ -161,6 +169,10 @@ a {
   gap: 14px;
   margin-top: 34px;
   justify-content: center;
+}
+
+.predikt-white {
+  color: var(--off-white);
 }
 
 .predikt-gold {

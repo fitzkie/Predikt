@@ -76,8 +76,9 @@ const MarketingHome: React.FC = () => {
         <div className="absolute inset-x-0 top-0 h-[32rem] bg-[radial-gradient(circle_at_top,rgba(235,180,55,0.18),transparent_52%)] pointer-events-none" />
         <div className="mx-auto max-w-[82rem] px-4 ds:px-8">
           <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-bg-l0/85 py-5 backdrop-blur">
-            <Href to="/" className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold uppercase tracking-[0.14em] text-brand-50">Predikt</span>
+            <Href to="/" className="flex items-baseline">
+              <span className="text-lg font-semibold uppercase tracking-[0.14em] text-grey-90">Predik</span>
+              <span className="text-lg font-semibold uppercase tracking-[0.14em] text-brand-50">t</span>
             </Href>
             <nav className="hidden items-center gap-6 ds:flex">
               {
@@ -113,7 +114,8 @@ const MarketingHome: React.FC = () => {
           <section className="py-16 ds:py-24">
             <div className="mx-auto max-w-4xl text-center">
               <div className="inline-flex items-center rounded-full border border-brand-50/30 bg-brand-50/10 px-4 py-2 text-caption-13 font-medium uppercase tracking-[0.18em] text-brand-50">
-                Predikt
+                <span className="text-grey-90">Predik</span>
+                <span className="text-brand-50">t</span>
               </div>
               <h1 className="mt-6 text-[3rem] font-semibold leading-[0.95] tracking-[-0.06em] text-grey-90 ds:text-[6rem]">
                 Trade What Happens Next

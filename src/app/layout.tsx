@@ -55,9 +55,12 @@ const AppDomainFallback = ({ hostname }: { hostname: string }) => {
               paddingBottom: '20px',
             }}
             >
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={{ color: '#F5F5F5', fontSize: '18px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  Predik
+                </span>
                 <span style={{ color: '#EBB437', fontSize: '18px', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                  Predikt
+                  t
                 </span>
               </div>
               <div style={{ color: '#EBB437', fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
@@ -66,8 +69,9 @@ const AppDomainFallback = ({ hostname }: { hostname: string }) => {
             </div>
 
             <section style={{ padding: '56px 0 32px', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#EBB437', fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-                Predikt
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                <span style={{ color: '#F5F5F5' }}>Predik</span>
+                <span style={{ color: '#EBB437' }}>t</span>
               </p>
               <h1 style={{ margin: '16px auto 0', maxWidth: '900px', fontSize: 'clamp(3rem, 7vw, 5.75rem)', lineHeight: 0.94, letterSpacing: '-0.06em' }}>
                 {heading}

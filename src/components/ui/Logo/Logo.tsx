@@ -12,8 +12,11 @@ const Logo: React.FC<LogoProps> = (props) => {
 
   return (
     <Href to="/" className={cx('flex items-baseline text-grey-90', className)}>
-      <span className="text-lg font-semibold tracking-[0.14em] uppercase text-brand-50">
-        Predikt
+      <span className="text-lg font-semibold uppercase tracking-[0.14em] text-grey-90">
+        Predik
+      </span>
+      <span className="text-lg font-semibold uppercase tracking-[0.14em] text-brand-50">
+        t
       </span>
     </Href>
   )
