@@ -6,6 +6,7 @@ import { Message } from '@locmod/intl'
 import { useChain, useCashout, type Bet } from '@azuro-org/sdk'
 import dayjs from 'dayjs'
 import cx from 'classnames'
+import { useAnalytics } from 'providers/analytics'
 import { toLocaleString } from 'helpers'
 
 import { PlainModal } from 'components/feedback'
@@ -22,6 +23,7 @@ export type CashoutModalProps = {
 const CashoutModal: ModalComponent<CashoutModalProps> = (props) => {
   const { closeModal, bet } = props
 
+  const analytics = useAnalytics()
   const [ secondsLeft, setSecondsLeft ] = useState(0)
   const { betToken, appChain } = useChain()
   const {
@@ -35,9 +37,18 @@ const CashoutModal: ModalComponent<CashoutModalProps> = (props) => {
   } = useCashout({
     bet,
     onSuccess: () => {
+      analytics.trackEvent('predikt_bet_cashout_success', {
+        bet_token_id: bet.tokenId,
+        chain_id: appChain.id,
+      })
       closeModal()
     },
     onError: (err) => {
+      analytics.trackEvent('predikt_bet_cashout_failed', {
+        bet_token_id: bet.tokenId,
+        chain_id: appChain.id,
+        error_message: err instanceof Error ? err.message : String(err),
+      })
       closeModal()
       openModal('ErrorModal', {
         title: 'Bet is not available to cashout',
@@ -57,6 +68,13 @@ const CashoutModal: ModalComponent<CashoutModalProps> = (props) => {
     isProcessing
   )
   const isOver = !isCalculationFetching && !secondsLeft
+
+  useEffect(() => {
+    analytics.trackEvent('predikt_bet_cashout_opened', {
+      bet_token_id: bet.tokenId,
+      chain_id: appChain.id,
+    })
+  }, [ analytics, appChain.id, bet.tokenId ])
 
   useEffect(() => {
     if (!approveExpiredAt) {
@@ -135,7 +153,15 @@ const CashoutModal: ModalComponent<CashoutModalProps> = (props) => {
             size={40}
             loading={isLoading}
             disabled={isOver || !isCashoutAvailable}
-            onClick={submit}
+            onClick={() => {
+              analytics.trackEvent('predikt_bet_cashout_submit_clicked', {
+                bet_token_id: bet.tokenId,
+                chain_id: appChain.id,
+                approval_required: isApproveRequired,
+                cashout_amount: cashoutAmount ? Number(cashoutAmount) : undefined,
+              })
+              void submit()
+            }}
           />
         </div>
         <div className="mt-3 text-center">

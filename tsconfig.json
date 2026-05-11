@@ -47,6 +47,9 @@
       "hooks": [
         "src/hooks"
       ],
+      "hooks/*": [
+        "src/hooks/*"
+      ],
       "helpers": [
         "src/helpers"
       ],
@@ -67,6 +70,24 @@
       ],
       "compositions": [
         "src/compositions"
+      ],
+      "modules": [
+        "src/modules"
+      ],
+      "modules/*": [
+        "src/modules/*"
+      ],
+      "providers": [
+        "src/providers"
+      ],
+      "providers/*": [
+        "src/providers/*"
+      ],
+      "shared": [
+        "src/shared"
+      ],
+      "shared/*": [
+        "src/shared/*"
       ],
       "graph/*": [
         "src/graph/*"

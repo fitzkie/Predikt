@@ -1,6 +1,6 @@
-import SportsHub from 'compositions/app/SportsHub/SportsHub'
+import { BetPage as BetModulePage } from 'modules/bet'
 
 
 export default function BetPage() {
-  return <SportsHub />
+  return <BetModulePage />
 }

@@ -8,6 +8,7 @@ import { Message } from '@locmod/intl'
 import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { openModal } from '@locmod/modal'
 import localStorage from '@locmod/local-storage'
+import { useAnalytics } from 'providers/analytics'
 import { constants, isUserRejectedRequestError, toLocaleString } from 'helpers'
 
 import { Icon } from 'components/ui'
@@ -22,6 +23,7 @@ type BetButtonProps = {
 }
 
 const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetching }) => {
+  const analytics = useAnalytics()
   const { address } = useAccount()
   const { betToken } = useChain()
   const { items, clear } = useBaseBetslip()
@@ -56,12 +58,28 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
     totalOdds,
     freebet: selectedFreebet,
     onSuccess: () => {
+      analytics.trackEvent('predikt_bet_submit_success', {
+        selections_count: items.length,
+        bet_amount: Number(betAmount || 0),
+        total_odds: Number(totalOddsRef.current || 0),
+        approval_required: isApproveRequired,
+        freebet_selected: Boolean(selectedFreebet),
+      })
       openModal('SuccessModal', {
         title: messages.success.title,
       })
       clear()
     },
     onError: (err) => {
+      analytics.trackEvent('predikt_bet_submit_failed', {
+        selections_count: items.length,
+        bet_amount: Number(betAmount || 0),
+        total_odds: Number(totalOddsRef.current || 0),
+        approval_required: isApproveRequired,
+        freebet_selected: Boolean(selectedFreebet),
+        rejected_by_user: isUserRejectedRequestError(err),
+        error_message: err instanceof Error ? err.message : String(err),
+      })
       if (!isUserRejectedRequestError(err)) {
         openModal('ErrorModal')
       }
@@ -102,7 +120,20 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
   })
 
   return (
-    <button className={rootClassName} onClick={submit} disabled={isDisabled}>
+    <button
+      className={rootClassName}
+      onClick={() => {
+        analytics.trackEvent('predikt_bet_submit_clicked', {
+          selections_count: items.length,
+          bet_amount: Number(betAmount || 0),
+          total_odds: Number(totalOddsRef.current || 0),
+          action: isApproveRequired ? 'approve' : 'place_bet',
+          freebet_selected: Boolean(selectedFreebet),
+        })
+        void submit()
+      }}
+      disabled={isDisabled}
+    >
       <div className="w-full text-center px-1">
         {
           isLoading ? (

@@ -1,0 +1,44 @@
+{
+  "games": [
+    {
+      "id": "1006000000000084793028",
+      "gameId": "1006000000000084793028",
+      "slug": "tottenham-hotspur-leeds-united-1006000000000084793028",
+      "title": "Tottenham Hotspur - Leeds United",
+      "startsAt": "1778526000",
+      "state": "Prematch",
+      "turnover": "8862.281125303549",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "c2e8dd40-8b06-4171-80c6-8c99a9ad1326",
+        "slug": "premier-league",
+        "name": "Premier League",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "0aed7fe4-3bc1-4ca4-ad52-dfd2b188d9ad",
+        "slug": "england",
+        "name": "England"
+      },
+      "participants": [
+        {
+          "name": "Tottenham Hotspur",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793028/Tottenham Hotspur.png"
+        },
+        {
+          "name": "Leeds United",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793028/Leeds United.png"
+        }
+      ]
+    }
+  ]
+}

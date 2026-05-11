@@ -1,0 +1,44 @@
+{
+  "games": [
+    {
+      "id": "1006000000000084793405",
+      "gameId": "1006000000000084793405",
+      "slug": "ssc-napoli-bologna-fc-1006000000000084793405",
+      "title": "SSC Napoli - Bologna FC",
+      "startsAt": "1778525100",
+      "state": "Live",
+      "turnover": "10656.127056574785",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "084b2fb1-5879-443b-9509-4b27d7a283d0",
+        "slug": "serie-a",
+        "name": "Serie A",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "SSC Napoli",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793405/SSC Napoli.png"
+        },
+        {
+          "name": "Bologna FC",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793405/Bologna FC.png"
+        }
+      ]
+    }
+  ]
+}

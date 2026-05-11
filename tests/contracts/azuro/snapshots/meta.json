@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-05-11T18:45:40.275Z",
+  "environment": "PolygonUSDT",
+  "apiBaseUrl": "https://api.onchainfeed.org/api/v1/public",
+  "prematch": {
+    "sampledGameId": "1006000000000084793028",
+    "sampledConditionId": "300610060000000000847930280000000000002435620690"
+  },
+  "live": {
+    "sampledGameId": "1006000000000084793405",
+    "sampledConditionId": "300610060000000000847934050000000000002435769680"
+  }
+}

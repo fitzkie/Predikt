@@ -1,6 +1,6 @@
-import MarketingHome from 'compositions/marketing/MarketingHome/MarketingHome'
+import { MarketingHomePage } from 'modules/marketing'
 
 
 export default function HomePage() {
-  return <MarketingHome />
+  return <MarketingHomePage />
 }

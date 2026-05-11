@@ -1,0 +1,990 @@
+{
+  "sports": [
+    {
+      "id": 33,
+      "slug": "football",
+      "name": "Football",
+      "sportId": "33",
+      "turnover": "11159.364152579816",
+      "countries": [
+        {
+          "slug": "denmark",
+          "name": "Denmark",
+          "turnover": "327.1114784111155",
+          "leagues": [
+            {
+              "slug": "superliga",
+              "name": "Superliga",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "327.1114784111155",
+              "games": [
+                {
+                  "id": "1006000000000084119968",
+                  "gameId": "1006000000000084119968",
+                  "slug": "randers-fc-odense-bk-1006000000000084119968",
+                  "title": "Randers FC - Odense BK",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "327.1114784111155",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "17ca5e99-2226-4670-b2cf-31ef948f83b9",
+                    "slug": "superliga",
+                    "name": "Superliga",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "0485dc68-767d-499f-94a8-a9dedff7e571",
+                    "slug": "denmark",
+                    "name": "Denmark"
+                  },
+                  "participants": [
+                    {
+                      "name": "Randers FC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084119968/Randers FC.png"
+                    },
+                    {
+                      "name": "Odense BK",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084119968/Odense BK.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "georgia",
+          "name": "Georgia",
+          "turnover": "0",
+          "leagues": [
+            {
+              "slug": "erovnuli-liga",
+              "name": "Erovnuli Liga",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "0",
+              "games": [
+                {
+                  "id": "1006000000000085030772",
+                  "gameId": "1006000000000085030772",
+                  "slug": "fc-rustavi-fc-dinamo-tbilisi-1006000000000085030772",
+                  "title": "FC Rustavi - FC Dinamo Tbilisi",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "0",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "79b69df4-2083-4af4-9d06-6743577555d4",
+                    "slug": "erovnuli-liga",
+                    "name": "Erovnuli Liga",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "942fb29f-f5e1-474e-8322-4c8ca60513b2",
+                    "slug": "georgia",
+                    "name": "Georgia"
+                  },
+                  "participants": [
+                    {
+                      "name": "FC Rustavi",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085030772/FC Rustavi.png"
+                    },
+                    {
+                      "name": "FC Dinamo Tbilisi",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085030772/FC Dinamo Tbilisi.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "italy",
+          "name": "Italy",
+          "turnover": "10656.119833395664",
+          "leagues": [
+            {
+              "slug": "serie-a",
+              "name": "Serie A",
+              "isTopLeague": true,
+              "topWeight": 0,
+              "turnover": "10656.119833395664",
+              "games": [
+                {
+                  "id": "1006000000000084793405",
+                  "gameId": "1006000000000084793405",
+                  "slug": "ssc-napoli-bologna-fc-1006000000000084793405",
+                  "title": "SSC Napoli - Bologna FC",
+                  "startsAt": "1778525100",
+                  "state": "Live",
+                  "turnover": "10656.119833395664",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "084b2fb1-5879-443b-9509-4b27d7a283d0",
+                    "slug": "serie-a",
+                    "name": "Serie A",
+                    "isTopLeague": true,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+                    "slug": "italy",
+                    "name": "Italy"
+                  },
+                  "participants": [
+                    {
+                      "name": "SSC Napoli",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084793405/SSC Napoli.png"
+                    },
+                    {
+                      "name": "Bologna FC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084793405/Bologna FC.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "morocco",
+          "name": "Morocco",
+          "turnover": "0.4716981132075472",
+          "leagues": [
+            {
+              "slug": "botola",
+              "name": "Botola",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "0.4716981132075472",
+              "games": [
+                {
+                  "id": "1006000000000084899072",
+                  "gameId": "1006000000000084899072",
+                  "slug": "us-yacoub-el-mansour-kawkab-athletic-club-de-marrakech-1006000000000084899072",
+                  "title": "US Yacoub El Mansour - Kawkab Athletic Club de Marrakech",
+                  "startsAt": "1778522400",
+                  "state": "Live",
+                  "turnover": "0.4716981132075472",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "e0b68f6c-a93c-42b7-8c01-a1f7cb1a08e4",
+                    "slug": "botola",
+                    "name": "Botola",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "239e3828-5894-4803-bb53-2915c4c31c21",
+                    "slug": "morocco",
+                    "name": "Morocco"
+                  },
+                  "participants": [
+                    {
+                      "name": "US Yacoub El Mansour",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084899072/US Yacoub El Mansour.png"
+                    },
+                    {
+                      "name": "Kawkab Athletic Club de Marrakech",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084899072/Kawkab Athletic Club de Marrakech.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "peru",
+          "name": "Peru",
+          "turnover": "11.20882314524556",
+          "leagues": [
+            {
+              "slug": "liga-1",
+              "name": "Liga 1",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "11.20882314524556",
+              "games": [
+                {
+                  "id": "1006000000000084523286",
+                  "gameId": "1006000000000084523286",
+                  "slug": "deportivo-garcilaso-alianza-atletico-1006000000000084523286",
+                  "title": "Deportivo Garcilaso - Alianza Atletico",
+                  "startsAt": "1778522400",
+                  "state": "Live",
+                  "turnover": "11.20882314524556",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "14b23ef9-ff14-421a-bdaa-d3e1946376af",
+                    "slug": "liga-1",
+                    "name": "Liga 1",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "fcdff780-6793-4166-b3ad-9bf0370a55c9",
+                    "slug": "peru",
+                    "name": "Peru"
+                  },
+                  "participants": [
+                    {
+                      "name": "Deportivo Garcilaso",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084523286/Deportivo Garcilaso.png"
+                    },
+                    {
+                      "name": "Alianza Atletico",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084523286/Alianza Atletico.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "poland",
+          "name": "Poland",
+          "turnover": "6.511958975788769",
+          "leagues": [
+            {
+              "slug": "ekstraklasa",
+              "name": "Ekstraklasa",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "6.511958975788769",
+              "games": [
+                {
+                  "id": "1006000000000084278674",
+                  "gameId": "1006000000000084278674",
+                  "slug": "cracovia-krakow-radomiak-radom-1006000000000084278674",
+                  "title": "Cracovia Krakow - Radomiak Radom",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "6.511958975788769",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "41ecb4c7-fe38-4ac7-996c-69af470e2aa9",
+                    "slug": "ekstraklasa",
+                    "name": "Ekstraklasa",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "8920d050-f45f-447a-80f3-6b2f44195962",
+                    "slug": "poland",
+                    "name": "Poland"
+                  },
+                  "participants": [
+                    {
+                      "name": "Cracovia Krakow",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084278674/Cracovia Krakow.png"
+                    },
+                    {
+                      "name": "Radomiak Radom",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084278674/Radomiak Radom.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "romania",
+          "name": "Romania",
+          "turnover": "15.401228413457346",
+          "leagues": [
+            {
+              "slug": "liga-i",
+              "name": "Liga I",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "15.401228413457346",
+              "games": [
+                {
+                  "id": "1006000000000085151663",
+                  "gameId": "1006000000000085151663",
+                  "slug": "fcsb-fc-unirea-2004-slobozia-1006000000000085151663",
+                  "title": "FCSB - FC Unirea 2004 Slobozia",
+                  "startsAt": "1778522400",
+                  "state": "Live",
+                  "turnover": "15.401228413457346",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "0c5876d8-f507-4505-bf1a-e2a627eb3116",
+                    "slug": "liga-i",
+                    "name": "Liga I",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "9e17e126-1624-454a-b981-7d8d6789f7e4",
+                    "slug": "romania",
+                    "name": "Romania"
+                  },
+                  "participants": [
+                    {
+                      "name": "FCSB",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085151663/FCSB.png"
+                    },
+                    {
+                      "name": "FC Unirea 2004 Slobozia",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085151663/FC Unirea 2004 Slobozia.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "saudi-arabia",
+          "name": "Saudi Arabia",
+          "turnover": "7.053060454204738",
+          "leagues": [
+            {
+              "slug": "professional-league",
+              "name": "Professional League",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "7.053060454204738",
+              "games": [
+                {
+                  "id": "1006000000000084206414",
+                  "gameId": "1006000000000084206414",
+                  "slug": "neom-sc-al-shabab-riyadh-1006000000000084206414",
+                  "title": "Neom SC - Al-Shabab Riyadh",
+                  "startsAt": "1778518200",
+                  "state": "Live",
+                  "turnover": "4.546909362358572",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "565c1d0e-c05d-4bed-9d1b-98b06dce8358",
+                    "slug": "professional-league",
+                    "name": "Professional League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "5f36af5f-ed27-4da6-a4d4-cac2dab75650",
+                    "slug": "saudi-arabia",
+                    "name": "Saudi Arabia"
+                  },
+                  "participants": [
+                    {
+                      "name": "Neom SC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084206414/Neom SC.png"
+                    },
+                    {
+                      "name": "Al-Shabab Riyadh",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084206414/Al-Shabab Riyadh.png"
+                    }
+                  ]
+                },
+                {
+                  "id": "1006000000000081316729",
+                  "gameId": "1006000000000081316729",
+                  "slug": "al-taawoun-fc-al-ahli-jeddah-1006000000000081316729",
+                  "title": "Al-Taawoun FC - Al Ahli Jeddah",
+                  "startsAt": "1778522400",
+                  "state": "Live",
+                  "turnover": "2.5061510918461662",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "565c1d0e-c05d-4bed-9d1b-98b06dce8358",
+                    "slug": "professional-league",
+                    "name": "Professional League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "5f36af5f-ed27-4da6-a4d4-cac2dab75650",
+                    "slug": "saudi-arabia",
+                    "name": "Saudi Arabia"
+                  },
+                  "participants": [
+                    {
+                      "name": "Al-Taawoun FC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000081316729/Al-Taawoun FC.png"
+                    },
+                    {
+                      "name": "Al Ahli Jeddah",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000081316729/Al Ahli Jeddah.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "spain",
+          "name": "Spain",
+          "turnover": "16.61172122976547",
+          "leagues": [
+            {
+              "slug": "laliga-2",
+              "name": "LaLiga 2",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "12.603551751928677",
+              "games": [
+                {
+                  "id": "1006000000000084515046",
+                  "gameId": "1006000000000084515046",
+                  "slug": "sd-huesca-real-sociedad-ii-1006000000000084515046",
+                  "title": "SD Huesca - Real Sociedad II",
+                  "startsAt": "1778524200",
+                  "state": "Live",
+                  "turnover": "12.603551751928677",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "cbaef6e9-bcfb-4b78-8496-86121f08709a",
+                    "slug": "laliga-2",
+                    "name": "LaLiga 2",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+                    "slug": "spain",
+                    "name": "Spain"
+                  },
+                  "participants": [
+                    {
+                      "name": "SD Huesca",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084515046/SD Huesca.png"
+                    },
+                    {
+                      "name": "Real Sociedad II",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084515046/Real Sociedad II.png"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "primera-division-w",
+              "name": "Primera Division (W)",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "4.0081694778367964",
+              "games": [
+                {
+                  "id": "1006000000000084289952",
+                  "gameId": "1006000000000084289952",
+                  "slug": "madrid-cff-w-sevilla-fc-w-1006000000000084289952",
+                  "title": "Madrid CFF (W) - Sevilla FC (W)",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "4.0081694778367964",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "9a493303-296c-4706-909d-6b0ee697672c",
+                    "slug": "primera-division-w",
+                    "name": "Primera Division (W)",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+                    "slug": "spain",
+                    "name": "Spain"
+                  },
+                  "participants": [
+                    {
+                      "name": "Madrid CFF (W)",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084289952/Madrid CFF (W).png"
+                    },
+                    {
+                      "name": "Sevilla FC (W)",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000084289952/Sevilla FC (W).png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "sweden",
+          "name": "Sweden",
+          "turnover": "80.30278864326458",
+          "leagues": [
+            {
+              "slug": "allsvenskan",
+              "name": "Allsvenskan",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "80.30278864326458",
+              "games": [
+                {
+                  "id": "1006000000000083368410",
+                  "gameId": "1006000000000083368410",
+                  "slug": "fk-sirius-orgryte-is-1006000000000083368410",
+                  "title": "FK Sirius - Orgryte IS",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "80.30278864326458",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "73ce5c99-8d7c-4011-bbfc-3e5175ead660",
+                    "slug": "allsvenskan",
+                    "name": "Allsvenskan",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "45082afd-17b1-4d06-83ec-337e63560e6a",
+                    "slug": "sweden",
+                    "name": "Sweden"
+                  },
+                  "participants": [
+                    {
+                      "name": "FK Sirius",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368410/FK Sirius.png"
+                    },
+                    {
+                      "name": "Orgryte IS",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368410/Orgryte IS.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "switzerland",
+          "name": "Switzerland",
+          "turnover": "36.68109085505007",
+          "leagues": [
+            {
+              "slug": "challenge-league",
+              "name": "Challenge League",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "36.68109085505007",
+              "games": [
+                {
+                  "id": "1006000000000083368560",
+                  "gameId": "1006000000000083368560",
+                  "slug": "fc-stade-nyonnais-fc-stade-ls-ouchy-1006000000000083368560",
+                  "title": "FC Stade Nyonnais - FC Stade LS Ouchy",
+                  "startsAt": "1778523300",
+                  "state": "Live",
+                  "turnover": "11.63052422433888",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "dbed2e56-01d6-4e44-bde6-70d30a0c4ab9",
+                    "slug": "challenge-league",
+                    "name": "Challenge League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c8fafa99-9151-42e0-bcd8-0bda2fdcc3e5",
+                    "slug": "switzerland",
+                    "name": "Switzerland"
+                  },
+                  "participants": [
+                    {
+                      "name": "FC Stade Nyonnais",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368560/FC Stade Nyonnais.png"
+                    },
+                    {
+                      "name": "FC Stade LS Ouchy",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368560/FC Stade LS Ouchy.png"
+                    }
+                  ]
+                },
+                {
+                  "id": "1006000000000083368546",
+                  "gameId": "1006000000000083368546",
+                  "slug": "fc-vaduz-fc-aarau-1006000000000083368546",
+                  "title": "FC Vaduz - FC Aarau",
+                  "startsAt": "1778523300",
+                  "state": "Live",
+                  "turnover": "10.623294090283007",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "dbed2e56-01d6-4e44-bde6-70d30a0c4ab9",
+                    "slug": "challenge-league",
+                    "name": "Challenge League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c8fafa99-9151-42e0-bcd8-0bda2fdcc3e5",
+                    "slug": "switzerland",
+                    "name": "Switzerland"
+                  },
+                  "participants": [
+                    {
+                      "name": "FC Vaduz",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368546/FC Vaduz.png"
+                    },
+                    {
+                      "name": "FC Aarau",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368546/FC Aarau.png"
+                    }
+                  ]
+                },
+                {
+                  "id": "1006000000000083368562",
+                  "gameId": "1006000000000083368562",
+                  "slug": "neuchatel-xamax-fc-etoile-carouge-1006000000000083368562",
+                  "title": "Neuchatel Xamax FC - Etoile Carouge",
+                  "startsAt": "1778523300",
+                  "state": "Live",
+                  "turnover": "7.271180000305472",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "dbed2e56-01d6-4e44-bde6-70d30a0c4ab9",
+                    "slug": "challenge-league",
+                    "name": "Challenge League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c8fafa99-9151-42e0-bcd8-0bda2fdcc3e5",
+                    "slug": "switzerland",
+                    "name": "Switzerland"
+                  },
+                  "participants": [
+                    {
+                      "name": "Neuchatel Xamax FC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368562/Neuchatel Xamax FC.png"
+                    },
+                    {
+                      "name": "Etoile Carouge",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368562/Etoile Carouge.png"
+                    }
+                  ]
+                },
+                {
+                  "id": "1006000000000083368566",
+                  "gameId": "1006000000000083368566",
+                  "slug": "yverdon-sport-fc-fc-rapperswil-jona-1006000000000083368566",
+                  "title": "Yverdon-Sport FC - FC Rapperswil-Jona",
+                  "startsAt": "1778523300",
+                  "state": "Live",
+                  "turnover": "6.626605729041073",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "dbed2e56-01d6-4e44-bde6-70d30a0c4ab9",
+                    "slug": "challenge-league",
+                    "name": "Challenge League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c8fafa99-9151-42e0-bcd8-0bda2fdcc3e5",
+                    "slug": "switzerland",
+                    "name": "Switzerland"
+                  },
+                  "participants": [
+                    {
+                      "name": "Yverdon-Sport FC",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368566/Yverdon-Sport FC.png"
+                    },
+                    {
+                      "name": "FC Rapperswil-Jona",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368566/FC Rapperswil-Jona.png"
+                    }
+                  ]
+                },
+                {
+                  "id": "1006000000000083368550",
+                  "gameId": "1006000000000083368550",
+                  "slug": "ac-bellinzona-fc-wil-1900-1006000000000083368550",
+                  "title": "AC Bellinzona - FC Wil 1900",
+                  "startsAt": "1778523300",
+                  "state": "Live",
+                  "turnover": "0.5294868110816386",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "dbed2e56-01d6-4e44-bde6-70d30a0c4ab9",
+                    "slug": "challenge-league",
+                    "name": "Challenge League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "c8fafa99-9151-42e0-bcd8-0bda2fdcc3e5",
+                    "slug": "switzerland",
+                    "name": "Switzerland"
+                  },
+                  "participants": [
+                    {
+                      "name": "AC Bellinzona",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368550/AC Bellinzona.png"
+                    },
+                    {
+                      "name": "FC Wil 1900",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000083368550/FC Wil 1900.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "turkey",
+          "name": "Turkey",
+          "turnover": "1.8064954118772714",
+          "leagues": [
+            {
+              "slug": "tff-1-lig",
+              "name": "TFF 1. Lig",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "1.8064954118772714",
+              "games": [
+                {
+                  "id": "1006000000000085402942",
+                  "gameId": "1006000000000085402942",
+                  "slug": "bodrumspor-corum-belediyespor-1006000000000085402942",
+                  "title": "Bodrumspor - Corum Belediyespor",
+                  "startsAt": "1778518800",
+                  "state": "Live",
+                  "turnover": "1.8064954118772714",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "cad75a9e-c5b2-422c-bec1-2ef648b2f4c3",
+                    "slug": "tff-1-lig",
+                    "name": "TFF 1. Lig",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "5589328e-fce3-4ff5-8d32-dcd3c8cdeb39",
+                    "slug": "turkey",
+                    "name": "Turkey"
+                  },
+                  "participants": [
+                    {
+                      "name": "Bodrumspor",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085402942/Bodrumspor.png"
+                    },
+                    {
+                      "name": "Corum Belediyespor",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085402942/Corum Belediyespor.png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "united-arab-emirates",
+          "name": "United Arab Emirates",
+          "turnover": "0.08397553117380704",
+          "leagues": [
+            {
+              "slug": "pro-league",
+              "name": "Pro League",
+              "isTopLeague": false,
+              "topWeight": 0,
+              "turnover": "0.08397553117380704",
+              "games": [
+                {
+                  "id": "1006000000000085076369",
+                  "gameId": "1006000000000085076369",
+                  "slug": "khor-fakkan-al-wahda-uae-1006000000000085076369",
+                  "title": "Khor Fakkan - Al Wahda (UAE)",
+                  "startsAt": "1778517900",
+                  "state": "Live",
+                  "turnover": "0.08397553117380704",
+                  "sport": {
+                    "sportId": "33",
+                    "slug": "football",
+                    "name": "Football",
+                    "sporthub": {
+                      "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+                      "slug": "sports"
+                    }
+                  },
+                  "league": {
+                    "id": "e38af9ee-7b9b-427b-b300-508a77225220",
+                    "slug": "pro-league",
+                    "name": "Pro League",
+                    "isTopLeague": false,
+                    "topWeight": 0
+                  },
+                  "country": {
+                    "id": "afd90409-818b-4590-9a80-2ed5a4165537",
+                    "slug": "united-arab-emirates",
+                    "name": "United Arab Emirates"
+                  },
+                  "participants": [
+                    {
+                      "name": "Khor Fakkan",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085076369/Khor Fakkan.png"
+                    },
+                    {
+                      "name": "Al Wahda (UAE)",
+                      "image": "https://avatars.azuro.org/images/33/1006000000000085076369/Al Wahda (UAE).png"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

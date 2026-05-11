@@ -1,6 +1,6 @@
-import PrediktsHub from 'compositions/app/PrediktsHub/PrediktsHub'
+import { PrediktsPage as PrediktsModulePage } from 'modules/predikts'
 
 
 export default function PrediktsPage() {
-  return <PrediktsHub />
+  return <PrediktsModulePage />
 }

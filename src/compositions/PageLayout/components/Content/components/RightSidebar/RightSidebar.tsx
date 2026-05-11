@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { usePrivy } from '@privy-io/react-auth'
 import { useWallet } from 'wallet'
 import { constants } from 'helpers'
+import { PrediktsPortfolioPanel } from 'modules/predikts'
 
 import { Button, buttonMessages } from 'components/inputs'
 import TabbedBetslip from 'compositions/TabbedBetslip/TabbedBetslip'
@@ -42,14 +43,7 @@ const RightSidebar: React.FC = () => {
         {
           isPredikts ? (
             <div className="space-y-2">
-              <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
-                <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Predikts flow</div>
-                <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Build market depth before execution</div>
-                <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-                  Use the taxonomy to define featured categories, then connect pricing, commentary, and settlement views for each lane.
-                </p>
-                <Button className="mt-5 w-full" href={constants.links.prediktsApp} size={40} title="Open Predikts Hub" />
-              </div>
+              <PrediktsPortfolioPanel />
               <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
                 <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Featured lanes</div>
                 <div className="mt-4 flex flex-wrap gap-2">

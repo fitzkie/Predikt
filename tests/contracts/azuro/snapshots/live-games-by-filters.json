@@ -1,0 +1,408 @@
+{
+  "games": [
+    {
+      "id": "1006000000000084793405",
+      "gameId": "1006000000000084793405",
+      "slug": "ssc-napoli-bologna-fc-1006000000000084793405",
+      "title": "SSC Napoli - Bologna FC",
+      "startsAt": "1778525100",
+      "state": "Live",
+      "turnover": "10656.119833395664",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "084b2fb1-5879-443b-9509-4b27d7a283d0",
+        "slug": "serie-a",
+        "name": "Serie A",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "SSC Napoli",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793405/SSC Napoli.png"
+        },
+        {
+          "name": "Bologna FC",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793405/Bologna FC.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029706866",
+      "gameId": "1006000000000029706866",
+      "slug": "bnei-herzliya-elitzur-maccabi-netanya-1006000000000029706866",
+      "title": "Bnei Herzliya - Elitzur Maccabi Netanya",
+      "startsAt": "1778520600",
+      "state": "Live",
+      "turnover": "626.38",
+      "sport": {
+        "sportId": "31",
+        "slug": "basketball",
+        "name": "Basketball",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "c3d11fc6-81e2-43f0-b48d-b7ae922d612b",
+        "slug": "super-league",
+        "name": "Super League",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "151cb52c-f1f5-4192-a58e-5f4e41498d84",
+        "slug": "israel",
+        "name": "Israel"
+      },
+      "participants": [
+        {
+          "name": "Bnei Herzliya",
+          "image": "https://avatars.azuro.org/images/31/1006000000000029706866/Bnei Herzliya.png"
+        },
+        {
+          "name": "Elitzur Maccabi Netanya",
+          "image": "https://avatars.azuro.org/images/31/1006000000000029706866/Elitzur Maccabi Netanya.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029725890",
+      "gameId": "1006000000000029725890",
+      "slug": "alexandra-panova-marie-bouzkova-gabriela-dabrowski-luisa-stefani-1006000000000029725890",
+      "title": "Alexandra Panova / Marie Bouzkova - Gabriela Dabrowski / Luisa Stefani",
+      "startsAt": "1778522100",
+      "state": "Live",
+      "turnover": "473.04",
+      "sport": {
+        "sportId": "45",
+        "slug": "tennis",
+        "name": "Tennis",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "3b539133-e019-4bc3-8233-7b4b625fe558",
+        "slug": "rome-doubles-w",
+        "name": "Rome - Doubles (W)",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "Alexandra Panova / Marie Bouzkova",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029725890/Alexandra Panova / Marie Bouzkova.png"
+        },
+        {
+          "name": "Gabriela Dabrowski / Luisa Stefani",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029725890/Gabriela Dabrowski / Luisa Stefani.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000084119968",
+      "gameId": "1006000000000084119968",
+      "slug": "randers-fc-odense-bk-1006000000000084119968",
+      "title": "Randers FC - Odense BK",
+      "startsAt": "1778518800",
+      "state": "Live",
+      "turnover": "327.1114784111155",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "17ca5e99-2226-4670-b2cf-31ef948f83b9",
+        "slug": "superliga",
+        "name": "Superliga",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "0485dc68-767d-499f-94a8-a9dedff7e571",
+        "slug": "denmark",
+        "name": "Denmark"
+      },
+      "participants": [
+        {
+          "name": "Randers FC",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084119968/Randers FC.png"
+        },
+        {
+          "name": "Odense BK",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084119968/Odense BK.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029738999",
+      "gameId": "1006000000000029738999",
+      "slug": "lisa-pigato-lucia-bronzetti-1006000000000029738999",
+      "title": "Lisa Pigato - Lucia Bronzetti",
+      "startsAt": "1778519400",
+      "state": "Live",
+      "turnover": "325.65",
+      "sport": {
+        "sportId": "45",
+        "slug": "tennis",
+        "name": "Tennis",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "24b6362c-e044-41e3-9840-abdc65d102ee",
+        "slug": "parma-w",
+        "name": "Parma (W)",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "Lisa Pigato",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029738999/Lisa Pigato.png"
+        },
+        {
+          "name": "Lucia Bronzetti",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029738999/Lucia Bronzetti.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029723347",
+      "gameId": "1006000000000029723347",
+      "slug": "nrg-fut-esports-1006000000000029723347",
+      "title": "NRG - FUT Esports",
+      "startsAt": "1778524800",
+      "state": "Live",
+      "turnover": "224.18",
+      "sport": {
+        "sportId": "1061",
+        "slug": "cs2",
+        "name": "Counter-Strike 2",
+        "sporthub": {
+          "id": "ee5c8776-e9ad-4aa0-8334-d8392f8da16e",
+          "slug": "esports"
+        }
+      },
+      "league": {
+        "id": "6fdfa67b-12c0-4a30-9f2d-042416dad66b",
+        "slug": "iem-atlanta",
+        "name": "IEM Atlanta",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "699286d6-12ac-42f2-9fd8-06d55eaf20ff",
+        "slug": "international-tournaments",
+        "name": "International Tournaments"
+      },
+      "participants": [
+        {
+          "name": "NRG",
+          "image": "https://avatars.azuro.org/images/1061/1006000000000029723347/NRG.png"
+        },
+        {
+          "name": "FUT Esports",
+          "image": "https://avatars.azuro.org/images/1061/1006000000000029723347/FUT Esports.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000083368410",
+      "gameId": "1006000000000083368410",
+      "slug": "fk-sirius-orgryte-is-1006000000000083368410",
+      "title": "FK Sirius - Orgryte IS",
+      "startsAt": "1778518800",
+      "state": "Live",
+      "turnover": "80.30278864326458",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "73ce5c99-8d7c-4011-bbfc-3e5175ead660",
+        "slug": "allsvenskan",
+        "name": "Allsvenskan",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "45082afd-17b1-4d06-83ec-337e63560e6a",
+        "slug": "sweden",
+        "name": "Sweden"
+      },
+      "participants": [
+        {
+          "name": "FK Sirius",
+          "image": "https://avatars.azuro.org/images/33/1006000000000083368410/FK Sirius.png"
+        },
+        {
+          "name": "Orgryte IS",
+          "image": "https://avatars.azuro.org/images/33/1006000000000083368410/Orgryte IS.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029706864",
+      "gameId": "1006000000000029706864",
+      "slug": "maccabi-tel-aviv-kiryat-ata-1006000000000029706864",
+      "title": "Maccabi Tel Aviv - Kiryat Ata",
+      "startsAt": "1778522700",
+      "state": "Live",
+      "turnover": "66",
+      "sport": {
+        "sportId": "31",
+        "slug": "basketball",
+        "name": "Basketball",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "c3d11fc6-81e2-43f0-b48d-b7ae922d612b",
+        "slug": "super-league",
+        "name": "Super League",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "151cb52c-f1f5-4192-a58e-5f4e41498d84",
+        "slug": "israel",
+        "name": "Israel"
+      },
+      "participants": [
+        {
+          "name": "Maccabi Tel Aviv",
+          "image": "https://avatars.azuro.org/images/31/1006000000000029706864/Maccabi Tel Aviv.png"
+        },
+        {
+          "name": "Kiryat Ata",
+          "image": "https://avatars.azuro.org/images/31/1006000000000029706864/Kiryat Ata.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029739331",
+      "gameId": "1006000000000029739331",
+      "slug": "naomi-osaka-iga-swiatek-1006000000000029739331",
+      "title": "Naomi Osaka - Iga Swiatek",
+      "startsAt": "1778521800",
+      "state": "Live",
+      "turnover": "29.3",
+      "sport": {
+        "sportId": "45",
+        "slug": "tennis",
+        "name": "Tennis",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "11f7b109-cd80-4822-aa37-722a70258ddc",
+        "slug": "rome-w",
+        "name": "Rome (W)",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "Naomi Osaka",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029739331/Naomi Osaka.png"
+        },
+        {
+          "name": "Iga Swiatek",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029739331/Iga Swiatek.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000085151663",
+      "gameId": "1006000000000085151663",
+      "slug": "fcsb-fc-unirea-2004-slobozia-1006000000000085151663",
+      "title": "FCSB - FC Unirea 2004 Slobozia",
+      "startsAt": "1778522400",
+      "state": "Live",
+      "turnover": "15.401228413457346",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "0c5876d8-f507-4505-bf1a-e2a627eb3116",
+        "slug": "liga-i",
+        "name": "Liga I",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "9e17e126-1624-454a-b981-7d8d6789f7e4",
+        "slug": "romania",
+        "name": "Romania"
+      },
+      "participants": [
+        {
+          "name": "FCSB",
+          "image": "https://avatars.azuro.org/images/33/1006000000000085151663/FCSB.png"
+        },
+        {
+          "name": "FC Unirea 2004 Slobozia",
+          "image": "https://avatars.azuro.org/images/33/1006000000000085151663/FC Unirea 2004 Slobozia.png"
+        }
+      ]
+    }
+  ],
+  "page": 1,
+  "perPage": 10,
+  "total": 50,
+  "totalPages": 5
+}

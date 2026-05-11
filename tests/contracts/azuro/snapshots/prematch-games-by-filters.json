@@ -1,0 +1,408 @@
+{
+  "games": [
+    {
+      "id": "1006000000000084793028",
+      "gameId": "1006000000000084793028",
+      "slug": "tottenham-hotspur-leeds-united-1006000000000084793028",
+      "title": "Tottenham Hotspur - Leeds United",
+      "startsAt": "1778526000",
+      "state": "Prematch",
+      "turnover": "8861.420958635048",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "c2e8dd40-8b06-4171-80c6-8c99a9ad1326",
+        "slug": "premier-league",
+        "name": "Premier League",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "0aed7fe4-3bc1-4ca4-ad52-dfd2b188d9ad",
+        "slug": "england",
+        "name": "England"
+      },
+      "participants": [
+        {
+          "name": "Tottenham Hotspur",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793028/Tottenham Hotspur.png"
+        },
+        {
+          "name": "Leeds United",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084793028/Leeds United.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029739652",
+      "gameId": "1006000000000029739652",
+      "slug": "karolina-pliskova-elena-rybakina-1006000000000029739652",
+      "title": "Karolina Pliskova - Elena Rybakina",
+      "startsAt": "1778526000",
+      "state": "Prematch",
+      "turnover": "414.560698477476",
+      "sport": {
+        "sportId": "45",
+        "slug": "tennis",
+        "name": "Tennis",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "11f7b109-cd80-4822-aa37-722a70258ddc",
+        "slug": "rome-w",
+        "name": "Rome (W)",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "c7b3f0f8-226d-4245-8d33-7f03b74e21a2",
+        "slug": "italy",
+        "name": "Italy"
+      },
+      "participants": [
+        {
+          "name": "Karolina Pliskova",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029739652/Karolina Pliskova.png"
+        },
+        {
+          "name": "Elena Rybakina",
+          "image": "https://avatars.azuro.org/images/45/1006000000000029739652/Elena Rybakina.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000081204713",
+      "gameId": "1006000000000081204713",
+      "slug": "rc-celta-de-vigo-levante-ud-1006000000000081204713",
+      "title": "RC Celta de Vigo - Levante UD",
+      "startsAt": "1778605200",
+      "state": "Prematch",
+      "turnover": "215.8477060017555",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "0c4edf34-0f92-4d28-8110-164fc6251a79",
+        "slug": "laliga",
+        "name": "LaLiga",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+        "slug": "spain",
+        "name": "Spain"
+      },
+      "participants": [
+        {
+          "name": "RC Celta de Vigo",
+          "image": "https://avatars.azuro.org/images/33/1006000000000081204713/RC Celta de Vigo.png"
+        },
+        {
+          "name": "Levante UD",
+          "image": "https://avatars.azuro.org/images/33/1006000000000081204713/Levante UD.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000081204714",
+      "gameId": "1006000000000081204714",
+      "slug": "deportivo-alaves-fc-barcelona-1006000000000081204714",
+      "title": "Deportivo Alaves - FC Barcelona",
+      "startsAt": "1778700600",
+      "state": "Prematch",
+      "turnover": "193.51334671914293",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "0c4edf34-0f92-4d28-8110-164fc6251a79",
+        "slug": "laliga",
+        "name": "LaLiga",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+        "slug": "spain",
+        "name": "Spain"
+      },
+      "participants": [
+        {
+          "name": "Deportivo Alaves",
+          "image": "https://avatars.azuro.org/images/33/1006000000000081204714/Deportivo Alaves.png"
+        },
+        {
+          "name": "FC Barcelona",
+          "image": "https://avatars.azuro.org/images/33/1006000000000081204714/FC Barcelona.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000029738774",
+      "gameId": "1006000000000029738774",
+      "slug": "samoa-vanuatu-1006000000000029738774",
+      "title": "Samoa - Vanuatu",
+      "startsAt": "1778545800",
+      "state": "Prematch",
+      "turnover": "181",
+      "sport": {
+        "sportId": "40",
+        "slug": "cricket",
+        "name": "Cricket",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "08fbd5e6-6f84-4122-9ef8-4ad577ef1a79",
+        "slug": "icc-t20-world-cup-qualification",
+        "name": "ICC T20 World Cup Qualification",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "699286d6-12ac-42f2-9fd8-06d55eaf20ff",
+        "slug": "international-tournaments",
+        "name": "International Tournaments"
+      },
+      "participants": [
+        {
+          "name": "Samoa",
+          "image": "https://avatars.azuro.org/images/40/1006000000000029738774/Samoa.png"
+        },
+        {
+          "name": "Vanuatu",
+          "image": "https://avatars.azuro.org/images/40/1006000000000029738774/Vanuatu.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000084967636",
+      "gameId": "1006000000000084967636",
+      "slug": "manchester-city-crystal-palace-fc-1006000000000084967636",
+      "title": "Manchester City - Crystal Palace FC",
+      "startsAt": "1778698800",
+      "state": "Prematch",
+      "turnover": "164.3012890748461",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "c2e8dd40-8b06-4171-80c6-8c99a9ad1326",
+        "slug": "premier-league",
+        "name": "Premier League",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "0aed7fe4-3bc1-4ca4-ad52-dfd2b188d9ad",
+        "slug": "england",
+        "name": "England"
+      },
+      "participants": [
+        {
+          "name": "Manchester City",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084967636/Manchester City.png"
+        },
+        {
+          "name": "Crystal Palace FC",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084967636/Crystal Palace FC.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000084450945",
+      "gameId": "1006000000000084450945",
+      "slug": "rayo-vallecano-girona-fc-1006000000000084450945",
+      "title": "Rayo Vallecano - Girona FC",
+      "startsAt": "1778526000",
+      "state": "Prematch",
+      "turnover": "149.85460851031178",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "0c4edf34-0f92-4d28-8110-164fc6251a79",
+        "slug": "laliga",
+        "name": "LaLiga",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+        "slug": "spain",
+        "name": "Spain"
+      },
+      "participants": [
+        {
+          "name": "Rayo Vallecano",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084450945/Rayo Vallecano.png"
+        },
+        {
+          "name": "Girona FC",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084450945/Girona FC.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000084496880",
+      "gameId": "1006000000000084496880",
+      "slug": "mfk-skalica-mfk-ruzomberok-1006000000000084496880",
+      "title": "MFK Skalica - MFk Ruzomberok",
+      "startsAt": "1778943600",
+      "state": "Prematch",
+      "turnover": "146.7",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "ab7abc56-ebc2-4fd3-82a2-41f6f147d2cd",
+        "slug": "superliga",
+        "name": "Superliga",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "203697c9-a099-4980-82ef-e4048da47c0a",
+        "slug": "slovakia",
+        "name": "Slovakia"
+      },
+      "participants": [
+        {
+          "name": "MFK Skalica",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084496880/MFK Skalica.png"
+        },
+        {
+          "name": "MFk Ruzomberok",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084496880/MFk Ruzomberok.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000084450938",
+      "gameId": "1006000000000084450938",
+      "slug": "rcd-espanyol-athletic-bilbao-1006000000000084450938",
+      "title": "RCD Espanyol - Athletic Bilbao",
+      "startsAt": "1778691600",
+      "state": "Prematch",
+      "turnover": "126.09315068493152",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "0c4edf34-0f92-4d28-8110-164fc6251a79",
+        "slug": "laliga",
+        "name": "LaLiga",
+        "isTopLeague": true,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "7269aa71-860e-4cca-b8b0-e04721c87bcc",
+        "slug": "spain",
+        "name": "Spain"
+      },
+      "participants": [
+        {
+          "name": "RCD Espanyol",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084450938/RCD Espanyol.png"
+        },
+        {
+          "name": "Athletic Bilbao",
+          "image": "https://avatars.azuro.org/images/33/1006000000000084450938/Athletic Bilbao.png"
+        }
+      ]
+    },
+    {
+      "id": "1006000000000085539522",
+      "gameId": "1006000000000085539522",
+      "slug": "argentinos-juniors-ca-huracan-1006000000000085539522",
+      "title": "Argentinos Juniors - CA Huracan",
+      "startsAt": "1778632200",
+      "state": "Prematch",
+      "turnover": "125",
+      "sport": {
+        "sportId": "33",
+        "slug": "football",
+        "name": "Football",
+        "sporthub": {
+          "id": "f800a0de-5fb6-45ff-8ed2-35daab086119",
+          "slug": "sports"
+        }
+      },
+      "league": {
+        "id": "835cdd41-d657-42ca-b033-30dbaa8d4945",
+        "slug": "liga-profesional",
+        "name": "Liga Profesional",
+        "isTopLeague": false,
+        "topWeight": 0
+      },
+      "country": {
+        "id": "853b5565-e225-4fa9-aba6-ceb1cf23f1f7",
+        "slug": "argentina",
+        "name": "Argentina"
+      },
+      "participants": [
+        {
+          "name": "Argentinos Juniors",
+          "image": "https://avatars.azuro.org/images/33/1006000000000085539522/Argentinos Juniors.png"
+        },
+        {
+          "name": "CA Huracan",
+          "image": "https://avatars.azuro.org/images/33/1006000000000085539522/CA Huracan.png"
+        }
+      ]
+    }
+  ],
+  "page": 1,
+  "perPage": 10,
+  "total": 890,
+  "totalPages": 89
+}

@@ -24,6 +24,8 @@ import EmptyContent from 'compositions/EmptyContent/EmptyContent'
 import OddsValue from 'compositions/OddsValue/OddsValue'
 
 import ConnectButtonWrapper from 'compositions/ConnectButtonWrapper/ConnectButtonWrapper'
+import { useBetHistorySource } from 'modules/bet/hooks'
+import HistoryBetsFallback from 'modules/bet/components/profile/HistoryBetsFallback'
 import messages from './messages'
 
 
@@ -515,6 +517,7 @@ type ContentProps = {
 
 const Content: React.FC<ContentProps> = ({ tab }) => {
   const { address } = useAccount()
+  const { historyQuery, historyBets } = useBetHistorySource()
   const props: UseBetsProps = {
     filter: {
       bettor: address!,
@@ -531,17 +534,33 @@ const Content: React.FC<ContentProps> = ({ tab }) => {
     },
   })
 
+  const shouldShowHistoryFallback = Boolean(
+    !betsQuery.isFetching &&
+    !legacyBetsQuery.isFetching &&
+    !betsQuery.data?.pages?.[0]?.bets?.length &&
+    !legacyBetsQuery.data?.pages?.[0]?.bets?.length &&
+    historyBets.length
+  )
+
   return (
     <>
-      <BetsPages
-        query={betsQuery}
-      />
       {
-        Boolean(!betsQuery.hasNextPage && !betsQuery.isFetching) && (
-          <BetsPages
-            query={legacyBetsQuery}
-            withEmptyContent
-          />
+        shouldShowHistoryFallback ? (
+          <HistoryBetsFallback bets={historyBets} tab={tab} />
+        ) : (
+          <>
+            <BetsPages
+              query={betsQuery}
+            />
+            {
+              Boolean(!betsQuery.hasNextPage && !betsQuery.isFetching) && (
+                <BetsPages
+                  query={legacyBetsQuery}
+                  withEmptyContent
+                />
+              )
+            }
+          </>
         )
       }
     </>

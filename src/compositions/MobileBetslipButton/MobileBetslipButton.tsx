@@ -4,6 +4,7 @@ import React from 'react'
 import { useBaseBetslip } from '@azuro-org/sdk'
 import { openModal } from '@locmod/modal'
 import dynamic from 'next/dynamic'
+import { useAnalytics } from 'providers/analytics'
 
 import { Button } from 'components/inputs'
 import { Media } from 'components/layout'
@@ -15,6 +16,7 @@ const BetslipModal = dynamic(() => import('./components/BetslipModal/BetslipModa
 
 const MobileBetslipButton: React.FC = () => {
   const { items } = useBaseBetslip()
+  const analytics = useAnalytics()
 
   return (
     <div>
@@ -28,7 +30,13 @@ const MobileBetslipButton: React.FC = () => {
           ) : undefined
         }
         size={40}
-        onClick={() => openModal('BetslipModal')}
+        onClick={() => {
+          analytics.trackEvent('predikt_bet_betslip_opened', {
+            selections_count: items.length,
+            trigger: 'mobile_button',
+          })
+          openModal('BetslipModal')
+        }}
       />
       <Media narrow mobile>
         <BetslipModal />

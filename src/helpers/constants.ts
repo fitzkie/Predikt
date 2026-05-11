@@ -111,6 +111,7 @@ const localStorageKeys = {
   gameMarketsView: 'gameMarketsView',
   collapsedMarkets: 'collapsedMarkets',
   oddsView: 'oddsView',
+  polymarketApiCredentials: 'polymarketApiCredentials',
 }
 
 export default {

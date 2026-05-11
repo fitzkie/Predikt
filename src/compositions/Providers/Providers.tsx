@@ -3,13 +3,13 @@
 import React from 'react'
 import { type State } from 'wagmi'
 import { type ChainId } from '@azuro-org/toolkit'
-import { type Address } from 'viem'
 import { IntlProvider } from '@locmod/intl'
 import { SvgProvider, SvgSprite } from 'svg-provider'
-import { AzuroSDKProvider, LiveProvider } from '@azuro-org/sdk'
-import { constants } from 'helpers'
-import { WagmiProvider } from 'wallet'
 import { DeviceProvider, OddsViewProvider } from 'contexts'
+import { AnalyticsProvider } from 'providers/analytics'
+import { AuthProviderBoundary } from 'providers/auth'
+import { AzuroAppProvider } from 'providers/azuro'
+import { PolymarketAppProvider } from 'providers/polymarket'
 
 import NewFreeBetsChecker from 'compositions/NewFreeBetsChecker/NewFreeBetsChecker'
 
@@ -29,16 +29,18 @@ const Providers: React.CFC<Props> = (props) => {
     <DeviceProvider userAgent={userAgent}>
       <SvgProvider>
         <IntlProvider locale="en">
-          <WagmiProvider initialState={initialState}>
-            <AzuroSDKProvider initialChainId={initialChainId} affiliate={constants.affiliateAddress as Address}>
-              <LiveProvider initialLiveState={initialLiveState}>
-                <OddsViewProvider>
-                  {children}
-                </OddsViewProvider>
-              </LiveProvider>
-              <NewFreeBetsChecker />
-            </AzuroSDKProvider>
-          </WagmiProvider>
+          <AnalyticsProvider>
+            <AuthProviderBoundary initialState={initialState}>
+              <AzuroAppProvider initialChainId={initialChainId} initialLiveState={initialLiveState}>
+                <PolymarketAppProvider>
+                  <OddsViewProvider>
+                    {children}
+                  </OddsViewProvider>
+                </PolymarketAppProvider>
+                <NewFreeBetsChecker />
+              </AzuroAppProvider>
+            </AuthProviderBoundary>
+          </AnalyticsProvider>
         </IntlProvider>
         <div className="sr-only">
           <SvgSprite />

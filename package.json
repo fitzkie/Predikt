@@ -11,6 +11,8 @@
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint-ts": "tsc --noEmit",
     "lint": "next lint && tsc --noEmit",
+    "test:contracts:azuro": "node scripts/test-azuro-contracts.mjs",
+    "test:contracts:polymarket": "node scripts/test-polymarket-contracts.mjs",
     "------  Icons --------------------------------------------------------------------------": "",
     "watch-icons": "node bin/icons --watch",
     "build-icons": "node bin/icons"
@@ -29,6 +31,7 @@
     "@locmod/intl": "1.0.5",
     "@locmod/local-storage": "1.0.4",
     "@locmod/modal": "3.0.2",
+    "@polymarket/clob-client-v2": "^1.0.6",
     "axios": "^1.13.5",
     "classnames": "^2.5.1",
     "cookies-next": "^5.1.0",
