@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { usePolymarketClient, type PolymarketMarket } from 'providers/polymarket'
+import { usePolymarketClient, type PolymarketMarket, type PolymarketSearchResult } from 'providers/polymarket'
 
 
 const uniqueMarkets = (markets: PolymarketMarket[]) => {
@@ -18,6 +18,15 @@ const uniqueMarkets = (markets: PolymarketMarket[]) => {
   })
 }
 
+const extractMarkets = (result: PolymarketSearchResult): PolymarketMarket[] => {
+  const directMarkets = Array.isArray(result.markets) ? result.markets : []
+  const nestedMarkets = Array.isArray(result.events)
+    ? result.events.flatMap((event) => Array.isArray(event.markets) ? event.markets : [])
+    : []
+
+  return uniqueMarkets([ ...directMarkets, ...nestedMarkets ])
+}
+
 const usePrediktsLaneMarkets = (terms: readonly string[], limit = 3) => {
   const client = usePolymarketClient()
   const normalizedTerms = terms.filter(Boolean)
@@ -28,7 +37,7 @@ const usePrediktsLaneMarkets = (terms: readonly string[], limit = 3) => {
       queryFn: async () => {
         const result = await client.search(term)
 
-        return (result.markets || [])
+        return extractMarkets(result)
           .filter((market) => market.active && !market.closed)
           .slice(0, limit)
       },

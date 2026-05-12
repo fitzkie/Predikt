@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-// import { openModal } from '@locmod/modal'
+import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
 import { useFreezeBodyScroll } from 'hooks'
 import { useOptionalPrivy } from 'providers/auth'
@@ -41,12 +41,21 @@ const Content: React.FC = () => {
   const Header: React.FC = () => {
   const { account, isReconnecting, isConnecting } = useWallet()
   const pathname = usePathname()
-  const { login } = useOptionalPrivy()
+  const { login, canLogin } = useOptionalPrivy()
   const [ isVisible, setVisibility ] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleClick = () => {
     setVisibility((v) => !v)
+  }
+
+  const handleConnect = () => {
+    if (canLogin) {
+      login()
+      return
+    }
+
+    openModal('ConnectModal')
   }
 
   useEffect(() => {
@@ -93,7 +102,7 @@ const Content: React.FC = () => {
               title={buttonMessages.connectWallet}
               size={32}
               loading={isConnecting || isReconnecting}
-              onClick={login}
+              onClick={handleConnect}
             />
           )
         }

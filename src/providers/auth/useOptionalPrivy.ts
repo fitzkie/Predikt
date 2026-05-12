@@ -8,12 +8,14 @@ type OptionalPrivyState = {
   authenticated: boolean
   ready: boolean
   login: () => void
+  canLogin: boolean
 }
 
 const fallbackState: OptionalPrivyState = {
   authenticated: false,
   ready: false,
   login: () => undefined,
+  canLogin: false,
 }
 
 export const useOptionalPrivy = (): OptionalPrivyState => {
@@ -28,6 +30,7 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
       authenticated,
       ready,
       login,
+      canLogin: typeof login === 'function' && ready,
     }
   }
   catch {

@@ -34,7 +34,7 @@ const formatDateTime = (timestamp?: number) => {
 
 const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   const { account, chainId, isAAWallet } = useWallet()
-  const { login } = useOptionalPrivy()
+  const { login, canLogin } = useOptionalPrivy()
   const analytics = useAnalytics()
   const trading = usePolymarketTrading()
   const outcomes = parsePolymarketOutcomes(market)
@@ -172,6 +172,15 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
           : undefined,
       },
     })
+  }
+
+  const handleConnect = () => {
+    if (canLogin) {
+      login()
+      return
+    }
+
+    openModal('ConnectModal')
   }
 
   return (
@@ -367,7 +376,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
 
       {
         !account ? (
-          <Button className="mt-5 w-full" size={40} title={buttonMessages.connectWallet} onClick={login} />
+          <Button className="mt-5 w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
         ) : (
           <div className="mt-5 space-y-2">
             <button

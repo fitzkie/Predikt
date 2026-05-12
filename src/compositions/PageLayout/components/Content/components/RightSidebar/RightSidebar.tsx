@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { usePathname } from 'next/navigation'
+import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
 import { constants } from 'helpers'
 import { PrediktsPortfolioPanel } from 'modules/predikts'
@@ -18,7 +19,16 @@ const RightSidebar: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
   const { account, isReconnecting, isConnecting } = useWallet()
-  const { login } = useOptionalPrivy()
+  const { login, canLogin } = useOptionalPrivy()
+
+  const handleConnect = () => {
+    if (canLogin) {
+      login()
+      return
+    }
+
+    openModal('ConnectModal')
+  }
 
   return (
     <>
@@ -32,7 +42,7 @@ const RightSidebar: React.FC = () => {
               title={buttonMessages.connectWallet}
               size={40}
               loading={isConnecting || isReconnecting}
-              onClick={login}
+              onClick={handleConnect}
             />
           )
         }
