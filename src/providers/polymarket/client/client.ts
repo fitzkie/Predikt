@@ -6,7 +6,10 @@ const safeJoinUrl = (baseUrl: string, path: string) => {
 }
 
 const buildUrlWithQuery = (baseUrl: string, path: string, params?: Record<string, string | number | boolean | undefined>) => {
-  const url = new URL(safeJoinUrl(baseUrl, path))
+  const joinedUrl = safeJoinUrl(baseUrl, path)
+  const url = joinedUrl.startsWith('http')
+    ? new URL(joinedUrl)
+    : new URL(joinedUrl, typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin)
 
   Object.entries(params || {}).forEach(([ key, value ]) => {
     if (value === undefined || value === null || value === '') {

@@ -10,23 +10,24 @@ import { normalizeAzuroFeedGame } from 'modules/bet/lib/normalizeFeedGame'
 const useBetTopGames = () => {
   const { isLive } = useLive()
   const sdkQuery = useGames({
-    perPage: 9,
+    perPage: 10,
     orderBy: GameOrderBy.Turnover,
     isLive,
   })
   const feedQuery = useAzuroTopGames({
     state: isLive ? 'Live' : 'Prematch',
-    perPage: 9,
+    perPage: 10,
   })
 
   const games = useMemo(() => {
     if (feedQuery.isSuccess) {
       return feedQuery.data
         .map(normalizeAzuroFeedGame)
-        .filter(Boolean) as GameData[]
+        .filter(Boolean)
+        .slice(0, 9) as GameData[]
     }
 
-    return sdkQuery.data?.games || []
+    return sdkQuery.data?.games?.slice(0, 9) || []
   }, [ feedQuery.data, sdkQuery.data ])
 
   return {

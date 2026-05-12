@@ -25,7 +25,7 @@ const readEnv = (name: string, fallback = '') => {
 const baseUrl = readEnv('NEXT_PUBLIC_BASE_URL', 'https://prediktmarkets.com')
 const companyName = readEnv('NEXT_PUBLIC_COMPANY_NAME', 'Predikt Markets')
 const privyAppId = readEnv('NEXT_PUBLIC_PRIVY_APP_ID')
-const isDevEnabled = Boolean(JSON.parse(readEnv('AZURO_UNSTABLE_DEV_ENABLED', 'false') || 'false'))
+const isDevEnabled = process.env.NODE_ENV !== 'production' && Boolean(JSON.parse(readEnv('AZURO_UNSTABLE_DEV_ENABLED', 'false') || 'false'))
 const docsUrl = readEnv('NEXT_PUBLIC_DOCS_URL')
 const termsUrl = readEnv('NEXT_PUBLIC_TERMS_URL')
 const policyUrl = readEnv('NEXT_PUBLIC_POLICY_URL')
