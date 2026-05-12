@@ -11,6 +11,25 @@ export type OpponentLogoBgColor = 'grey-20'
 
 const fallback = 'interface/no_opponent'
 
+const sanitizeOpponentImage = (image?: string | null) => {
+  if (!image) {
+    return undefined
+  }
+
+  try {
+    const url = new URL(image)
+
+    if (url.hostname.endsWith('.azuro.org')) {
+      return undefined
+    }
+  }
+  catch {
+    return image
+  }
+
+  return image
+}
+
 type OpponentLogoProps = {
   className?: string
   image?: string | null
@@ -19,6 +38,7 @@ type OpponentLogoProps = {
 }
 
 const OpponentLogo: React.FC<OpponentLogoProps> = ({ className, image, size = 28, bgColor = 'grey-20' }) => {
+  const safeImage = sanitizeOpponentImage(image)
   const rootClassName = cx(
     'flex items-center justify-center flex-none rounded-full', `bg-${bgColor}`, className, {
       'size-7 p-1': size === 28,
@@ -31,7 +51,7 @@ const OpponentLogo: React.FC<OpponentLogoProps> = ({ className, image, size = 28
     <div className={rootClassName}>
       <FallbackImage
         className="z-10 w-full text-grey-60"
-        src={image}
+        src={safeImage}
         iconFallback={fallback}
       />
     </div>
