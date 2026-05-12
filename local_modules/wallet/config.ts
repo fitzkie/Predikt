@@ -9,7 +9,7 @@ import { constants } from 'helpers'
 import { appChains } from './chains'
 
 
-export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID as string
+export const projectId = constants.walletConnectId
 
 // Replace this with your Privy config
 export const privyConfig: PrivyConfig = {

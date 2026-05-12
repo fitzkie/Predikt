@@ -3,18 +3,37 @@ import { type ChainId } from '@azuro-org/toolkit'
 import { type IconName } from 'components/ui'
 
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://prediktmarkets.com'
-const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || 'Predikt Markets'
-const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || ''
-const isDevEnabled = Boolean(JSON.parse(process.env.AZURO_UNSTABLE_DEV_ENABLED || 'false'))
-const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || ''
-const termsUrl = process.env.NEXT_PUBLIC_TERMS_URL || ''
-const policyUrl = process.env.NEXT_PUBLIC_POLICY_URL || ''
-const faqUrl = process.env.NEXT_PUBLIC_FAQ_URL || ''
-const sportsAppUrl = process.env.NEXT_PUBLIC_SPORTS_APP_URL || '/bet'
-const prediktsAppUrl = process.env.NEXT_PUBLIC_PREDIKTS_APP_URL || '/predikts'
-const affiliateAddress = process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS || ''
-const walletConnectId = process.env.NEXT_PUBLIC_WALLETCONNECT_ID || ''
+const readEnv = (name: string, fallback = '') => {
+  const value = process.env[name]
+
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const trimmedValue = value.trim()
+
+  if (
+    (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+    (trimmedValue.startsWith('\'') && trimmedValue.endsWith('\''))
+  ) {
+    return trimmedValue.slice(1, -1).trim()
+  }
+
+  return trimmedValue
+}
+
+const baseUrl = readEnv('NEXT_PUBLIC_BASE_URL', 'https://prediktmarkets.com')
+const companyName = readEnv('NEXT_PUBLIC_COMPANY_NAME', 'Predikt Markets')
+const privyAppId = readEnv('NEXT_PUBLIC_PRIVY_APP_ID')
+const isDevEnabled = Boolean(JSON.parse(readEnv('AZURO_UNSTABLE_DEV_ENABLED', 'false') || 'false'))
+const docsUrl = readEnv('NEXT_PUBLIC_DOCS_URL')
+const termsUrl = readEnv('NEXT_PUBLIC_TERMS_URL')
+const policyUrl = readEnv('NEXT_PUBLIC_POLICY_URL')
+const faqUrl = readEnv('NEXT_PUBLIC_FAQ_URL')
+const sportsAppUrl = readEnv('NEXT_PUBLIC_SPORTS_APP_URL', '/bet')
+const prediktsAppUrl = readEnv('NEXT_PUBLIC_PREDIKTS_APP_URL', '/predikts')
+const affiliateAddress = readEnv('NEXT_PUBLIC_AFFILIATE_ADDRESS')
+const walletConnectId = readEnv('NEXT_PUBLIC_WALLETCONNECT_ID')
 const missingAppEnv = [
   !privyAppId && 'NEXT_PUBLIC_PRIVY_APP_ID',
   !walletConnectId && 'NEXT_PUBLIC_WALLETCONNECT_ID',
