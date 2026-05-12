@@ -4,9 +4,12 @@ import React, { useState } from 'react'
 import { useBaseBetslip, useBetTokenBalance, useChain, useDetailedBetslip } from '@azuro-org/sdk'
 import { Message } from '@locmod/intl'
 import cx from 'classnames'
+import { openModal } from '@locmod/modal'
+import { useWallet } from 'wallet'
 
 import { Icon } from 'components/ui'
 import { Warning } from 'components/feedback'
+import { Button } from 'components/inputs'
 import ConnectButtonWrapper from 'compositions/ConnectButtonWrapper/ConnectButtonWrapper'
 
 import { AmountInput, BetButton, Card, Chips, SelectFreebet, Slippage, QuickBet } from './components'
@@ -69,7 +72,8 @@ type ContentProps = {
 }
 
 const Content: React.FC<ContentProps> = ({ openSettings }) => {
-  const { betToken } = useChain()
+  const { betToken, appChain } = useChain()
+  const { account, chainId, isAAWallet } = useWallet()
   const { items, clear } = useBaseBetslip()
   const {
     odds, states, minBet, maxBet, disableReason, betAmount, selectedFreebet,
@@ -82,6 +86,8 @@ const Content: React.FC<ContentProps> = ({ openSettings }) => {
   const isSingle = itemsLength === 1
 
   const isEnoughBalance = isBalanceFetching || !Boolean(+betAmount) ? true : Boolean(+balance! > +betAmount)
+  const isWrongNetwork = Boolean(account && chainId && chainId !== appChain.id && !isAAWallet)
+  const shouldShowBalanceWarning = Boolean(account && !isBalanceFetching && !isEnoughBalance && +betAmount)
 
   return (
     <div>
@@ -171,6 +177,38 @@ const Content: React.FC<ContentProps> = ({ openSettings }) => {
                 <AmountInput isEnoughBalance={isEnoughBalance} />
                 <Chips />
               </>
+            )
+          }
+          {
+            isWrongNetwork && (
+              <Warning
+                className="mt-3"
+                text={messages.warnings.wrongNetwork}
+              />
+            )
+          }
+          {
+            shouldShowBalanceWarning && (
+              <div className="mt-3 space-y-2">
+                <Warning
+                  text={messages.warnings.insufficientBalance}
+                />
+                <Button
+                  className="w-full"
+                  title="Fund wallet"
+                  size={32}
+                  style="tertiary"
+                  onClick={() => {
+                    openModal('FundingModal', {
+                      initialTab: 'deposit',
+                      depositProps: {
+                        type: 'bet',
+                        toAmount: betAmount,
+                      },
+                    })
+                  }}
+                />
+              </div>
             )
           }
           {

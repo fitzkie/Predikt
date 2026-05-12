@@ -29,6 +29,18 @@ export default {
     en: 'Total bet',
   },
   warnings: {
+    insufficientBalance: {
+      en: 'Your Polygon wallet does not have enough USDT for this bet. Fund the wallet, then try again.',
+    },
+    approvalRequired: {
+      en: 'Your USDT allowance must be approved before Predikt Sports can place this bet on Polygon.',
+    },
+    wrongNetwork: {
+      en: 'Predikt Sports is live on Polygon USDT only. Switch your wallet to Polygon to continue.',
+    },
+    staleOdds: {
+      en: 'One or more prices changed or were suspended. Review your selections and submit again.',
+    },
     [BetslipDisableReason.ComboWithForbiddenItem]: {
       en: 'One or more conditions can\'t be used in combo',
     },

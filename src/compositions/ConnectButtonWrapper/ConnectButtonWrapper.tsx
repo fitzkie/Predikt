@@ -4,7 +4,7 @@ import React from 'react'
 import { openModal } from '@locmod/modal'
 import { useChain } from '@azuro-org/sdk'
 import { useWallet } from 'wallet'
-import { usePrivy } from '@privy-io/react-auth'
+import { useOptionalPrivy } from 'providers/auth'
 
 import { Button, buttonMessages, type ButtonProps } from 'components/inputs'
 
@@ -16,7 +16,7 @@ type ConnectButtonWrapperProps = {
 const ConnectButtonWrapper: React.FC<ConnectButtonWrapperProps> = ({ children }) => {
   const { appChain } = useChain()
   const { account, chainId, isAAWallet } = useWallet()
-  const { ready, login } = usePrivy()
+  const { ready, login } = useOptionalPrivy()
   const { onClick, title, disabled, ...props } = children.props
 
   if (!account) {

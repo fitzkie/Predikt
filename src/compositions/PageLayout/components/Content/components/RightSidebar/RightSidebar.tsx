@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import { usePrivy } from '@privy-io/react-auth'
 import { useWallet } from 'wallet'
 import { constants } from 'helpers'
 import { PrediktsPortfolioPanel } from 'modules/predikts'
+import { useOptionalPrivy } from 'providers/auth'
 
 import { Button, buttonMessages } from 'components/inputs'
 import TabbedBetslip from 'compositions/TabbedBetslip/TabbedBetslip'
@@ -18,7 +18,7 @@ const RightSidebar: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
   const { account, isReconnecting, isConnecting } = useWallet()
-  const { login } = usePrivy()
+  const { login } = useOptionalPrivy()
 
   return (
     <>

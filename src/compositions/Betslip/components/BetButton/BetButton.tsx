@@ -12,6 +12,7 @@ import { useAnalytics } from 'providers/analytics'
 import { constants, isUserRejectedRequestError, toLocaleString } from 'helpers'
 
 import { Icon } from 'components/ui'
+import { Warning } from 'components/feedback'
 import { buttonMessages } from 'components/inputs'
 
 import messages from './messages'
@@ -20,6 +21,28 @@ import messages from './messages'
 type BetButtonProps = {
   isEnoughBalance: boolean
   isBalanceFetching: boolean
+}
+
+const getErrorConfig = (error: unknown) => {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
+
+  if (isUserRejectedRequestError(error)) {
+    return messages.errors.walletRejected
+  }
+
+  if (/(insufficient|balance)/i.test(message)) {
+    return messages.errors.insufficientBalance
+  }
+
+  if (/(allowance|approve)/i.test(message)) {
+    return messages.errors.approvalRequired
+  }
+
+  if (/(odds|slippage|price|condition state|suspend|suspended|stale)/i.test(message)) {
+    return messages.errors.staleOdds
+  }
+
+  return messages.errors.generic
 }
 
 const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetching }) => {
@@ -70,7 +93,7 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
       })
       clear()
     },
-    onError: (err) => {
+      onError: (err) => {
       analytics.trackEvent('predikt_bet_submit_failed', {
         selections_count: items.length,
         bet_amount: Number(betAmount || 0),
@@ -80,9 +103,12 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
         rejected_by_user: isUserRejectedRequestError(err),
         error_message: err instanceof Error ? err.message : String(err),
       })
-      if (!isUserRejectedRequestError(err)) {
-        openModal('ErrorModal')
-      }
+      const errorConfig = getErrorConfig(err)
+
+      openModal('ErrorModal', {
+        title: errorConfig.title,
+        text: errorConfig.text,
+      })
 
       console.log('Bet err:', err)
     },
@@ -120,37 +146,44 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
   })
 
   return (
-    <button
-      className={rootClassName}
-      onClick={() => {
-        analytics.trackEvent('predikt_bet_submit_clicked', {
-          selections_count: items.length,
-          bet_amount: Number(betAmount || 0),
-          total_odds: Number(totalOddsRef.current || 0),
-          action: isApproveRequired ? 'approve' : 'place_bet',
-          freebet_selected: Boolean(selectedFreebet),
-        })
-        void submit()
-      }}
-      disabled={isDisabled}
-    >
-      <div className="w-full text-center px-1">
-        {
-          isLoading ? (
-            <Icon className="size-4 mx-auto" name="interface/spinner" />
-          ) : (
-            <Message
-              className="font-bold text-caption-14"
-              value={isApproveRequired ? buttonMessages.approve : buttonMessages.placeBet}
-            />
-          )
-        }
-      </div>
-      <div className={possibleWinClassName}>
-        <Message className="mr-1" value={messages.possibleWin} />
-        <div className="font-semibold">{possibleWin} {betToken.symbol}</div>
-      </div>
-    </button>
+    <div className="space-y-3">
+      {
+        isApproveRequired && (
+          <Warning text={messages.errors.approvalRequired.text} />
+        )
+      }
+      <button
+        className={rootClassName}
+        onClick={() => {
+          analytics.trackEvent('predikt_bet_submit_clicked', {
+            selections_count: items.length,
+            bet_amount: Number(betAmount || 0),
+            total_odds: Number(totalOddsRef.current || 0),
+            action: isApproveRequired ? 'approve' : 'place_bet',
+            freebet_selected: Boolean(selectedFreebet),
+          })
+          void submit()
+        }}
+        disabled={isDisabled}
+      >
+        <div className="w-full text-center px-1">
+          {
+            isLoading ? (
+              <Icon className="size-4 mx-auto" name="interface/spinner" />
+            ) : (
+              <Message
+                className="font-bold text-caption-14"
+                value={isApproveRequired ? buttonMessages.approve : buttonMessages.placeBet}
+              />
+            )
+          }
+        </div>
+        <div className={possibleWinClassName}>
+          <Message className="mr-1" value={messages.possibleWin} />
+          <div className="font-semibold">{possibleWin} {betToken.symbol}</div>
+        </div>
+      </button>
+    </div>
   )
 }
 

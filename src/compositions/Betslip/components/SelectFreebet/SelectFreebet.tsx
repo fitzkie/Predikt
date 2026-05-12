@@ -5,6 +5,7 @@ import { Message } from '@locmod/intl'
 import dynamic from 'next/dynamic'
 import { openModal } from '@locmod/modal'
 import React, { useEffect } from 'react'
+import { constants } from 'helpers'
 
 import { Icon } from 'components/ui'
 
@@ -14,6 +15,10 @@ import messages from './messages'
 const SelectFreebetModal = dynamic(() => import('./components/SelectFreebetModal/SelectFreeBetModal'))
 
 const SelectFreebet: React.FC = () => {
+  if (!constants.freebetsEnabled) {
+    return null
+  }
+
   const { betToken } = useChain()
   const { items } = useBaseBetslip()
   const { freebets, selectedFreebet, selectFreebet, isFreebetsFetching } = useDetailedBetslip()

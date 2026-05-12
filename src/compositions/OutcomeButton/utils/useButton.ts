@@ -1,6 +1,7 @@
 import { useBaseBetslip, useSelectionOdds } from '@azuro-org/sdk'
-import { type GameData, type MarketOutcome } from '@azuro-org/toolkit'
+import { GameState, type GameData, type MarketOutcome } from '@azuro-org/toolkit'
 import { type MutableRefObject } from 'react'
+import { useAnalytics } from 'providers/analytics'
 
 import useOddsChange from 'src/hooks/useOddsChange'
 
@@ -14,6 +15,7 @@ type UseButtonProps = {
 
 const useButton = (props: UseButtonProps) => {
   const { marketName, outcome, game, nodeRef } = props
+  const analytics = useAnalytics()
 
   const { data: odds, isFetching: isOddsFetching } = useSelectionOdds({
     selection: outcome,
@@ -32,6 +34,18 @@ const useButton = (props: UseButtonProps) => {
   }))
 
   const onClick = () => {
+    const action = isActive ? 'remove' : 'add'
+
+    analytics.trackEvent('predikt_bet_odds_clicked', {
+      action,
+      game_id: game.gameId,
+      market_name: marketName,
+      outcome_id: outcome.outcomeId,
+      selection_name: outcome.selectionName,
+      odds: odds ?? outcome.odds,
+      is_live: game.state === GameState.Live,
+    })
+
     if (isActive) {
       removeItem(outcome)
     }

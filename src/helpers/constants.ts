@@ -34,11 +34,13 @@ const sportsAppUrl = readEnv('NEXT_PUBLIC_SPORTS_APP_URL', '/bet')
 const prediktsAppUrl = readEnv('NEXT_PUBLIC_PREDIKTS_APP_URL', '/predikts')
 const affiliateAddress = readEnv('NEXT_PUBLIC_AFFILIATE_ADDRESS')
 const walletConnectId = readEnv('NEXT_PUBLIC_WALLETCONNECT_ID')
+const freebetsEnabled = readEnv('NEXT_PUBLIC_FREEBETS_ENABLED', 'false') === 'true'
 const missingAppEnv = [
   !privyAppId && 'NEXT_PUBLIC_PRIVY_APP_ID',
   !walletConnectId && 'NEXT_PUBLIC_WALLETCONNECT_ID',
   !affiliateAddress && 'NEXT_PUBLIC_AFFILIATE_ADDRESS',
 ].filter(Boolean) as string[]
+const hasValidPrivyAppId = privyAppId.length === 25
 
 const rpcByChains: Record<ChainId, string> = {
   [gnosis.id]: 'https://gnosis-rpc.publicnode.com',
@@ -150,7 +152,9 @@ export default {
   privyAppId,
   affiliateAddress,
   walletConnectId,
+  freebetsEnabled,
   missingAppEnv,
   hasRequiredAppEnv: missingAppEnv.length === 0,
+  hasValidPrivyAppId,
   prediktsTaxonomy,
 }

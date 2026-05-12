@@ -2,6 +2,7 @@
 
 import { AxiosError } from 'axios'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider as BaseWagmiProvider } from 'wagmi'
 import { type State } from 'wagmi'
 import { PrivyProvider } from '@azuro-org/sdk-social-aa-connector'
 import { constants } from 'helpers'
@@ -31,6 +32,16 @@ export const queryClient = new QueryClient({
 
 const WagmiProvider: React.CFC<{ initialState?: State }> = (props) => {
   const { children, initialState } = props
+
+  if (!constants.hasValidPrivyAppId) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BaseWagmiProvider config={config} initialState={initialState}>
+          {children}
+        </BaseWagmiProvider>
+      </QueryClientProvider>
+    )
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

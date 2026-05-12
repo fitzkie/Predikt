@@ -7,9 +7,14 @@ import { useBonuses } from '@azuro-org/sdk'
 import { BonusStatus } from '@azuro-org/toolkit'
 import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { type Address } from 'viem'
+import { constants } from 'helpers'
 
 
 const NewFreeBetsChecker: React.FC = () => {
+  if (!constants.freebetsEnabled) {
+    return null
+  }
+
   const { address } = useAccount()
   const { data: bonuses } = useBonuses({
     account: address!,

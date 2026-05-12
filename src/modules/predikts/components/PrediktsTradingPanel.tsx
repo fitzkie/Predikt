@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { usePrivy } from '@privy-io/react-auth'
 import { openModal } from '@locmod/modal'
 import { useAnalytics } from 'providers/analytics'
+import { useOptionalPrivy } from 'providers/auth'
 import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketApiCredentials, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
@@ -34,7 +34,7 @@ const formatDateTime = (timestamp?: number) => {
 
 const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   const { account, chainId, isAAWallet } = useWallet()
-  const { login } = usePrivy()
+  const { login } = useOptionalPrivy()
   const analytics = useAnalytics()
   const trading = usePolymarketTrading()
   const outcomes = parsePolymarketOutcomes(market)

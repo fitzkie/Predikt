@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 // import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
-import { usePrivy } from '@privy-io/react-auth'
 import { useFreezeBodyScroll } from 'hooks'
+import { useOptionalPrivy } from 'providers/auth'
 
 import { Icon, Logo } from 'components/ui'
 import { Button, buttonMessages } from 'components/inputs'
@@ -38,10 +38,10 @@ const Content: React.FC = () => {
   )
 }
 
-const Header: React.FC = () => {
+  const Header: React.FC = () => {
   const { account, isReconnecting, isConnecting } = useWallet()
   const pathname = usePathname()
-  const { login } = usePrivy()
+  const { login } = useOptionalPrivy()
   const [ isVisible, setVisibility ] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 

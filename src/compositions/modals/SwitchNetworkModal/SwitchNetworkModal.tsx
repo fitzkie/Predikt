@@ -31,7 +31,7 @@ const SwitchNetworkModal: ModalComponent<SwitchNetworkModalProps> = (props) => {
 
   useEffect(() => {
     if (switchChain && userChainId !== chainId) {
-      switchChain({ chainId })
+      switchChain({ chainId: chainId as typeof chains[number]['id'] })
     }
   }, [ chainId, userChainId, switchChain ])
 
