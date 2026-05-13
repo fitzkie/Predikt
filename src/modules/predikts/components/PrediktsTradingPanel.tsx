@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { openModal } from '@locmod/modal'
 import { useAnalytics } from 'providers/analytics'
+import { useOptionalPrivy } from 'providers/auth'
 import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketApiCredentials, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
@@ -33,6 +34,7 @@ const formatDateTime = (timestamp?: number) => {
 
 const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   const { account, chainId, isAAWallet } = useWallet()
+  const { connectWallet, canLogin, ready } = useOptionalPrivy()
   const analytics = useAnalytics()
   const trading = usePolymarketTrading()
   const outcomes = parsePolymarketOutcomes(market)
@@ -173,6 +175,14 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   }
 
   const handleConnect = () => {
+    if (canLogin && ready) {
+      try {
+        connectWallet()
+        return
+      }
+      catch {}
+    }
+
     openModal('ConnectModal')
   }
 

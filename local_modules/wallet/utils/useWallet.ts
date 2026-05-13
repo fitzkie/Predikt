@@ -51,7 +51,7 @@ export const useWallet = () => {
     chainId,
     isConnected,
     isConnecting,
-    isReconnecting: isReconnecting || !isReady || (authenticated && !address),
+    isReconnecting,
     isWalletConnect,
     isAAWallet,
     isReady,
