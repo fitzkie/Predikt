@@ -10,6 +10,7 @@ import { AnalyticsProvider } from 'providers/analytics'
 import { AuthProviderBoundary } from 'providers/auth'
 import { AzuroAppProvider } from 'providers/azuro'
 import { PolymarketAppProvider } from 'providers/polymarket'
+import { PrediktUserProvider } from 'providers/user'
 
 import NewFreeBetsChecker from 'compositions/NewFreeBetsChecker/NewFreeBetsChecker'
 
@@ -32,11 +33,13 @@ const Providers: React.CFC<Props> = (props) => {
           <AnalyticsProvider>
             <AuthProviderBoundary initialState={initialState}>
               <AzuroAppProvider initialChainId={initialChainId} initialLiveState={initialLiveState}>
-                <PolymarketAppProvider>
-                  <OddsViewProvider>
-                    {children}
-                  </OddsViewProvider>
-                </PolymarketAppProvider>
+                <PrediktUserProvider>
+                  <PolymarketAppProvider>
+                    <OddsViewProvider>
+                      {children}
+                    </OddsViewProvider>
+                  </PolymarketAppProvider>
+                </PrediktUserProvider>
                 <NewFreeBetsChecker />
               </AzuroAppProvider>
             </AuthProviderBoundary>

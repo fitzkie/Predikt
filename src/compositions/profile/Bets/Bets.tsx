@@ -572,23 +572,23 @@ const Bets: React.FC = () => {
   const pathname = usePathname()
   const router = useRouter()
 
-  const tab = searchParams.get('tab') as BetType || undefined
+  const tab = searchParams.get('betType') as BetType || undefined
 
   const handleTabChange = (type: BetType | undefined) => {
     const params = new URLSearchParams(searchParams.toString())
 
     if (type) {
-      params.set('tab', type)
+      params.set('betType', type)
     }
     else {
-      params.delete('tab')
+      params.delete('betType')
     }
 
     router.replace(pathname + '?' + params)
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" id="my-bets">
       <Navbar activeType={tab} onClick={(type) => handleTabChange(type)} />
       <Content tab={tab} />
     </div>

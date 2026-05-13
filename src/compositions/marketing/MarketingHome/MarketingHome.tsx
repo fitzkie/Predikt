@@ -1,5 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import localStorage from '@locmod/local-storage'
+import { openModal } from '@locmod/modal'
+
 import { constants } from 'helpers'
 
 import { Button } from 'components/inputs'
@@ -9,7 +13,7 @@ import { Href } from 'components/navigation'
 const mainNav = [
   { label: 'Home', to: '#home' },
   { label: 'Sports', href: constants.links.sportsApp },
-  { label: 'Predikts', href: constants.links.prediktsApp },
+  { label: 'Predikt', href: constants.links.prediktsApp },
   { label: 'About', to: '#about' },
   { label: 'FAQ', to: '#faq' },
 ]
@@ -35,7 +39,7 @@ const productCards = [
     button: 'Open app.prediktmarkets.com/bet',
   },
   {
-    title: 'Predikts App',
+    title: 'Predikt App',
     text: 'A prediction-market entrypoint for politics, macro, crypto, and event-driven markets with the same Azuro settlement rails underneath.',
     href: constants.links.prediktsApp,
     button: 'Open app.prediktmarkets.com/predikts',
@@ -45,7 +49,7 @@ const productCards = [
 const faqs = [
   {
     question: 'How do I start using Predikt?',
-    answer: 'Open the Sports or Predikts app, connect your wallet, choose a market, and confirm your position directly from your wallet.',
+    answer: 'Open the Sports or Predikt app, connect your wallet, choose a market, and confirm your position directly from your wallet.',
   },
   {
     question: 'Why use an on-chain market platform instead of a traditional one?',
@@ -70,6 +74,21 @@ const faqs = [
 ]
 
 const MarketingHome: React.FC = () => {
+  const [ isQuickTourVisible, setQuickTourVisible ] = useState(false)
+
+  useEffect(() => {
+    const wasDismissed = localStorage.getItem<boolean>(constants.localStorageKeys.prediktQuickTourDismissed)
+
+    if (!wasDismissed) {
+      setQuickTourVisible(true)
+    }
+  }, [])
+
+  const handleDismissQuickTour = () => {
+    localStorage.setItem(constants.localStorageKeys.prediktQuickTourDismissed, true)
+    setQuickTourVisible(false)
+  }
+
   return (
     <div id="home" className="min-h-screen bg-bg-l0 text-grey-90">
       <div className="relative overflow-hidden">
@@ -133,8 +152,8 @@ const MarketingHome: React.FC = () => {
           <section className="border-t border-white/10 py-8">
             <div className="flex flex-col items-start justify-between gap-4 ds:flex-row ds:items-center">
               <div>
-                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Choose your market lane</div>
-                <div className="mt-2 text-heading-h3 font-semibold">Use Sports for live and prematch action. Use Predikts for politics, finance, tech, culture, and event-driven markets.</div>
+                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Choose Your Market</div>
+                <div className="mt-2 text-heading-h3 font-semibold">Use Sports for live and prematch action. Use Predikt for politics, finance, tech, culture, and event-driven markets.</div>
               </div>
               <Button href={constants.links.sportsApp} size={40} title="Launch App" />
             </div>
@@ -183,6 +202,29 @@ const MarketingHome: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {
+        isQuickTourVisible && (
+          <div className="fixed bottom-4 right-4 z-40 max-w-sm rounded-xl border border-white/10 bg-bg-l2 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">New here?</div>
+                <p className="mt-2 text-caption-14 leading-6 text-grey-70">
+                  Click to get a Quick Tour of Sports, Predikt, funding, and profile flows before you trade.
+                </p>
+              </div>
+              <button className="text-grey-60 transition hover:text-grey-90" onClick={handleDismissQuickTour} type="button">
+                <span className="sr-only">Dismiss quick tour</span>
+                ×
+              </button>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <Button size={32} title="Quick Tour" onClick={() => openModal('QuickTourModal')} />
+              <Button size={32} style="tertiary" title="Later" onClick={handleDismissQuickTour} />
+            </div>
+          </div>
+        )
+      }
     </div>
   )
 }

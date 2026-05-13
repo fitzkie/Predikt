@@ -201,7 +201,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
         {!account
           ? 'Connect your wallet to view balances, enable trading, and place live orders on this market.'
           : !trading.isOnSupportedChain
-            ? 'Predikts trading runs on Polygon. Switch your wallet to Polygon before placing an order.'
+            ? 'Predikt trading runs on Polygon. Switch your wallet to Polygon before placing an order.'
             : !trading.hasCredentials
               ? 'Enable trading once for this wallet. Predikt will handle the market authorization step for you.'
               : 'Trading is enabled for this wallet. Review your order details, then place the trade.'}

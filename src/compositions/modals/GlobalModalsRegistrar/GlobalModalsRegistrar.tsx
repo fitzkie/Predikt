@@ -35,6 +35,7 @@ const registry = {
   NewFreeBetModal: dynamic(() => import('compositions/modals/NewFreeBetModal/NewFreeBetModal'), { loading }),
   SwitchNetworkModal: dynamic(() => import('compositions/modals/SwitchNetworkModal/SwitchNetworkModal'), { loading }),
   SearchModal: dynamic(() => import('compositions/modals/SearchModal/SearchModal'), { loading }),
+  QuickTourModal: dynamic(() => import('compositions/modals/QuickTourModal/QuickTourModal'), { loading }),
   FundingModal: dynamic(() => import('compositions/funding/FundingModal/FundingModal'), { loading }),
   FiatProviderModal: dynamic(() => import('compositions/funding/FiatProviderModal/FiatProviderModal'), { loading }),
   FundingExchangeModal: dynamic(() => import('compositions/funding/FundingExchangeModal/FundingExchangeModal'), { loading }),

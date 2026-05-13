@@ -33,7 +33,7 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
   return (
     <Href to={`/predikts/${market.slug}`} className="block rounded-lg border border-white/10 bg-bg-l3 p-4 transition hover:border-brand-50/40 hover:bg-bg-l2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-caption-12 uppercase tracking-[0.16em] text-brand-50">{market.category || 'Predikts'}</span>
+        <span className="text-caption-12 uppercase tracking-[0.16em] text-brand-50">{market.category || 'Predikt'}</span>
         <span className="text-heading-h5 font-semibold text-grey-90">{formatPercent(yesPrice)}</span>
       </div>
       <div className="mt-3 text-caption-14 font-semibold leading-6 text-grey-90">

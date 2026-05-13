@@ -8,6 +8,7 @@ type OptionalPrivyState = {
   authenticated: boolean
   ready: boolean
   connectWallet: () => void
+  logout: () => Promise<void> | void
   canLogin: boolean
 }
 
@@ -15,6 +16,7 @@ const fallbackState: OptionalPrivyState = {
   authenticated: false,
   ready: false,
   connectWallet: () => undefined,
+  logout: () => undefined,
   canLogin: false,
 }
 
@@ -24,13 +26,14 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
   }
 
   try {
-    const { authenticated, ready, connectOrCreateWallet, login } = usePrivy()
+    const { authenticated, ready, connectOrCreateWallet, login, logout } = usePrivy()
     const connectWallet = typeof connectOrCreateWallet === 'function' ? connectOrCreateWallet : login
 
     return {
       authenticated,
       ready,
       connectWallet,
+      logout: typeof logout === 'function' ? logout : (() => undefined),
       canLogin: typeof connectWallet === 'function',
     }
   }

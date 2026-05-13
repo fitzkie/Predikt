@@ -186,7 +186,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           <p className="mt-3 text-caption-14 leading-6 text-grey-70">
             This market link did not return a live market.
           </p>
-          <Href to="/predikts" className="mt-5 inline-flex text-caption-13 font-semibold text-brand-50">Back to Predikts</Href>
+          <Href to="/predikts" className="mt-5 inline-flex text-caption-13 font-semibold text-brand-50">Back to Predikt</Href>
         </div>
       </div>
     )
@@ -198,9 +198,9 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
   return (
     <div className="px-2 py-6 ds:px-4">
       <section className="rounded-[1.5rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(235,180,55,0.16),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-6 ds:p-8">
-        <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikts</Href>
+        <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
         <div className="mt-4 max-w-4xl">
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">{market.category || 'Predikts'}</div>
+          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">{market.category || 'Predikt'}</div>
           <h1 className="mt-3 text-[2.1rem] font-semibold leading-[0.98] tracking-[-0.05em] text-grey-90 ds:text-[3.75rem]">
             {market.question}
           </h1>

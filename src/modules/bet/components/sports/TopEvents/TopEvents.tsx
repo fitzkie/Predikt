@@ -196,9 +196,12 @@ const TopEvents: React.FC = () => {
   return (
     <div className="relative pt-6">
       <div className="px-4">
-        <Message className="text-caption-13 text-grey-60 uppercase tracking-[0.2em]" value={messages.title} />
+        <div className="text-caption-13 uppercase tracking-[0.2em]">
+          <span className="text-grey-90">Predik</span>
+          <span className="text-brand-50">t</span>
+        </div>
         <h1 className="mt-2 max-w-3xl text-[2.5rem] font-bold leading-[1.05] tracking-[-0.04em] text-grey-90 ds:text-[4.5rem]">
-          <Message className="text-brand-50" value={messages.top} />
+          <Message value={messages.top} />
         </h1>
         {
           Boolean(sport) && (

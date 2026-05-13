@@ -154,7 +154,6 @@ const links = {
   appShell: appShellOrigin,
   sportsApp: sportsAppUrl,
   prediktsApp: prediktsAppUrl,
-  waves: 'https://azuro.org/app/waves',
 }
 
 const defaultSlippageValues = [ '5', '10', '15' ]
@@ -200,6 +199,8 @@ const localStorageKeys = {
   collapsedMarkets: 'collapsedMarkets',
   oddsView: 'oddsView',
   polymarketApiCredentials: 'polymarketApiCredentials',
+  prediktUserProfiles: 'prediktUserProfiles',
+  prediktQuickTourDismissed: 'prediktQuickTourDismissed',
 }
 
 export default {

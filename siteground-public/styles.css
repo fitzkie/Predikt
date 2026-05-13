@@ -133,6 +133,50 @@ a {
   color: var(--gold);
 }
 
+.quick-tour-prompt {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--slate-line);
+  background: rgba(17, 19, 21, 0.96);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+
+.quick-tour-dismiss {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: 0;
+  color: var(--text-soft);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.quick-tour-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.quick-tour-prompt p {
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  line-height: 1.65;
+}
+
+.quick-tour-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1fr;

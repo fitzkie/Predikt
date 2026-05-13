@@ -14,7 +14,7 @@ const items = [
     matchers: [ '/bet', '/football', '/basketball', '/tennis', '/cricket', '/mma', '/boxing', '/american-football', '/baseball', '/rugby-union', '/rugby-league', '/ice-hockey', '/unique' ],
   },
   {
-    label: 'Predikts',
+    label: 'Predikt',
     href: constants.links.prediktsApp,
     matchers: [ '/predikts' ],
   },
