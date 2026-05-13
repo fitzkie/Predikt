@@ -2,11 +2,11 @@
 
 import { BetType, useBets, type UseBetsProps } from '@azuro-org/sdk'
 import { OrderDirection } from '@azuro-org/toolkit'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { type Address } from 'viem'
 import { Message } from '@locmod/intl'
 import React from 'react'
 import dynamic from 'next/dynamic'
+import { useWallet } from 'wallet'
 
 import { Button } from 'components/inputs'
 import EmptyContentComp from 'compositions/EmptyContent/EmptyContent'
@@ -31,7 +31,7 @@ const EmptyContent: React.FC = () => {
 }
 
 const AcceptedBets: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
 
   const props: UseBetsProps = {
     filter: {

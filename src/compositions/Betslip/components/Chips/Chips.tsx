@@ -2,7 +2,7 @@ import React from 'react'
 import cx from 'classnames'
 import { useBetTokenBalance, useDetailedBetslip } from '@azuro-org/sdk'
 import { Message } from '@locmod/intl'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
+import { useWallet } from 'wallet'
 import { formatToFixed } from 'helpers/formatters'
 
 import { getQuickBetStorageValue } from '../QuickBet/QuickBet'
@@ -32,7 +32,7 @@ const Chip: React.FC<ChipProps> = ({ title, isActive, isDisabled, onClick }) => 
 }
 
 const Chips: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { betAmount, changeBetAmount } = useDetailedBetslip()
   const { data, isLoading: isBalanceFetching } = useBetTokenBalance()
 

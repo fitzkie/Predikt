@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useChain, useWaveStats } from '@azuro-org/sdk'
 import { WaveLevelName } from '@azuro-org/toolkit'
 import { useDisconnect } from 'wagmi'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
+import { useWallet } from 'wallet'
 import copy from 'copy-to-clipboard'
 import { useIsMounted } from 'hooks'
 import { Message } from '@locmod/intl'
@@ -30,7 +30,7 @@ const azuroIconClassNameByLevel: Record<WaveLevelName, string> = {
 }
 
 const AzuroWaves: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { data, isFetching } = useWaveStats({
     account: address!,
   })
@@ -74,7 +74,7 @@ const AzuroWaves: React.FC = () => {
 }
 
 const Content: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { disconnect } = useDisconnect()
   const { appChain } = useChain()
   const [ isCopied, setCopied ] = useState(false)

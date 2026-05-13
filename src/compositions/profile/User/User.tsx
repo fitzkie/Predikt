@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react'
 import { Message } from '@locmod/intl'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { useIsMounted } from 'hooks'
 import copy from 'copy-to-clipboard'
 import cx from 'classnames'
 import { useChain } from '@azuro-org/sdk'
+import { useWallet } from 'wallet'
 import { shortenAddress } from 'helpers'
 
 import { Icon } from 'components/ui'
@@ -14,7 +14,7 @@ import messages from './messages'
 
 
 const User: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { appChain } = useChain()
   const [ isCopied, setCopied ] = useState(false)
   const isMounted = useIsMounted()

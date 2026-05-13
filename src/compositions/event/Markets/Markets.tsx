@@ -5,9 +5,9 @@ import { XMasonry, XBlock } from 'react-xmasonry'
 import { GameState, getIsPendingResolution } from '@azuro-org/toolkit'
 import { type GameData, type GameMarkets, type Market } from '@azuro-org/toolkit'
 import { useActiveMarkets, useBetsSummaryBySelection, useConditionState, useResolvedMarkets } from '@azuro-org/sdk'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import dayjs from 'dayjs'
 import cx from 'classnames'
+import { useWallet } from 'wallet'
 
 import { Tooltip } from 'components/feedback'
 import { Icon } from 'components/ui'
@@ -200,7 +200,7 @@ type MarketsProps = {
 }
 
 const ResolvedMarkets: React.FC<MarketsProps> = ({ game, gameState }) => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { data: markets, isLoading } = useResolvedMarkets({ gameId: game.gameId })
   const { data: betsSummary } = useBetsSummaryBySelection({
     account: address!,

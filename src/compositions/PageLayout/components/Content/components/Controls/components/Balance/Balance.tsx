@@ -7,8 +7,8 @@ import { Listbox, ListboxButton, ListboxOptions } from '@headlessui/react'
 import { Message } from '@locmod/intl'
 import cx from 'classnames'
 import { openModal } from '@locmod/modal'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { config } from 'wallet'
+import { useWallet } from 'wallet'
 import { constants, toLocaleString } from 'helpers'
 
 import { Icon } from 'components/ui'
@@ -108,7 +108,7 @@ const ChainSelect: React.FC = () => {
 }
 
 const BalanceInfo: React.FC = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { appChain, betToken } = useChain()
   const { data: balanceData, isLoading: isBalanceFetching } = useBetTokenBalance()
   const { data: nativeBalanceData, isLoading: isNativeBalanceFetching } = useNativeBalance()

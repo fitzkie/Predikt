@@ -5,8 +5,8 @@ import { openModal } from '@locmod/modal'
 import localStorage from '@locmod/local-storage'
 import { useBonuses } from '@azuro-org/sdk'
 import { BonusStatus } from '@azuro-org/toolkit'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { type Address } from 'viem'
+import { useWallet } from 'wallet'
 import { constants } from 'helpers'
 
 
@@ -15,7 +15,7 @@ const NewFreeBetsChecker: React.FC = () => {
     return null
   }
 
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { data: bonuses } = useBonuses({
     account: address!,
     affiliate: process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS as Address,

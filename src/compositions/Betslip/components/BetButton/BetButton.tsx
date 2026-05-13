@@ -5,10 +5,10 @@ import cx from 'classnames'
 import { useBaseBetslip, useChain, useDetailedBetslip, useBet } from '@azuro-org/sdk'
 import { type Address } from 'viem'
 import { Message } from '@locmod/intl'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { openModal } from '@locmod/modal'
 import localStorage from '@locmod/local-storage'
 import { useAnalytics } from 'providers/analytics'
+import { useWallet } from 'wallet'
 import { constants, isUserRejectedRequestError, toLocaleString } from 'helpers'
 
 import { Icon } from 'components/ui'
@@ -47,7 +47,7 @@ const getErrorConfig = (error: unknown) => {
 
 const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetching }) => {
   const analytics = useAnalytics()
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { betToken } = useChain()
   const { items, clear } = useBaseBetslip()
   const {

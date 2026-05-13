@@ -3,9 +3,9 @@
 import { type ReactNode, useEffect } from 'react'
 import { type ModalComponent } from '@locmod/modal'
 import { type Connector, useConnect } from 'wagmi'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { Message } from '@locmod/intl'
 import { useDevice } from 'contexts'
+import { useWallet } from 'wallet'
 
 import { PlainModal } from 'components/feedback'
 
@@ -21,7 +21,7 @@ type ConnectModalProps = {
 const ConnectModal: ModalComponent<ConnectModalProps> = (props) => {
   const { closeModal, onFinish } = props
 
-  const { isConnected, connector } = useAccount()
+  const { isConnected, connector } = useWallet()
   const { connectAsync, connectors, isPending, isError, error, variables, reset } = useConnect()
   const { isMobileDevice } = useDevice()
 

@@ -1,11 +1,11 @@
 'use client'
 
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
+import { useWallet } from 'wallet'
 import { useAzuroUserBetHistoryRaw } from 'providers/azuro'
 
 
 const useBetHistorySource = () => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const historyQuery = useAzuroUserBetHistoryRaw(address)
 
   return {

@@ -8,10 +8,10 @@ import dayjs from 'dayjs'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import cx from 'classnames'
 import { openModal } from '@locmod/modal'
-import { useAccount } from '@azuro-org/sdk-social-aa-connector'
 import { useEntry } from '@locmod/intersection-observer'
 import { type InfiniteData, type UseInfiniteQueryResult } from '@tanstack/react-query'
 import { type Address } from 'viem'
+import { useWallet } from 'wallet'
 import { toLocaleString } from 'helpers'
 import { getGameDateTime } from 'helpers/getters'
 
@@ -516,7 +516,7 @@ type ContentProps = {
 }
 
 const Content: React.FC<ContentProps> = ({ tab }) => {
-  const { address } = useAccount()
+  const { account: address } = useWallet()
   const { historyQuery, historyBets } = useBetHistorySource()
   const props: UseBetsProps = {
     filter: {
