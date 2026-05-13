@@ -3,8 +3,24 @@ import { type ChainId } from '@azuro-org/toolkit'
 import { type IconName } from 'components/ui'
 
 
-const readEnv = (name: string, fallback = '') => {
-  const value = process.env[name]
+const publicEnv = {
+  NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+  NEXT_PUBLIC_COMPANY_NAME: process.env.NEXT_PUBLIC_COMPANY_NAME,
+  NEXT_PUBLIC_PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID,
+  NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
+  NEXT_PUBLIC_TERMS_URL: process.env.NEXT_PUBLIC_TERMS_URL,
+  NEXT_PUBLIC_POLICY_URL: process.env.NEXT_PUBLIC_POLICY_URL,
+  NEXT_PUBLIC_FAQ_URL: process.env.NEXT_PUBLIC_FAQ_URL,
+  NEXT_PUBLIC_SPORTS_APP_URL: process.env.NEXT_PUBLIC_SPORTS_APP_URL,
+  NEXT_PUBLIC_PREDIKTS_APP_URL: process.env.NEXT_PUBLIC_PREDIKTS_APP_URL,
+  NEXT_PUBLIC_AFFILIATE_ADDRESS: process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS,
+  NEXT_PUBLIC_WALLETCONNECT_ID: process.env.NEXT_PUBLIC_WALLETCONNECT_ID,
+  NEXT_PUBLIC_FREEBETS_ENABLED: process.env.NEXT_PUBLIC_FREEBETS_ENABLED,
+  AZURO_UNSTABLE_DEV_ENABLED: process.env.AZURO_UNSTABLE_DEV_ENABLED,
+} as const
+
+const readEnv = (name: keyof typeof publicEnv, fallback = '') => {
+  const value = publicEnv[name]
 
   if (typeof value !== 'string') {
     return fallback
