@@ -38,7 +38,7 @@ const dedupeMarkets = (markets: PolymarketMarket[]) => {
 }
 
 const isMarketActive = (market: PolymarketMarket) => {
-  return Boolean(market.active && !market.closed && !market.restricted)
+  return Boolean(market.active && !market.closed)
 }
 
 const toNumericValue = (value?: string | number | null) => {
