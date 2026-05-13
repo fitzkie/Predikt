@@ -6,8 +6,10 @@ import { type Connector, useConnect } from 'wagmi'
 import { Message } from '@locmod/intl'
 import { useDevice } from 'contexts'
 import { useWallet } from 'wallet'
+import { useOptionalPrivy } from 'providers/auth'
 
 import { PlainModal } from 'components/feedback'
+import { Button } from 'components/inputs'
 
 import { ActionScreen, Buttons } from './components'
 import messages from './messages'
@@ -24,6 +26,7 @@ const ConnectModal: ModalComponent<ConnectModalProps> = (props) => {
   const { isConnected, connector } = useWallet()
   const { connectAsync, connectors, isPending, isError, error, variables, reset } = useConnect()
   const { isMobileDevice } = useDevice()
+  const { login, canLogin, ready } = useOptionalPrivy()
 
   const handleButtonClick = (connector: Connector) => {
     connectAsync({
@@ -109,7 +112,47 @@ const ConnectModal: ModalComponent<ConnectModalProps> = (props) => {
           value={messages.connect}
           tag="h2"
         />
-        <Buttons onClick={handleButtonClick} />
+        <div className="space-y-4">
+          {
+            canLogin ? (
+              <div className="space-y-4">
+                <p className="text-caption-13 text-grey-60 text-center">
+                  Continue with Privy to use email, social login, embedded wallet, or WalletConnect.
+                </p>
+                <Button
+                  className="w-full"
+                  size={40}
+                  title="Continue"
+                  loading={!ready}
+                  onClick={() => login()}
+                />
+              </div>
+            ) : null
+          }
+          {
+            connectors.length ? (
+              <>
+                {
+                  canLogin ? (
+                    <div className="flex items-center gap-3 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+                      <div className="h-px flex-1 bg-white/10" />
+                      <span>Browser wallets</span>
+                      <div className="h-px flex-1 bg-white/10" />
+                    </div>
+                  ) : null
+                }
+                <Buttons onClick={handleButtonClick} />
+              </>
+            ) : null
+          }
+          {
+            !canLogin && !connectors.length ? (
+              <p className="text-caption-13 text-grey-60 text-center">
+                Wallet connectors are not available yet. Refresh the page and try again.
+              </p>
+            ) : null
+          }
+        </div>
       </>
     )
   }

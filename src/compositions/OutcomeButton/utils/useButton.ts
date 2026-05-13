@@ -16,9 +16,14 @@ type UseButtonProps = {
 const useButton = (props: UseButtonProps) => {
   const { marketName, outcome, game, nodeRef } = props
   const analytics = useAnalytics()
+  const hasRequiredIds = Boolean(outcome.conditionId && outcome.outcomeId)
 
   const { data: odds, isFetching: isOddsFetching } = useSelectionOdds({
-    selection: outcome,
+    selection: hasRequiredIds ? outcome : {
+      ...outcome,
+      conditionId: '__missing_condition__',
+      outcomeId: '__missing_outcome__',
+    },
     initialOdds: outcome.odds,
   })
 
@@ -34,6 +39,10 @@ const useButton = (props: UseButtonProps) => {
   }))
 
   const onClick = () => {
+    if (!hasRequiredIds) {
+      return
+    }
+
     const action = isActive ? 'remove' : 'add'
 
     analytics.trackEvent('predikt_bet_odds_clicked', {

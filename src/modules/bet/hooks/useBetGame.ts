@@ -9,8 +9,12 @@ import { normalizeAzuroFeedGame } from 'modules/bet/lib/normalizeFeedGame'
 
 
 const useBetGame = (gameId?: string) => {
+  const hasGameId = Boolean(gameId)
   const sdkQuery = useGame({
     gameId: gameId || '',
+    query: {
+      enabled: hasGameId,
+    },
   })
   const feedQuery = useAzuroGameFeed(gameId)
 
@@ -24,7 +28,7 @@ const useBetGame = (gameId?: string) => {
 
   return {
     data: game,
-    isFetching: (feedQuery.isFetching && !feedQuery.isSuccess) || sdkQuery.isFetching,
+    isFetching: hasGameId && ((feedQuery.isFetching && !feedQuery.isSuccess) || sdkQuery.isFetching),
     source: feedQuery.isSuccess ? 'backend-api' : 'sdk',
     feedQuery,
     sdkQuery,

@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
 import { useFreezeBodyScroll } from 'hooks'
-import { useOptionalPrivy } from 'providers/auth'
 
 import { Icon, Logo } from 'components/ui'
 import { Button, buttonMessages } from 'components/inputs'
@@ -41,7 +40,6 @@ const Content: React.FC = () => {
   const Header: React.FC = () => {
   const { account, isReconnecting, isConnecting } = useWallet()
   const pathname = usePathname()
-  const { login, canLogin } = useOptionalPrivy()
   const [ isVisible, setVisibility ] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -50,11 +48,6 @@ const Content: React.FC = () => {
   }
 
   const handleConnect = () => {
-    if (canLogin) {
-      login()
-      return
-    }
-
     openModal('ConnectModal')
   }
 

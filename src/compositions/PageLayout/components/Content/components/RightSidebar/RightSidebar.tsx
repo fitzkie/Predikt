@@ -6,7 +6,6 @@ import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
 import { constants } from 'helpers'
 import { PrediktsPortfolioPanel } from 'modules/predikts'
-import { useOptionalPrivy } from 'providers/auth'
 
 import { Button, buttonMessages } from 'components/inputs'
 import TabbedBetslip from 'compositions/TabbedBetslip/TabbedBetslip'
@@ -19,14 +18,8 @@ const RightSidebar: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
   const { account, isReconnecting, isConnecting } = useWallet()
-  const { login, canLogin } = useOptionalPrivy()
 
   const handleConnect = () => {
-    if (canLogin) {
-      login()
-      return
-    }
-
     openModal('ConnectModal')
   }
 

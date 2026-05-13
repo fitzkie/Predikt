@@ -165,11 +165,17 @@ const LiveStatistics: React.FC<LiveStatisticsProps> = (props) => {
     gameId = params.gameId as string
   }
 
-  const { data: game, isFetching } = useGame({ gameId })
+  const hasGameId = Boolean(gameId)
+  const { data: game, isFetching } = useGame({
+    gameId: gameId || '',
+    query: {
+      enabled: hasGameId,
+    },
+  })
 
   const isGamePage = Boolean(params.gameId)
 
-  if (isFetching || !game) {
+  if (!hasGameId || isFetching || !game) {
     return null
   }
 

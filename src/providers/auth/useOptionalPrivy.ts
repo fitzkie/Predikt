@@ -30,7 +30,7 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
       authenticated,
       ready,
       login,
-      canLogin: typeof login === 'function' && ready,
+      canLogin: typeof login === 'function',
     }
   }
   catch {
