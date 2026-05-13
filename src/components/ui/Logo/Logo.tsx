@@ -1,4 +1,5 @@
 import cx from 'classnames'
+import { constants } from 'helpers'
 
 import { Href } from 'components/navigation'
 
@@ -11,7 +12,7 @@ const Logo: React.FC<LogoProps> = (props) => {
   const { className } = props
 
   return (
-    <Href to="/" className={cx('flex items-baseline text-grey-90', className)}>
+    <Href href={constants.baseUrl} className={cx('flex items-baseline text-grey-90', className)}>
       <span className="text-lg font-semibold uppercase tracking-[0.14em] text-grey-90">
         Predik
       </span>
