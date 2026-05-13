@@ -26,6 +26,17 @@ export const usePolymarketFeaturedMarkets = (limit = 6) => {
   })
 }
 
+export const usePolymarketMarkets = (params?: Record<string, string | number | boolean | undefined>) => {
+  const client = usePolymarketClient()
+
+  return useQuery({
+    queryKey: [ 'polymarket', 'markets', 'list', params ],
+    queryFn: () => client.getMarkets(params),
+    staleTime: 30_000,
+    retry: 1,
+  })
+}
+
 export const usePolymarketSearchMarkets = (query: string, limit = 6) => {
   const client = usePolymarketClient()
   const normalizedQuery = query.trim()
@@ -34,10 +45,20 @@ export const usePolymarketSearchMarkets = (query: string, limit = 6) => {
     queryKey: [ 'polymarket', 'search', normalizedQuery, limit ],
     queryFn: async () => {
       const result = await client.search(normalizedQuery)
-      const markets = result.markets || []
+      const directMarkets = result.markets || []
+      const nestedMarkets = (result.events || []).flatMap((event) => event.markets || [])
+      const markets = [ ...directMarkets, ...nestedMarkets ]
+      const seen = new Set<string>()
 
       return markets
-        .filter((market) => market.active && !market.closed)
+        .filter((market) => {
+          if (!market.active || market.closed || seen.has(market.id)) {
+            return false
+          }
+
+          seen.add(market.id)
+          return true
+        })
         .slice(0, limit)
     },
     enabled: normalizedQuery.length >= 2,

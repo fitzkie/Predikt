@@ -23,7 +23,7 @@ const Search: React.FC = () => {
         <Message className="text-caption-13" value={messages.title} />
       </div>
       <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60">
-        {isPredikts ? 'Prediction mode' : 'Sports mode'}
+        {isPredikts ? 'Trending board' : 'Sports mode'}
       </div>
     </div>
   )
