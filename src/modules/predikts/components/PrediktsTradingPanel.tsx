@@ -90,7 +90,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
     }
 
     if (!selectedTokenId) {
-      setTicketError('This market outcome is missing a Polymarket token ID.')
+      setTicketError('This market outcome is missing a tradable token ID.')
       return
     }
 
@@ -106,7 +106,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
 
     if (orderMode === 'LIMIT') {
       if (Number.isNaN(numericPrice) || numericPrice <= 0 || numericPrice >= 1) {
-        setTicketError('Price must be between 0 and 1 for a Polymarket limit order.')
+        setTicketError('Price must be between 0 and 1 for a limit order.')
         return
       }
 
@@ -134,7 +134,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
     setTicketError(null)
 
     if (!selectedTokenId) {
-      setTicketError('This market outcome is missing a Polymarket token ID.')
+      setTicketError('This market outcome is missing a tradable token ID.')
       return
     }
 
@@ -203,7 +203,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
           : !trading.isOnSupportedChain
             ? 'Predikts trading runs on Polygon. Switch your wallet to Polygon before placing an order.'
             : !trading.hasCredentials
-              ? 'Enable trading once for this wallet. Predikt will handle the Polymarket authorization step for you.'
+              ? 'Enable trading once for this wallet. Predikt will handle the market authorization step for you.'
               : 'Trading is enabled for this wallet. Review your order details, then place the trade.'}
       </p>
       {

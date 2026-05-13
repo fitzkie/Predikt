@@ -107,7 +107,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     if (!signer) {
       throw new Error(isAAWallet
         ? 'Privy smart-wallet signer is not ready yet.'
-        : 'Wallet signer is not ready for Polymarket execution.')
+        : 'Wallet signer is not ready for market execution.')
     }
 
     return signer
@@ -124,12 +124,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
   const createOrDeriveApiKey = useCallback(async (nonce = 0) => {
     if (!account) {
-      setAuthError('Connect a wallet before authenticating with Polymarket.')
+      setAuthError('Connect a wallet before enabling market trading.')
       return null
     }
 
     if (!isOnSupportedChain) {
-      setAuthError('Switch the wallet to Polygon before authenticating with Polymarket.')
+      setAuthError('Switch the wallet to Polygon before enabling market trading.')
       return null
     }
 
@@ -154,7 +154,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       saveCredentials(normalizedCredentials)
       setAuthenticating(false)
-      setLastExecutionMessage('Polymarket API credentials are ready for authenticated order placement.')
+      setLastExecutionMessage('Trading is enabled for authenticated order placement.')
       analytics.trackEvent('predikt_polymarket_auth_success', {
         wallet_type: isAAWallet ? 'smart_wallet' : 'eoa',
       })
@@ -162,7 +162,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return normalizedCredentials
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not authenticate with Polymarket.'
+      const message = error instanceof Error ? error.message : 'Could not enable market trading.'
 
       setAuthError(message)
       setAuthenticating(false)
@@ -177,11 +177,11 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
   const getExecutionClient = useCallback(() => {
     if (!account) {
-      throw new Error('Connect a wallet before trading on Polymarket.')
+      throw new Error('Connect a wallet before trading on this market.')
     }
 
     if (!isOnSupportedChain) {
-      throw new Error('Switch the wallet to Polygon before trading on Polymarket.')
+      throw new Error('Switch the wallet to Polygon before trading on this market.')
     }
 
     if (!isExecutionEnabled) {
@@ -282,7 +282,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return result
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not check Polymarket balance and allowance.'
+      const message = error instanceof Error ? error.message : 'Could not check market balance and allowance.'
 
       setExecutionError(message)
       setCheckingReadiness(false)
@@ -323,7 +323,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return true
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not update Polymarket allowance.'
+      const message = error instanceof Error ? error.message : 'Could not update allowance for this market.'
 
       setExecutionError(message)
       setFixingAllowance(false)
@@ -381,7 +381,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return response as PolymarketOrderResponse
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not place the Polymarket order.'
+      const message = error instanceof Error ? error.message : 'Could not place the order.'
 
       setExecutionError(message)
       setSubmittingOrder(false)
@@ -440,7 +440,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return response as PolymarketOrderResponse
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not place the Polymarket market order.'
+      const message = error instanceof Error ? error.message : 'Could not place the market order.'
 
       setExecutionError(message)
       setSubmittingOrder(false)
@@ -476,7 +476,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return results.flat() as PolymarketOpenOrder[]
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not load open Polymarket orders.'
+      const message = error instanceof Error ? error.message : 'Could not load open orders.'
 
       setExecutionError(message)
       setRefreshingOrders(false)
@@ -504,7 +504,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return true
     }
     catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not cancel the Polymarket order.'
+      const message = error instanceof Error ? error.message : 'Could not cancel the order.'
 
       setExecutionError(message)
       setCancellingOrderId(null)
@@ -538,7 +538,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       statusMessage: isExecutionEnabled
         ? (hasCredentials
           ? 'Trading boundary enabled. Signed CLOB order placement and cancellation are live for authenticated wallets.'
-          : 'Trading boundary enabled. Finish Polymarket wallet auth before submitting live orders.')
+          : 'Trading is available. Enable this wallet before submitting live orders.')
         : 'Trading boundary is wired, but execution is disabled until NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED is set to true.',
       saveCredentials,
       clearCredentials,

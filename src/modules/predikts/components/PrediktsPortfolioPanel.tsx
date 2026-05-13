@@ -23,7 +23,7 @@ const PrediktsPortfolioPanel: React.FC = () => {
         <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Portfolio</div>
         <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Connect to load positions</div>
         <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-          Wallet-connected views will populate current Polymarket positions and recent activity here.
+          Wallet-connected views will populate your current positions and recent activity here.
         </p>
       </div>
     )
@@ -46,7 +46,7 @@ const PrediktsPortfolioPanel: React.FC = () => {
               </div>
             </div>
           )) : (
-            <div className="text-caption-13 text-grey-60">No open Polymarket positions found for this wallet.</div>
+            <div className="text-caption-13 text-grey-60">No open positions found for this wallet.</div>
           )}
         </div>
       </div>
@@ -62,7 +62,7 @@ const PrediktsPortfolioPanel: React.FC = () => {
               <div className="mt-2 text-caption-12 text-grey-60 line-clamp-2">{item.title || item.slug || item.conditionId}</div>
             </div>
           )) : (
-            <div className="text-caption-13 text-grey-60">No recent Polymarket activity found for this wallet.</div>
+            <div className="text-caption-13 text-grey-60">No recent market activity found for this wallet.</div>
           )}
         </div>
       </div>

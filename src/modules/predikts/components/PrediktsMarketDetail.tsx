@@ -184,7 +184,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
         <div className="rounded-xl border border-white/10 bg-bg-l2 p-6">
           <div className="text-heading-h4 font-semibold text-grey-90">Market not found</div>
           <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-            This Polymarket slug did not return a market from the public Gamma API.
+            This market link did not return a live market.
           </p>
           <Href to="/predikts" className="mt-5 inline-flex text-caption-13 font-semibold text-brand-50">Back to Predikts</Href>
         </div>
@@ -205,7 +205,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             {market.question}
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-7 text-grey-70 ds:text-lg">
-            {market.description || 'This market is being pulled live from Polymarket Gamma and enriched with CLOB order-book depth for Predikt.'}
+            {market.description || 'This market is being pulled live and enriched with real-time order-book depth for Predikt.'}
           </p>
         </div>
         <div className="mt-6 flex flex-wrap gap-2">

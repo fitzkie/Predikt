@@ -61,7 +61,7 @@ const PrediktsHub: React.FC = () => {
             Premium discovery for event-driven markets
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-grey-70 ds:text-lg">
-            Organize markets by signal, not by sportsbook convention. Scan politics, finance, tech, culture, and black swan scenarios from one live prediction surface backed by Polymarket APIs.
+            Organize markets by signal, not by sportsbook convention. Scan politics, finance, tech, culture, and black swan scenarios from one live prediction surface backed by real-time market data.
           </p>
           <div className="mt-7 flex flex-col gap-3 ds:flex-row">
             <Button href={constants.links.sportsApp} size={40} style="secondary" title="Switch to Sports" />
