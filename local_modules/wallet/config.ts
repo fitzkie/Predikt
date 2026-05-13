@@ -1,6 +1,7 @@
 'use client'
 
 import { cookieStorage, createStorage, http } from 'wagmi'
+import { injected, walletConnect } from 'wagmi/connectors'
 import { type PrivyConfig } from '@azuro-org/sdk-social-aa-connector'
 import { createConfig } from '@privy-io/wagmi'
 import { polygon, polygonAmoy } from 'viem/chains'
@@ -37,6 +38,13 @@ const wagmiConfig = createConfig({
     [polygon.id]: http(constants.rpcByChains[polygon.id]),
     [polygonAmoy.id]: http(constants.rpcByChains[polygonAmoy.id]),
   },
+  connectors: [
+    injected(),
+    walletConnect({
+      projectId,
+      showQrModal: true,
+    }),
+  ],
   ssr: false,
   syncConnectedChain: true,
   multiInjectedProviderDiscovery: true,

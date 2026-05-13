@@ -7,14 +7,14 @@ import { constants } from 'helpers'
 type OptionalPrivyState = {
   authenticated: boolean
   ready: boolean
-  login: () => void
+  connectWallet: () => void
   canLogin: boolean
 }
 
 const fallbackState: OptionalPrivyState = {
   authenticated: false,
   ready: false,
-  login: () => undefined,
+  connectWallet: () => undefined,
   canLogin: false,
 }
 
@@ -24,13 +24,14 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
   }
 
   try {
-    const { authenticated, ready, login } = usePrivy()
+    const { authenticated, ready, connectOrCreateWallet, login } = usePrivy()
+    const connectWallet = typeof connectOrCreateWallet === 'function' ? connectOrCreateWallet : login
 
     return {
       authenticated,
       ready,
-      login,
-      canLogin: typeof login === 'function',
+      connectWallet,
+      canLogin: typeof connectWallet === 'function',
     }
   }
   catch {

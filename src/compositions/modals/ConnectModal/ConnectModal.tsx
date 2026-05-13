@@ -26,7 +26,7 @@ const ConnectModal: ModalComponent<ConnectModalProps> = (props) => {
   const { isConnected, connector } = useWallet()
   const { connectAsync, connectors, isPending, isError, error, variables, reset } = useConnect()
   const { isMobileDevice } = useDevice()
-  const { login, canLogin, ready } = useOptionalPrivy()
+  const { connectWallet, canLogin, ready } = useOptionalPrivy()
 
   const handleButtonClick = (connector: Connector) => {
     connectAsync({
@@ -124,7 +124,7 @@ const ConnectModal: ModalComponent<ConnectModalProps> = (props) => {
                   size={40}
                   title="Continue"
                   loading={!ready}
-                  onClick={() => login()}
+                  onClick={() => connectWallet()}
                 />
               </div>
             ) : null
