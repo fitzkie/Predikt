@@ -6,10 +6,21 @@ import { constants } from 'helpers'
 import { PrediktsMarketCard, usePrediktsMarketBrowser } from 'modules/predikts'
 
 import { Button } from 'components/inputs'
-import AppModeTabs from '../AppModeTabs/AppModeTabs'
+import { Logo } from 'components/ui'
+import { Href } from 'components/navigation'
 
 
-const skeletonCards = new Array(12).fill(0)
+const sectionDescriptions: Record<string, string> = {
+  all: 'Search across every live market on the board.',
+  trending: 'Highest-velocity markets across the full board.',
+  new: 'Fresh contracts and newly opened markets.',
+  politics: 'Elections, policy, geopolitics, and state power.',
+  finance: 'Macro, crypto, rates, stocks, and money flows.',
+  sports: 'Live and event-driven sports contracts.',
+  tech: 'AI, launches, M&A, and product milestones.',
+  culture: 'Movies, music, celebrities, and internet moments.',
+  'black-swan': 'War, weather, pandemics, and low-probability shocks.',
+}
 
 const volumeLabel = (value?: number) => {
   if (!value || value <= 0) {
@@ -27,20 +38,24 @@ const volumeLabel = (value?: number) => {
   return `$${Math.round(value)}`
 }
 
+const skeletonCards = new Array(12).fill(0)
+
 const PrediktsHub: React.FC = () => {
   const browser = usePrediktsMarketBrowser()
   const [ activeSection, setActiveSection ] = useState<string>('trending')
   const [ search, setSearch ] = useState('')
 
   const normalizedSearch = search.trim().toLowerCase()
-  const boardMarkets = browser.marketBySection[activeSection] || browser.trendingMarkets
+  const baseMarkets = browser.marketBySection[activeSection] || browser.allMarkets
 
   const filteredMarkets = useMemo(() => {
+    const sourceMarkets = normalizedSearch ? browser.allMarkets : baseMarkets
+
     if (!normalizedSearch) {
-      return boardMarkets
+      return sourceMarkets
     }
 
-    return boardMarkets.filter((market) => {
+    return sourceMarkets.filter((market) => {
       const haystack = [
         market.question,
         market.slug,
@@ -51,57 +66,87 @@ const PrediktsHub: React.FC = () => {
 
       return haystack.includes(normalizedSearch)
     })
-  }, [ boardMarkets, normalizedSearch ])
+  }, [ baseMarkets, browser.allMarkets, normalizedSearch ])
 
   const activeSectionMeta = browser.sections.find((section) => section.key === activeSection) || browser.sections[0]
-  const activeLane = browser.lanes.find((lane) => lane.slug === activeSection)
-  const featuredChips = activeLane?.items || browser.tags.slice(0, 12)
+  const activeSectionDescription = normalizedSearch
+    ? 'Search results across all live Predikt markets.'
+    : (sectionDescriptions[activeSection] || sectionDescriptions.trending)
+  const activeSectionVolume = normalizedSearch
+    ? browser.allMarkets.reduce((acc, market) => acc + Number(market.volume24hr || market.volume || 0), 0)
+    : browser.totals[activeSection]
+  const visibleCount = filteredMarkets.length
+  const supportingTags = activeSection === 'all'
+    ? browser.tags.slice(0, 12)
+    : (browser.lanes.find((lane) => lane.slug === activeSection)?.items || browser.tags.slice(0, 12))
 
   return (
     <div className="px-2 py-5 ds:px-4">
       <div className="space-y-5">
-        <div className="rounded-xl border border-white/10 bg-bg-l2 p-4">
+        <section className="rounded-[1.4rem] border border-white/10 bg-bg-l2 p-4 ds:p-5">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 ds:flex-row ds:items-center ds:justify-between">
-              <div className="ds:max-w-[18rem]">
-                <AppModeTabs />
+            <div className="flex flex-col gap-4 ds:flex-row ds:items-center">
+              <div className="flex items-center justify-between ds:min-w-[15rem]">
+                <Logo className="h-5" />
+                <Href className="ds:hidden" href={constants.links.sportsApp}>
+                  <Button size={32} style="secondary" title="Switch to Sports" />
+                </Href>
               </div>
+
               <label className="block flex-1">
                 <input
-                  className="w-full rounded-xl border border-white/10 bg-bg-l3 px-4 py-3 text-caption-14 text-grey-90 placeholder:text-grey-40"
+                  className="w-full rounded-[1rem] border border-white/10 bg-bg-l3 px-4 py-3 text-caption-14 text-grey-90 placeholder:text-grey-40"
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search across Predikt"
                   value={search}
                 />
               </label>
-              <div className="flex items-center gap-3 text-caption-13">
-                <div className="rounded-lg border border-white/10 bg-bg-l3 px-4 py-3 text-grey-60">
-                  <div>Trending</div>
-                  <div className="mt-1 font-semibold text-grey-90">{browser.totalLiveMarkets}</div>
-                </div>
-                <Button href={constants.links.sportsApp} size={40} style="secondary" title="Sports" />
+
+              <Href className="hidden ds:block" href={constants.links.sportsApp}>
+                <Button size={40} style="secondary" title="Switch to Sports" />
+              </Href>
+            </div>
+
+            <div className="flex flex-col gap-2 ds:flex-row ds:items-end ds:justify-between">
+              <div>
+                <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Predikt</div>
+                <h1 className="mt-2 text-[1.9rem] font-semibold leading-tight tracking-[-0.04em] text-grey-90 ds:text-[2.5rem]">
+                  Browse live event-driven markets
+                </h1>
+                <p className="mt-2 max-w-3xl text-caption-14 leading-7 text-grey-70">
+                  Use the Sports button to move into the sportsbook. Use search and categories here to scan live prediction markets, trending topics, and deeper event contracts from one board.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-bg-l3 px-4 py-3 text-right">
+                <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Markets showing</div>
+                <div className="mt-1 text-heading-h4 font-semibold text-grey-90">{visibleCount}</div>
               </div>
             </div>
 
             <div className="overflow-auto no-scrollbar">
-              <div className="flex min-w-max items-center gap-2">
+              <div className="flex min-w-max items-stretch gap-2">
                 {
                   browser.sections.map((section) => {
-                    const isActive = section.key === activeSection
+                    const isActive = section.key === activeSection && !normalizedSearch
 
                     return (
                       <button
                         key={section.key}
                         className={cx(
-                          'rounded-full border px-4 py-2 text-caption-13 font-semibold transition',
+                          'rounded-2xl border px-4 py-3 text-left transition min-w-[10.5rem]',
                           isActive
-                            ? 'border-brand-50 bg-brand-50/15 text-brand-50'
-                            : 'border-white/10 bg-bg-l3 text-grey-60 hover:text-grey-90'
+                            ? 'border-brand-50 bg-brand-50/12'
+                            : 'border-white/10 bg-bg-l3 hover:border-white/20'
                         )}
                         onClick={() => setActiveSection(section.key)}
                         type="button"
                       >
-                        {section.label}
+                        <div className={cx('text-caption-13 font-semibold', isActive ? 'text-brand-50' : 'text-grey-90')}>
+                          {section.label}
+                        </div>
+                        <div className="mt-1 text-caption-12 leading-5 text-grey-60">
+                          {sectionDescriptions[section.key] || sectionDescriptions.trending}
+                        </div>
                       </button>
                     )
                   })
@@ -112,7 +157,7 @@ const PrediktsHub: React.FC = () => {
             <div className="overflow-auto no-scrollbar">
               <div className="flex min-w-max items-center gap-2">
                 {
-                  featuredChips.map((chip) => (
+                  supportingTags.map((chip) => (
                     <span key={chip} className="rounded-full border border-white/10 bg-bg-l3 px-3 py-1.5 text-caption-12 text-grey-60">
                       {chip}
                     </span>
@@ -121,18 +166,24 @@ const PrediktsHub: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <section className="rounded-xl border border-white/10 bg-bg-l2 p-5">
+        <section className="rounded-[1.4rem] border border-white/10 bg-bg-l2 p-5">
           <div className="flex flex-col gap-3 ds:flex-row ds:items-end ds:justify-between">
             <div>
-              <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">{activeSectionMeta.label}</div>
-              <h1 className="mt-2 text-[2rem] font-semibold leading-tight tracking-[-0.04em] text-grey-90">
-                {activeSectionMeta.label === 'Trending' ? 'Trending markets' : `${activeSectionMeta.label} markets`}
-              </h1>
-              <p className="mt-2 text-caption-14 leading-7 text-grey-70">
-                {filteredMarkets.length} live markets on the board. {volumeLabel(browser.totals[activeSection])} in sampled volume across the current section.
+              <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">
+                {normalizedSearch ? 'Search Results' : activeSectionMeta.label}
+              </div>
+              <h2 className="mt-2 text-[1.65rem] font-semibold leading-tight tracking-[-0.04em] text-grey-90">
+                {normalizedSearch ? `Results for “${search}”` : `${activeSectionMeta.label} markets`}
+              </h2>
+              <p className="mt-2 max-w-3xl text-caption-14 leading-7 text-grey-70">
+                {activeSectionDescription}
               </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-bg-l3 px-4 py-3 text-right">
+              <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Sampled volume</div>
+              <div className="mt-1 text-heading-h4 font-semibold text-grey-90">{volumeLabel(activeSectionVolume)}</div>
             </div>
           </div>
 
@@ -157,7 +208,7 @@ const PrediktsHub: React.FC = () => {
                 </div>
               )) : (
                 <div className="rounded-lg border border-white/10 bg-bg-l3 p-4 text-caption-13 text-grey-60 ds:col-span-4">
-                  No live markets match the current filter.
+                  No live markets match the current search.
                 </div>
               )
             }

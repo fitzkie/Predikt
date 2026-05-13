@@ -56,6 +56,7 @@ const toNumericValue = (value?: string | number | null) => {
 }
 
 const boardSections = [
+  { key: 'all', label: 'All' },
   { key: 'trending', label: 'Trending' },
   { key: 'new', label: 'New' },
   ...constants.prediktsTaxonomy.map((category) => ({
@@ -118,6 +119,7 @@ const usePrediktsMarketBrowser = () => {
     })
 
     const marketBySection: Record<string, PolymarketMarket[]> = {
+      all: dedupeMarkets([ ...trendingMarkets, ...newestMarkets ]),
       trending: trendingMarkets,
       new: newestMarkets,
     }
@@ -133,6 +135,7 @@ const usePrediktsMarketBrowser = () => {
 
     return {
       featuredMarkets,
+      allMarkets: marketBySection.all,
       lanes,
       marketBySection,
       sections: boardSections,
