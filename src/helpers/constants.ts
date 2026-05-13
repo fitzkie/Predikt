@@ -74,6 +74,16 @@ const ensurePath = (value: string, path: string) => {
   return url.toString().replace(/\/$/, url.pathname === '/' ? '/' : '')
 }
 
+const toOrigin = (value: string, fallback: string) => {
+  const absoluteUrl = toAbsoluteUrl(value, fallback)
+
+  if (!/^https?:\/\//i.test(absoluteUrl)) {
+    return fallback
+  }
+
+  return new URL(absoluteUrl).origin
+}
+
 const baseUrl = toAbsoluteUrl(readEnv('NEXT_PUBLIC_BASE_URL', 'https://prediktmarkets.com'), 'https://prediktmarkets.com')
 const companyName = readEnv('NEXT_PUBLIC_COMPANY_NAME', 'Predikt Markets')
 const privyAppId = readEnv('NEXT_PUBLIC_PRIVY_APP_ID')
@@ -82,14 +92,12 @@ const docsUrl = readEnv('NEXT_PUBLIC_DOCS_URL')
 const termsUrl = readEnv('NEXT_PUBLIC_TERMS_URL')
 const policyUrl = readEnv('NEXT_PUBLIC_POLICY_URL')
 const faqUrl = readEnv('NEXT_PUBLIC_FAQ_URL')
-const sportsAppUrl = ensurePath(
-  toAbsoluteUrl(readEnv('NEXT_PUBLIC_SPORTS_APP_URL', 'https://bet.prediktmarkets.com/bet'), 'https://bet.prediktmarkets.com/bet'),
-  '/bet'
+const appShellOrigin = toOrigin(
+  readEnv('NEXT_PUBLIC_PREDIKTS_APP_URL', 'https://app.prediktmarkets.com/predikts'),
+  'https://app.prediktmarkets.com'
 )
-const prediktsAppUrl = ensurePath(
-  toAbsoluteUrl(readEnv('NEXT_PUBLIC_PREDIKTS_APP_URL', 'https://app.prediktmarkets.com/predikts'), 'https://app.prediktmarkets.com/predikts'),
-  '/predikts'
-)
+const sportsAppUrl = `${appShellOrigin}/bet`
+const prediktsAppUrl = `${appShellOrigin}/predikts`
 const affiliateAddress = readEnv('NEXT_PUBLIC_AFFILIATE_ADDRESS')
 const walletConnectId = readEnv('NEXT_PUBLIC_WALLETCONNECT_ID')
 const freebetsEnabled = readEnv('NEXT_PUBLIC_FREEBETS_ENABLED', 'false') === 'true'
@@ -143,6 +151,7 @@ const links = {
   terms: termsUrl,
   policy: policyUrl,
   faq: faqUrl,
+  appShell: appShellOrigin,
   sportsApp: sportsAppUrl,
   prediktsApp: prediktsAppUrl,
   waves: 'https://azuro.org/app/waves',

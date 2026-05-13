@@ -30,15 +30,35 @@ declare global {
 
 const Context = createContext<AnalyticsContextValue | null>(null)
 
-const getProductFromHostname = (hostname: string): PrediktProduct => {
+const getProductFromRoute = (hostname: string, path: string): PrediktProduct => {
+  const normalizedPath = path.toLowerCase()
+  const sportsbookPathMatchers = [
+    '/bet',
+    '/football',
+    '/basketball',
+    '/tennis',
+    '/cricket',
+    '/mma',
+    '/boxing',
+    '/american-football',
+    '/baseball',
+    '/rugby-union',
+    '/rugby-league',
+    '/ice-hockey',
+    '/unique',
+  ]
   const normalizedHostname = hostname.toLowerCase()
 
   if (normalizedHostname === 'bet.prediktmarkets.com') {
     return 'bet'
   }
 
-  if (normalizedHostname === 'app.prediktmarkets.com') {
+  if (normalizedPath === '/predikts' || normalizedPath.startsWith('/predikts/')) {
     return 'app'
+  }
+
+  if (sportsbookPathMatchers.some((matcher) => normalizedPath === matcher || normalizedPath.startsWith(`${matcher}/`))) {
+    return 'bet'
   }
 
   return 'marketing'
@@ -73,7 +93,7 @@ const AnalyticsProvider: React.CFC = (props) => {
   const path = `${pathname || '/'}${search ? `?${search}` : ''}`
 
   const value = useMemo<AnalyticsContextValue>(() => {
-    const product = getProductFromHostname(hostname)
+    const product = getProductFromRoute(hostname, path)
 
     return {
       brand: 'Predikt',

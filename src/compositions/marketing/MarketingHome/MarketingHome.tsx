@@ -32,13 +32,13 @@ const productCards = [
     title: 'Sports App',
     text: 'A sportsbook-style experience for live and prematch markets, wallet-native betting, and instant access to Azuro liquidity.',
     href: constants.links.sportsApp,
-    button: 'Open bet.prediktmarkets.com',
+    button: 'Open app.prediktmarkets.com/bet',
   },
   {
     title: 'Predikts App',
     text: 'A prediction-market entrypoint for politics, macro, crypto, and event-driven markets with the same Azuro settlement rails underneath.',
     href: constants.links.prediktsApp,
-    button: 'Open app.prediktmarkets.com',
+    button: 'Open app.prediktmarkets.com/predikts',
   },
 ]
 

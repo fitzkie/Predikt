@@ -1,7 +1,6 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { constants } from 'helpers'
-import { MarketingHomePage } from 'modules/marketing'
 
 
 const getHostname = async () => {
@@ -12,16 +11,14 @@ const getHostname = async () => {
   return host.split(':')[0].toLowerCase()
 }
 
-export default async function HomePage() {
+export const redirectLegacyBetHost = async (pathname: string) => {
   const hostname = await getHostname()
 
-  if (hostname === 'bet.prediktmarkets.com') {
-    redirect(constants.links.sportsApp)
+  if (hostname !== 'bet.prediktmarkets.com') {
+    return
   }
 
-  if (hostname === 'app.prediktmarkets.com') {
-    redirect(constants.links.prediktsApp)
-  }
-
-  return <MarketingHomePage />
+  redirect(`${constants.links.appShell}${pathname}`)
 }
+
+export default redirectLegacyBetHost
