@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { openModal } from '@locmod/modal'
+import { polygon } from 'viem/chains'
 import { useAnalytics } from 'providers/analytics'
 import { useOptionalPrivy } from 'providers/auth'
-import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketApiCredentials, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
+import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
 import { Button, buttonMessages } from 'components/inputs'
@@ -12,12 +13,6 @@ import { Button, buttonMessages } from 'components/inputs'
 
 type Props = {
   market: PolymarketMarket
-}
-
-const initialCredentials: PolymarketApiCredentials = {
-  apiKey: '',
-  passphrase: '',
-  secret: '',
 }
 
 const formatCurrency = (value: number) => {
@@ -46,7 +41,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   const [ size, setSize ] = useState('25')
   const [ price, setPrice ] = useState(String(prices[0] || 0.5))
   const [ marketOrderType, setMarketOrderType ] = useState<'FOK' | 'FAK'>('FOK')
-  const [ credentials, setCredentials ] = useState<PolymarketApiCredentials>(initialCredentials)
   const [ ticketError, setTicketError ] = useState<string | null>(null)
   const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
 
@@ -77,16 +71,23 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
     return formatCurrency(numericSize * numericPrice)
   }, [ price, size ])
 
-  const handleSaveCredentials = () => {
-    trading.saveCredentials({
-      ...credentials,
-      walletAddress: account || undefined,
-    })
-    setCredentials(initialCredentials)
+  const handleEnableTrading = async () => {
+    setTicketError(null)
+    await trading.createOrDeriveApiKey()
+    await openOrdersQuery.refetch()
   }
 
   const handleSubmitOrder = async () => {
     setTicketError(null)
+
+    if (!trading.hasCredentials) {
+      const nextCredentials = await trading.createOrDeriveApiKey()
+
+      if (!nextCredentials) {
+        setTicketError('Enable trading before placing a live order.')
+        return
+      }
+    }
 
     if (!selectedTokenId) {
       setTicketError('This market outcome is missing a Polymarket token ID.')
@@ -186,12 +187,24 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
     openModal('ConnectModal')
   }
 
+  const handleSwitchToPolygon = () => {
+    openModal('SwitchNetworkModal', {
+      chainId: polygon.id,
+    })
+  }
+
   return (
     <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
       <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Trading readiness</div>
-      <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Authenticated CLOB execution</div>
+      <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Trade this market</div>
       <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-        {trading.statusMessage}
+        {!account
+          ? 'Connect your wallet to view balances, enable trading, and place live orders on this market.'
+          : !trading.isOnSupportedChain
+            ? 'Predikts trading runs on Polygon. Switch your wallet to Polygon before placing an order.'
+            : !trading.hasCredentials
+              ? 'Enable trading once for this wallet. Predikt will handle the Polymarket authorization step for you.'
+              : 'Trading is enabled for this wallet. Review your order details, then place the trade.'}
       </p>
       {
         trading.authError ? (
@@ -377,52 +390,49 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
         </div>
       </div>
 
-      {
-        !account ? (
-          <Button className="mt-5 w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
-        ) : (
-          <div className="mt-5 space-y-2">
-            <button
-              className="w-full rounded-md border border-brand-50/30 bg-brand-50/10 px-4 py-3 text-caption-13 font-semibold text-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={trading.isAuthenticating || !trading.isReadyForAuthentication || !trading.isOnSupportedChain}
-              onClick={() => {
-                void trading.createOrDeriveApiKey()
-              }}
-            >
-              {trading.isAuthenticating
-                ? 'Authenticating With Polymarket...'
-                : trading.hasCredentials
-                  ? 'Refresh API Credentials'
-                  : 'Create or Derive API Credentials'}
-            </button>
-            <div className="text-caption-12 text-grey-60">
-              Wallet chain: {chainId || 'Unknown'} {trading.isOnSupportedChain ? '(Polygon ready)' : '(Switch to Polygon)'} {isAAWallet ? '• Smart wallet detected' : '• EOA wallet detected'}
-            </div>
-            <button
-              className="w-full rounded-md border border-white/10 px-4 py-3 text-caption-13 font-semibold text-grey-60 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!isTradeReady}
-            >
-              {isTradeReady ? 'Execution Ready' : 'Execution Disabled'}
-            </button>
-            <button
-              className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
-              onClick={() => {
-                void handleSubmitOrder()
-              }}
-            >
-              {trading.isSubmittingOrder ? 'Submitting Order...' : `Place ${side} ${orderMode} Order`}
-            </button>
-          </div>
-        )
-      }
+      <div className="mt-5 space-y-2">
+        {!account ? (
+          <Button className="w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
+        ) : !trading.isOnSupportedChain ? (
+          <button
+            className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black"
+            onClick={handleSwitchToPolygon}
+          >
+            Switch To Polygon
+          </button>
+        ) : !trading.hasCredentials ? (
+          <button
+            className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={trading.isAuthenticating || !trading.isReadyForAuthentication}
+            onClick={() => {
+              void handleEnableTrading()
+            }}
+          >
+            {trading.isAuthenticating ? 'Enabling Trading...' : 'Enable Trading'}
+          </button>
+        ) : null}
+
+        <div className="rounded-md border border-white/10 px-3 py-3 text-caption-12 text-grey-60">
+          Wallet: {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not connected'} • Chain: {chainId || 'Unknown'} {trading.isOnSupportedChain ? '• Polygon ready' : '• Switch to Polygon'} {isAAWallet ? '• Smart wallet' : '• External wallet'}
+        </div>
+
+        <button
+          className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
+          onClick={() => {
+            void handleSubmitOrder()
+          }}
+        >
+          {trading.isSubmittingOrder ? 'Submitting Order...' : `Place ${side} ${orderMode} Order`}
+        </button>
+      </div>
 
       <div className="mt-6 rounded-xl border border-white/10 bg-bg-l3 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
             <p className="mt-2 text-caption-13 leading-6 text-grey-70">
-              Live authenticated orders for this market’s token outcomes.
+              Your live orders for this market.
             </p>
           </div>
           <button
@@ -470,52 +480,10 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
               <div className="text-caption-13 text-grey-60">
                 {trading.hasCredentials
                   ? 'No open authenticated orders are loaded for this market yet.'
-                  : 'Authenticate with Polymarket to load and manage open orders.'}
+                  : 'Enable trading to load and manage open orders.'}
               </div>
             )
           }
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-white/10 bg-bg-l3 p-4">
-        <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Credential scaffold</div>
-        <p className="mt-3 text-caption-13 leading-6 text-grey-70">
-          Polymarket trading requires wallet-based L1 auth plus L2 API credentials. The button above now performs the real create-or-derive flow, and the live ticket submits authenticated signed orders through the CLOB. Manual fields remain as a fallback.
-        </p>
-        <div className="mt-4 space-y-3">
-          <input
-            className="w-full rounded-md border border-white/10 bg-bg-l2 px-3 py-2 text-caption-13 text-grey-90"
-            placeholder="POLY_API_KEY"
-            value={credentials.apiKey}
-            onChange={(event) => setCredentials((current) => ({ ...current, apiKey: event.target.value }))}
-          />
-          <input
-            className="w-full rounded-md border border-white/10 bg-bg-l2 px-3 py-2 text-caption-13 text-grey-90"
-            placeholder="POLY_PASSPHRASE"
-            value={credentials.passphrase}
-            onChange={(event) => setCredentials((current) => ({ ...current, passphrase: event.target.value }))}
-          />
-          <textarea
-            className="min-h-24 w-full rounded-md border border-white/10 bg-bg-l2 px-3 py-2 text-caption-13 text-grey-90"
-            placeholder="POLY_SECRET"
-            value={credentials.secret}
-            onChange={(event) => setCredentials((current) => ({ ...current, secret: event.target.value }))}
-          />
-        </div>
-        <div className="mt-4 flex gap-2">
-          <button
-            className="rounded-md border border-brand-50/30 bg-brand-50/10 px-4 py-2 text-caption-13 font-semibold text-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!credentials.apiKey || !credentials.passphrase || !credentials.secret}
-            onClick={handleSaveCredentials}
-          >
-            Save Credentials
-          </button>
-          <button
-            className="rounded-md border border-white/10 px-4 py-2 text-caption-13 text-grey-60"
-            onClick={trading.clearCredentials}
-          >
-            Clear Stored
-          </button>
         </div>
       </div>
     </div>

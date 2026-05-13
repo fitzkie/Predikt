@@ -94,7 +94,7 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
         <div>
           <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Orders and fills</div>
           <div className="mt-2 text-caption-13 text-grey-70">
-            Authenticated open orders plus recent wallet activity for this market.
+            Your open orders and recent fills for this market.
           </div>
         </div>
         <button
