@@ -1,6 +1,8 @@
 'use client'
 
-import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, usePolymarketActivity, usePolymarketMarketBySlug, usePolymarketOpenOrders, usePolymarketOrderBook, usePolymarketOrderBookStream, type PolymarketMarket } from 'providers/polymarket'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketEvent, type PolymarketMarket, usePolymarketActivity, usePolymarketEventBySlug, usePolymarketMarketBySlug, usePolymarketOpenOrders, usePolymarketOrderBook, usePolymarketOrderBookStream } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
 import { Href } from 'components/navigation'
@@ -18,14 +20,6 @@ const formatPercent = (value?: number) => {
   }
 
   return `${Math.round(value * 100)}%`
-}
-
-const formatCurrency = (value?: number) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return '$0'
-  }
-
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value)
 }
 
 const formatVolume = (value?: string | number) => {
@@ -46,8 +40,12 @@ const formatVolume = (value?: string | number) => {
   return `$${Math.round(numericValue)}`
 }
 
-const marketImage = (market: PolymarketMarket) => {
-  return market.image || market.icon || market.events?.[0]?.image || market.events?.[0]?.icon || ''
+const formatDate = (value?: string) => {
+  if (!value) {
+    return 'Open'
+  }
+
+  return new Date(value).toLocaleDateString()
 }
 
 const formatTimestamp = (timestamp?: number) => {
@@ -58,44 +56,74 @@ const formatTimestamp = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString()
 }
 
+const marketVolume = (market: PolymarketMarket) => {
+  return Number(market.volume24hr || market.volume || 0)
+}
+
+const sortMarkets = (markets: PolymarketMarket[]) => {
+  return [ ...markets ]
+    .filter((market) => market.active && !market.closed)
+    .sort((left, right) => marketVolume(right) - marketVolume(left))
+}
+
+const yesPrice = (market: PolymarketMarket) => {
+  const prices = parsePolymarketOutcomePrices(market)
+  return typeof prices[0] === 'number' ? prices[0] : 0
+}
+
+const noPrice = (market: PolymarketMarket) => {
+  return Math.max(0, 1 - yesPrice(market))
+}
+
+const outcomeLabel = (market: PolymarketMarket) => {
+  return parsePolymarketOutcomes(market)[0] || market.question
+}
+
+const eventImage = (event?: PolymarketEvent | null, market?: PolymarketMarket | null) => {
+  return event?.image || event?.icon || market?.image || market?.icon || market?.events?.[0]?.image || market?.events?.[0]?.icon || ''
+}
+
 const OrderBookPanel: React.FC<{ market: PolymarketMarket }> = ({ market }) => {
   const tokenIds = parsePolymarketTokenIds(market)
   const orderBookQuery = usePolymarketOrderBook(tokenIds[0])
 
   usePolymarketOrderBookStream(market)
 
-  const bids = orderBookQuery.data?.bids.slice(0, 5) || []
-  const asks = orderBookQuery.data?.asks.slice(0, 5) || []
+  const bids = orderBookQuery.data?.bids.slice(0, 6) || []
+  const asks = orderBookQuery.data?.asks.slice(0, 6) || []
 
   return (
-    <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
-      <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Live Order Book</div>
+    <div className="rounded-[1.35rem] border border-white/10 bg-[#161616] p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Live Order Book</div>
+          <div className="mt-2 text-caption-13 text-grey-70">Current depth for the selected contract.</div>
+        </div>
+        <div className="text-caption-12 text-grey-60">Last {orderBookQuery.data?.last_trade_price || '--'}</div>
+      </div>
       <div className="mt-4 grid gap-4 ds:grid-cols-2">
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Bids</div>
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Bids</div>
+          <div className="space-y-2">
             {bids.length ? bids.map((bid, index) => (
-              <div key={`${bid.price}-${index}`} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2 text-caption-13">
-                <span className="text-grey-90">{bid.price}</span>
+              <div key={`${bid.price}-${index}`} className="flex items-center justify-between rounded-xl bg-[#0f0f10] px-3 py-2 text-caption-13">
+                <span className="text-[#7ef0a5]">{bid.price}</span>
                 <span className="text-grey-60">{bid.size}</span>
               </div>
             )) : <div className="text-caption-13 text-grey-60">No bid depth loaded.</div>}
           </div>
         </div>
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Asks</div>
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Asks</div>
+          <div className="space-y-2">
             {asks.length ? asks.map((ask, index) => (
-              <div key={`${ask.price}-${index}`} className="flex items-center justify-between rounded-md border border-white/10 px-3 py-2 text-caption-13">
-                <span className="text-grey-90">{ask.price}</span>
+              <div key={`${ask.price}-${index}`} className="flex items-center justify-between rounded-xl bg-[#0f0f10] px-3 py-2 text-caption-13">
+                <span className="text-[#ff6f7c]">{ask.price}</span>
                 <span className="text-grey-60">{ask.size}</span>
               </div>
             )) : <div className="text-caption-13 text-grey-60">No ask depth loaded.</div>}
           </div>
         </div>
-      </div>
-      <div className="mt-4 text-caption-12 text-grey-60">
-        Last trade: {orderBookQuery.data?.last_trade_price || '...'}
       </div>
     </div>
   )
@@ -111,20 +139,19 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
     .slice(0, 6)
 
   return (
-    <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
+    <div className="rounded-[1.35rem] border border-white/10 bg-[#161616] p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Orders and fills</div>
-          <div className="mt-2 text-caption-13 text-grey-70">
-            Your open orders and recent fills for this market.
-          </div>
+          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Orders and fills</div>
+          <div className="mt-2 text-caption-13 text-grey-70">Open orders and recent fills for the selected contract.</div>
         </div>
         <button
-          className="rounded-md border border-white/10 px-3 py-2 text-caption-12 font-semibold text-grey-60 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-white/10 bg-[#0f0f10] px-3 py-2 text-caption-12 font-semibold text-grey-60 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={openOrdersQuery.isFetching || activityQuery.isFetching || !account}
           onClick={() => {
             void Promise.all([ openOrdersQuery.refetch(), activityQuery.refetch() ])
           }}
+          type="button"
         >
           {openOrdersQuery.isFetching || activityQuery.isFetching ? 'Refreshing...' : 'Refresh'}
         </button>
@@ -132,41 +159,37 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
 
       <div className="mt-5 grid gap-4 ds:grid-cols-2">
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
+          <div className="space-y-2">
             {!account ? (
               <div className="text-caption-13 text-grey-60">Connect a wallet to load open orders.</div>
-            ) : openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => {
-              const remainingSize = Math.max(Number(order.original_size) - Number(order.size_matched), 0)
-
-              return (
-                <div key={order.id} className="rounded-md border border-white/10 px-3 py-3 text-caption-13">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold text-grey-90">{order.side} {order.outcome}</span>
-                    <span className="text-grey-60">{order.status}</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
-                    <span>@ {order.price}</span>
-                    <span>Remaining {remainingSize.toFixed(2)}</span>
-                  </div>
+            ) : openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => (
+              <div key={order.id} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-grey-90">{order.side} {order.outcome}</span>
+                  <span className="text-grey-60">{order.status}</span>
                 </div>
-              )
-            }) : (
-              <div className="text-caption-13 text-grey-60">No open orders loaded for this market.</div>
+                <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
+                  <span>@ {order.price}</span>
+                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            )) : (
+              <div className="text-caption-13 text-grey-60">No open orders for this contract.</div>
             )}
           </div>
         </div>
 
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Recent fills</div>
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Recent fills</div>
+          <div className="space-y-2">
             {!account ? (
-              <div className="text-caption-13 text-grey-60">Connect a wallet to load fills and activity.</div>
+              <div className="text-caption-13 text-grey-60">Connect a wallet to load fills.</div>
             ) : fills.length ? fills.map((fill) => (
-              <div key={`${fill.transactionHash}-${fill.timestamp}`} className="rounded-md border border-white/10 px-3 py-3 text-caption-13">
+              <div key={`${fill.transactionHash}-${fill.timestamp}`} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold text-grey-90">{fill.side || fill.type} {fill.outcome || ''}</span>
-                  <span className="text-grey-60">{formatCurrency(fill.usdcSize)}</span>
+                  <span className="text-grey-60">{formatVolume(fill.usdcSize)}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
                   <span>{typeof fill.price === 'number' ? `@ ${fill.price}` : fill.type}</span>
@@ -174,7 +197,7 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
                 </div>
               </div>
             )) : (
-              <div className="text-caption-13 text-grey-60">No recent fills found for this market.</div>
+              <div className="text-caption-13 text-grey-60">No recent fills for this contract.</div>
             )}
           </div>
         </div>
@@ -184,9 +207,46 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
 }
 
 const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
-  const marketQuery = usePolymarketMarketBySlug(slug)
+  const searchParams = useSearchParams()
+  const directEventQuery = usePolymarketEventBySlug(slug)
+  const directMarketQuery = usePolymarketMarketBySlug(slug)
+  const relatedEventSlug = directMarketQuery.data?.events?.[0]?.slug
+  const relatedEventQuery = usePolymarketEventBySlug(relatedEventSlug)
+  const [ selectedMarketSlug, setSelectedMarketSlug ] = useState(searchParams.get('market') || slug)
+  const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(Number(searchParams.get('outcome') || '0'))
 
-  if (marketQuery.isLoading) {
+  const event = directEventQuery.data || relatedEventQuery.data || null
+  const directMarket = directMarketQuery.data || null
+  const eventMarkets = useMemo(() => {
+    if (event?.markets?.length) {
+      return sortMarkets(event.markets)
+    }
+
+    return directMarket ? [ directMarket ] : []
+  }, [ event, directMarket ])
+
+  useEffect(() => {
+    if (!selectedMarketSlug && eventMarkets[0]?.slug) {
+      setSelectedMarketSlug(eventMarkets[0].slug)
+    }
+  }, [ eventMarkets, selectedMarketSlug ])
+
+  useEffect(() => {
+    const marketFromQuery = searchParams.get('market')
+    const outcomeFromQuery = Number(searchParams.get('outcome') || '0')
+
+    if (marketFromQuery) {
+      setSelectedMarketSlug(marketFromQuery)
+    }
+
+    if (Number.isFinite(outcomeFromQuery)) {
+      setSelectedOutcomeIndex(outcomeFromQuery)
+    }
+  }, [ searchParams ])
+
+  const selectedMarket = eventMarkets.find((market) => market.slug === selectedMarketSlug) || eventMarkets[0] || directMarket
+
+  if (directEventQuery.isLoading || directMarketQuery.isLoading || (relatedEventSlug && relatedEventQuery.isLoading)) {
     return (
       <div className="px-2 py-6 ds:px-4">
         <div className="rounded-xl border border-white/10 bg-bg-l2 p-6">
@@ -198,9 +258,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
     )
   }
 
-  const market = marketQuery.data
-
-  if (!market) {
+  if (!selectedMarket) {
     return (
       <div className="px-2 py-6 ds:px-4">
         <div className="rounded-xl border border-white/10 bg-bg-l2 p-6">
@@ -214,87 +272,114 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
     )
   }
 
-  const outcomes = parsePolymarketOutcomes(market)
-  const prices = parsePolymarketOutcomePrices(market)
-  const image = marketImage(market)
+  const image = eventImage(event, selectedMarket)
+  const totalVolume = eventMarkets.reduce((acc, market) => acc + marketVolume(market), 0)
 
   return (
     <div className="px-2 py-6 ds:px-4">
-      <section className="grid gap-4 ds:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.85fr)]">
-        <div className="rounded-[1.5rem] border border-white/10 bg-[#161616] p-5 ds:p-6">
-          <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
-          <div className="mt-4 grid gap-5 ds:grid-cols-[minmax(0,1fr)_14rem]">
-            <div>
-              <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">{market.category || market.events?.[0]?.category || 'Predikt'}</div>
-              <h1 className="mt-3 text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-grey-90 ds:text-[3.1rem]">
-                {market.question}
-              </h1>
-              <p className="mt-4 max-w-3xl text-caption-14 leading-7 text-grey-70 ds:text-base">
-                {market.description || 'Live market pricing, real-time depth, and wallet-native execution for this contract.'}
-              </p>
-              <div className="mt-5 grid gap-3 ds:grid-cols-3">
-                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
-                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">24H Volume</div>
-                  <div className="mt-2 text-heading-h4 font-semibold text-grey-90">{formatVolume(market.volume24hr || market.volume)}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
-                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Liquidity</div>
-                  <div className="mt-2 text-heading-h4 font-semibold text-grey-90">{formatVolume(market.liquidity)}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
-                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Ends</div>
-                  <div className="mt-2 text-caption-13 font-semibold text-grey-90">{market.endDate ? new Date(market.endDate).toLocaleDateString() : 'Open'}</div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
+      <section className="grid gap-5 ds:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.85fr)]">
+        <div className="space-y-5">
+          <div className="rounded-[1.5rem] border border-white/10 bg-[#161616] p-6">
+            <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
+            <div className="mt-4 flex items-start gap-4">
               {
                 image ? (
-                  <img alt="" className="h-28 w-full rounded-2xl object-cover" src={image} />
+                  <img alt="" className="size-16 rounded-2xl object-cover" src={image} />
                 ) : (
-                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-brand-50/15 text-heading-h2 font-semibold text-brand-50">
-                    {(market.category || 'P').slice(0, 2)}
+                  <div className="flex size-16 items-center justify-center rounded-2xl bg-brand-50/15 text-heading-h3 font-semibold text-brand-50">
+                    {(event?.category || selectedMarket.category || 'P').slice(0, 2)}
                   </div>
                 )
               }
-              <div className="rounded-2xl border border-white/10 bg-bg-l2 p-3">
-                <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Outcomes</div>
-                <div className="mt-3 space-y-2">
-                  {
-                    outcomes.slice(0, 4).map((outcome, index) => (
-                      <div key={`${market.id}-${outcome}`} className="flex items-center justify-between rounded-xl border border-white/8 bg-bg-l0 px-3 py-2">
-                        <span className="truncate pr-3 text-caption-13 text-grey-70">{outcome}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-[#193724] px-3 py-1 text-caption-13 font-semibold text-[#72f29c]">Yes {formatPercent(prices[index])}</span>
-                          <span className="rounded-full bg-[#421a22] px-3 py-1 text-caption-13 font-semibold text-[#ff6a78]">No {formatPercent(typeof prices[index] === 'number' ? 1 - prices[index] : undefined)}</span>
-                        </div>
-                      </div>
-                    ))
-                  }
+              <div className="min-w-0 flex-1">
+                <h1 className="text-[2.2rem] font-semibold leading-[1.05] tracking-[-0.05em] text-grey-90 ds:text-[3rem]">
+                  {event?.title || selectedMarket.question}
+                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-caption-13 text-grey-60">
+                  <span className="rounded-full border border-[#6d3da0] bg-[#6d3da0]/20 px-3 py-1 text-[#d7b8ff]">
+                    {event?.category || selectedMarket.category || 'Predikt'}
+                  </span>
+                  <span>{formatVolume(totalVolume)} Vol.</span>
+                  <span>{formatDate(event?.endDate || selectedMarket.endDate)}</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-4">
-          <PrediktsTradingPanel market={market} />
-          <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
-            <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Market metadata</div>
-            <div className="mt-4 space-y-2 text-caption-13 text-grey-70">
-              <div>Slug: {market.slug}</div>
-              <div>Condition ID: {market.conditionId || 'N/A'}</div>
-              <div>Volume: {formatVolume(market.volume)}</div>
-              <div>Liquidity: {formatVolume(market.liquidity)}</div>
-              <div>Ends: {market.endDate ? new Date(market.endDate).toLocaleString() : 'N/A'}</div>
+          <div className="rounded-[1.5rem] border border-white/10 bg-[#161616]">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-white/10 px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+              <div>Question</div>
+              <div>% Chance</div>
+              <div />
+            </div>
+            <div>
+              {
+                eventMarkets.map((market) => {
+                  const active = market.slug === selectedMarket.slug
+                  const probability = yesPrice(market)
+
+                  return (
+                    <div
+                      key={market.id}
+                      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 border-b border-white/10 px-5 py-5 transition last:border-b-0 ${active ? 'bg-white/4' : ''}`}
+                    >
+                      <button
+                        className="min-w-0 text-left"
+                        onClick={() => {
+                          setSelectedMarketSlug(market.slug)
+                          setSelectedOutcomeIndex(0)
+                        }}
+                        type="button"
+                      >
+                        <div className="text-[1.2rem] leading-8 text-grey-90">{market.question}</div>
+                        <div className="mt-1 text-caption-13 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
+                      </button>
+                      <div className="flex items-center text-[1.6rem] font-semibold text-grey-90">
+                        {formatPercent(probability)}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          className="min-w-[11rem] rounded-2xl px-5 py-3 text-[1.1rem] font-semibold transition"
+                          onClick={() => {
+                            setSelectedMarketSlug(market.slug)
+                            setSelectedOutcomeIndex(0)
+                          }}
+                          style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
+                          type="button"
+                        >
+                          Buy Yes {formatPercent(probability)}
+                        </button>
+                        <button
+                          className="min-w-[11rem] rounded-2xl px-5 py-3 text-[1.1rem] font-semibold transition"
+                          onClick={() => {
+                            setSelectedMarketSlug(market.slug)
+                            setSelectedOutcomeIndex(1)
+                          }}
+                          style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
+                          type="button"
+                        >
+                          Buy No {formatPercent(1 - probability)}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              }
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="mt-6 grid gap-4 ds:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <OrderBookPanel market={market} />
-        <MarketExecutionPanel market={market} />
+          <div className="grid gap-4 ds:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <OrderBookPanel market={selectedMarket} />
+            <MarketExecutionPanel market={selectedMarket} />
+          </div>
+        </div>
+
+        <div id="trade" className="space-y-4 ds:sticky ds:top-6 ds:self-start">
+          <PrediktsTradingPanel
+            initialOutcomeIndex={selectedOutcomeIndex}
+            market={selectedMarket}
+          />
+        </div>
       </section>
     </div>
   )

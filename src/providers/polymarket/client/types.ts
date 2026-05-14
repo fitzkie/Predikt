@@ -7,6 +7,8 @@ export type PolymarketEvent = {
   category?: string
   image?: string
   icon?: string
+  startDate?: string
+  endDate?: string
   active?: boolean
   closed?: boolean
   volume?: number
@@ -173,6 +175,7 @@ export type PolymarketRealtimeBookEvent = {
 export interface PolymarketClient {
   getMarkets(params?: Record<string, string | number | boolean | undefined>): Promise<PolymarketMarket[]>
   getEvents(params?: Record<string, string | number | boolean | undefined>): Promise<PolymarketEvent[]>
+  getEventBySlug(slug: string): Promise<PolymarketEvent | null>
   getTags(): Promise<PolymarketTag[]>
   search(query: string): Promise<PolymarketSearchResult>
   getMarketBySlug(slug: string): Promise<PolymarketMarket | null>

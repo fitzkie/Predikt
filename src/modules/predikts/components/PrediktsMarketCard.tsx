@@ -1,12 +1,12 @@
 'use client'
 
-import { type PolymarketMarket, parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, usePolymarketOrderBook, usePolymarketOrderBookStream } from 'providers/polymarket'
-import { Href } from 'components/navigation'
+import { useRouter } from 'next/navigation'
+
+import { type PrediktBoardEvent } from '../hooks/usePrediktsMarketBrowser'
 
 
 type Props = {
-  market: PolymarketMarket
-  compact?: boolean
+  event: PrediktBoardEvent
 }
 
 const formatPercent = (value?: number) => {
@@ -17,8 +17,8 @@ const formatPercent = (value?: number) => {
   return `${Math.round(value * 100)}%`
 }
 
-const formatVolume = (value?: string | number | null) => {
-  const numericValue = typeof value === 'number' ? value : Number(value || 0)
+const formatVolume = (value?: number) => {
+  const numericValue = Number(value || 0)
 
   if (!Number.isFinite(numericValue) || numericValue <= 0) {
     return '$0 Vol.'
@@ -35,107 +35,110 @@ const formatVolume = (value?: string | number | null) => {
   return `$${Math.round(numericValue)} Vol.`
 }
 
-const marketImage = (market: PolymarketMarket) => {
-  return market.image || market.icon || market.events?.[0]?.image || market.events?.[0]?.icon || ''
+const formatCents = (value?: number) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '--'
+  }
+
+  return `${Math.round(value * 1000) / 10}¢`
 }
 
-const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
-  const tokenIds = parsePolymarketTokenIds(market)
-  const outcomes = parsePolymarketOutcomes(market)
-  const outcomePrices = parsePolymarketOutcomePrices(market)
-  const orderBookQuery = usePolymarketOrderBook(tokenIds[0])
-  const image = marketImage(market)
+const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
+  const router = useRouter()
+  const displayRows = event.rows.slice(0, 2)
+  const hasMoreRows = event.rows.length > displayRows.length
 
-  usePolymarketOrderBookStream(market)
+  const openDetail = () => {
+    router.push(`/predikts/${event.slug}`)
+  }
 
-  const yesPrice = outcomePrices[0]
-  const noPrice = typeof yesPrice === 'number' ? Math.max(0, 1 - yesPrice) : undefined
-  const secondOutcome = outcomes[1] || 'No'
-  const marketVolume = market.volume24hr || market.volume
-  const secondaryLines = outcomes.slice(0, compact ? 2 : 3)
-
-  const renderYesNoPills = (probability?: number) => {
-    const yesText = `Yes ${formatPercent(probability)}`
-    const noText = `No ${formatPercent(typeof probability === 'number' ? 1 - probability : undefined)}`
-
-    return (
-      <div className="flex items-center gap-2">
-        <span
-          className="rounded-full px-3 py-1 text-caption-13 font-semibold"
-          style={{ backgroundColor: '#1f5f34', color: '#9cf5bb' }}
-        >
-          {yesText}
-        </span>
-        <span
-          className="rounded-full px-3 py-1 text-caption-13 font-semibold"
-          style={{ backgroundColor: '#5a2028', color: '#ff8a95' }}
-        >
-          {noText}
-        </span>
-      </div>
-    )
+  const openTrade = (marketSlug: string, outcomeIndex: number) => {
+    router.push(`/predikts/${event.slug}?market=${encodeURIComponent(marketSlug)}&outcome=${outcomeIndex}#trade`)
   }
 
   return (
-    <Href
-      to={`/predikts/${market.slug}`}
-      className="block rounded-[1.35rem] border border-white/10 bg-[#161616] p-4 transition hover:border-white/20 hover:bg-[#1b1b1b]"
+    <div
+      className="cursor-pointer rounded-[1.5rem] border border-white/10 bg-[#161616] p-5 transition hover:border-white/20 hover:bg-[#1b1b1b]"
+      onClick={openDetail}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(eventKey) => {
+        if (eventKey.key === 'Enter' || eventKey.key === ' ') {
+          eventKey.preventDefault()
+          openDetail()
+        }
+      }}
     >
       <div className="flex items-start gap-3">
         {
-          image ? (
-            <img alt="" className="mt-0.5 size-12 rounded-xl object-cover" src={image} />
+          event.image ? (
+            <img alt="" className="mt-0.5 size-12 rounded-xl object-cover" src={event.image} />
           ) : (
             <div className="mt-0.5 flex size-12 items-center justify-center rounded-xl bg-brand-50/15 text-caption-13 font-semibold uppercase tracking-[0.14em] text-brand-50">
-              {(market.category || 'P').slice(0, 2)}
+              {(event.category || 'P').slice(0, 2)}
             </div>
           )
         }
         <div className="min-w-0 flex-1">
-          <div className="line-clamp-2 text-heading-h5 font-semibold leading-7 text-grey-90">
-            {market.question}
+          <div className="line-clamp-2 text-[2rem] font-semibold leading-[1.15] tracking-[-0.04em] text-grey-90">
+            {event.title}
           </div>
           <div className="mt-2 text-caption-12 text-grey-60">
-            {market.category || market.events?.[0]?.category || 'Predikt'}
+            {event.subtitle}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-5 space-y-4">
         {
-          secondaryLines.length ? secondaryLines.map((outcome, index) => (
-            <div key={`${market.id}-${outcome}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
-              <div className="truncate text-grey-70">{outcome}</div>
-              <div className="font-semibold text-grey-90">{formatPercent(outcomePrices[index])}</div>
-              {renderYesNoPills(outcomePrices[index])}
+          displayRows.map((row) => (
+            <div key={row.market.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-[1.15rem] text-grey-80">{row.outcomeLabel}</div>
+              </div>
+              <div className="text-[1.25rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded-full px-4 py-2 text-[1.05rem] font-semibold transition"
+                  onClick={(clickEvent) => {
+                    clickEvent.stopPropagation()
+                    openTrade(row.market.slug, 0)
+                  }}
+                  style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
+                  type="button"
+                >
+                  Yes
+                </button>
+                <button
+                  className="rounded-full px-4 py-2 text-[1.05rem] font-semibold transition"
+                  onClick={(clickEvent) => {
+                    clickEvent.stopPropagation()
+                    openTrade(row.market.slug, 1)
+                  }}
+                  style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
+                  type="button"
+                >
+                  No
+                </button>
+              </div>
             </div>
-          )) : (
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
-              <div className="truncate text-grey-70">{outcomes[0] || 'Yes'}</div>
-              <div className="font-semibold text-grey-90">{formatPercent(yesPrice)}</div>
-              {renderYesNoPills(yesPrice)}
-            </div>
-          )
+          ))
         }
 
         {
-          outcomes.length > secondaryLines.length && (
+          hasMoreRows ? (
             <div className="text-caption-13 text-grey-60">
-              +{outcomes.length - secondaryLines.length} more outcomes
+              +{event.rows.length - displayRows.length} more outcomes
             </div>
-          )
+          ) : null
         }
       </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4 text-caption-13 text-grey-60">
-        <span>{formatVolume(marketVolume)}</span>
-        <div className="flex items-center gap-3">
-          <span style={{ color: '#9cf5bb' }}>Yes {formatPercent(yesPrice)}</span>
-          <span style={{ color: '#ff8a95' }}>No {formatPercent(noPrice)}</span>
-          <span>{orderBookQuery.data?.last_trade_price ? `Last ${orderBookQuery.data.last_trade_price}` : ''}</span>
-        </div>
+        <span>{formatVolume(event.volume)}</span>
+        <span>{event.totalMarkets} contracts</span>
       </div>
-    </Href>
+    </div>
   )
 }
 

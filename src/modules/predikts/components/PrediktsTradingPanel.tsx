@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { openModal } from '@locmod/modal'
 import { polygon } from 'viem/chains'
 import { useAnalytics } from 'providers/analytics'
@@ -13,6 +13,7 @@ import { Button, buttonMessages } from 'components/inputs'
 
 type Props = {
   market: PolymarketMarket
+  initialOutcomeIndex?: number
 }
 
 const formatCurrency = (value: number) => {
@@ -27,7 +28,7 @@ const formatDateTime = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString()
 }
 
-const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
+const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0 }) => {
   const { account, chainId, isAAWallet } = useWallet()
   const { connectWallet, canLogin, ready } = useOptionalPrivy()
   const analytics = useAnalytics()
@@ -37,12 +38,17 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market }) => {
   const tokenIds = parsePolymarketTokenIds(market)
   const [ orderMode, setOrderMode ] = useState<'LIMIT' | 'MARKET'>('LIMIT')
   const [ side, setSide ] = useState<'BUY' | 'SELL'>('BUY')
-  const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(0)
+  const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(initialOutcomeIndex)
   const [ size, setSize ] = useState('25')
   const [ price, setPrice ] = useState(String(prices[0] || 0.5))
   const [ marketOrderType, setMarketOrderType ] = useState<'FOK' | 'FAK'>('FOK')
   const [ ticketError, setTicketError ] = useState<string | null>(null)
   const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
+
+  useEffect(() => {
+    setSelectedOutcomeIndex(initialOutcomeIndex)
+    setPrice(String(prices[initialOutcomeIndex] || prices[0] || 0.5))
+  }, [ initialOutcomeIndex, market.id, prices ])
 
   const isTradeReady = trading.isExecutionEnabled && trading.isWalletConnected && trading.hasCredentials
   const selectedOutcome = outcomes[selectedOutcomeIndex] || 'Yes'

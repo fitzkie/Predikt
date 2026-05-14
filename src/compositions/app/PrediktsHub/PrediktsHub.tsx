@@ -49,37 +49,41 @@ const PrediktsHub: React.FC = () => {
 
   const normalizedSearch = search.trim().toLowerCase()
   const activeLane = browser.lanes.find((lane) => lane.slug === activeSection)
-  const baseMarkets = useMemo(() => {
+  const baseEvents = useMemo(() => {
     if (activeSubcategory !== 'all' && activeLane) {
-      return activeLane.subcategories.find((subcategory) => subcategory.slug === activeSubcategory)?.markets || activeLane.markets
+      return activeLane.subcategories.find((subcategory) => subcategory.slug === activeSubcategory)?.events || activeLane.events
     }
 
-    return browser.marketBySection[activeSection] || browser.allMarkets
-  }, [ activeLane, activeSection, activeSubcategory, browser.allMarkets, browser.marketBySection ])
+    return browser.eventsBySection[activeSection] || browser.allEvents
+  }, [ activeLane, activeSection, activeSubcategory, browser.allEvents, browser.eventsBySection ])
 
   useEffect(() => {
     setActiveSubcategory('all')
   }, [ activeSection ])
 
-  const filteredMarkets = useMemo(() => {
-    const sourceMarkets = normalizedSearch ? browser.allMarkets : baseMarkets
+  const filteredEvents = useMemo(() => {
+    const sourceEvents = normalizedSearch ? browser.allEvents : baseEvents
 
     if (!normalizedSearch) {
-      return sourceMarkets
+      return sourceEvents
     }
 
-    return sourceMarkets.filter((market) => {
+    return sourceEvents.filter((event) => {
       const haystack = [
-        market.question,
-        market.slug,
-        market.category,
-        market.description,
-        ...(market.events || []).flatMap((event) => [ event.title, event.category, event.description ]),
+        event.title,
+        event.slug,
+        event.subtitle,
+        ...event.markets.flatMap((market) => [
+          market.question,
+          market.slug,
+          market.category,
+          market.description,
+        ]),
       ].join(' ').toLowerCase()
 
       return haystack.includes(normalizedSearch)
     })
-  }, [ baseMarkets, browser.allMarkets, normalizedSearch ])
+  }, [ baseEvents, browser.allEvents, normalizedSearch ])
 
   const activeSectionMeta = browser.sections.find((section) => section.key === activeSection) || browser.sections[0]
   const activeSubcategoryMeta = activeLane?.subcategories.find((subcategory) => subcategory.slug === activeSubcategory)
@@ -89,11 +93,11 @@ const PrediktsHub: React.FC = () => {
       ? `${activeSubcategoryMeta.label} markets inside ${activeSectionMeta.label}.`
       : (sectionDescriptions[activeSection] || sectionDescriptions.trending)
   const activeSectionVolume = normalizedSearch
-    ? browser.allMarkets.reduce((acc, market) => acc + Number(market.volume24hr || market.volume || 0), 0)
+    ? browser.allEvents.reduce((acc, event) => acc + event.volume, 0)
     : activeSubcategoryMeta
-      ? activeSubcategoryMeta.markets.reduce((acc, market) => acc + Number(market.volume24hr || market.volume || 0), 0)
+      ? activeSubcategoryMeta.events.reduce((acc, event) => acc + event.volume, 0)
       : browser.totals[activeSection]
-  const visibleCount = filteredMarkets.length
+  const visibleCount = filteredEvents.length
   const supportingTags = activeSection === 'all'
     ? browser.tags.slice(0, 12)
     : (browser.lanes.find((lane) => lane.slug === activeSection)?.items || browser.tags.slice(0, 12))
@@ -274,8 +278,8 @@ const PrediktsHub: React.FC = () => {
 
           <div className="mt-5 grid gap-4 ds:grid-cols-4">
             {
-              filteredMarkets.length ? filteredMarkets.map((market) => (
-                <PrediktsMarketCard key={market.id} market={market} />
+              filteredEvents.length ? filteredEvents.map((event) => (
+                <PrediktsMarketCard key={event.id} event={event} />
               )) : browser.isLoading ? skeletonCards.map((_, index) => (
                 <div key={index} className="rounded-[1.35rem] border border-white/10 bg-bg-l3 p-4">
                   <div className="flex items-start gap-3">

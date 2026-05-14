@@ -63,11 +63,11 @@ const RightSidebar: React.FC = () => {
                 <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Featured Markets</div>
                 <div className="mt-4 space-y-3">
                   {
-                    (isPrediktsHome ? prediktBrowser.trendingMarkets : prediktBrowser.featuredMarkets).slice(0, 4).map((market) => (
-                      <Href key={market.id} to={`/predikts/${market.slug}`} className="block rounded-md border border-white/10 bg-bg-l1 px-3 py-3 transition hover:border-white/20 hover:bg-bg-l0">
-                        <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">{market.question}</div>
+                    (isPrediktsHome ? prediktBrowser.trendingEvents : prediktBrowser.featuredMarkets).slice(0, 4).map((event) => (
+                      <Href key={event.id} to={`/predikts/${event.slug}`} className="block rounded-md border border-white/10 bg-bg-l1 px-3 py-3 transition hover:border-white/20 hover:bg-bg-l0">
+                        <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">{event.title}</div>
                         <div className="mt-2 text-caption-12 text-grey-60">
-                          {market.category || market.events?.[0]?.category || 'Trending market'}
+                          {event.subtitle || 'Trending market'}
                         </div>
                         <div className="mt-2 text-caption-12" style={{ color: '#9cf5bb' }}>
                           Open market

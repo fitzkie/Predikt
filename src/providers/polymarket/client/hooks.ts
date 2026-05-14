@@ -92,6 +92,19 @@ export const usePolymarketEvents = (limit = 6) => {
   })
 }
 
+export const usePolymarketEventBySlug = (slug?: string) => {
+  const client = usePolymarketClient()
+  const normalizedSlug = slug?.trim()
+
+  return useQuery({
+    queryKey: [ 'polymarket', 'event', normalizedSlug ],
+    queryFn: () => client.getEventBySlug(normalizedSlug!),
+    enabled: Boolean(normalizedSlug),
+    staleTime: 30_000,
+    retry: 1,
+  })
+}
+
 export const usePolymarketMarketBySlug = (slug?: string) => {
   const client = usePolymarketClient()
   const normalizedSlug = slug?.trim()

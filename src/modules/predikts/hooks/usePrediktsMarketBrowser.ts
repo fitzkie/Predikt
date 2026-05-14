@@ -2,11 +2,99 @@
 
 import { useMemo } from 'react'
 import { constants } from 'helpers'
-import { usePolymarketMarkets, usePolymarketSearchMarkets, type PolymarketMarket } from 'providers/polymarket'
+import { usePolymarketMarkets, usePolymarketSearchMarkets, type PolymarketEvent, type PolymarketMarket } from 'providers/polymarket'
 
+
+export type PrediktBoardEventRow = {
+  market: PolymarketMarket
+  outcomeLabel: string
+  probability: number
+  yesPrice: number
+  noPrice: number
+  volume: number
+}
+
+export type PrediktBoardEvent = {
+  id: string
+  slug: string
+  title: string
+  subtitle: string
+  category: string
+  image?: string
+  event?: PolymarketEvent
+  markets: PolymarketMarket[]
+  rows: PrediktBoardEventRow[]
+  totalMarkets: number
+  volume: number
+  endDate?: string
+}
+
+type SubcategoryBucket = {
+  label: string
+  slug: string
+  count: number
+  events: PrediktBoardEvent[]
+}
+
+const boardSections = [
+  { key: 'all', label: 'All' },
+  { key: 'trending', label: 'Trending' },
+  { key: 'new', label: 'New' },
+  ...constants.prediktsTaxonomy.map((category) => ({
+    key: category.slug,
+    label: category.title,
+  })),
+] as const
 
 const normalize = (value?: string | null) => {
   return (value || '').toLowerCase()
+}
+
+const toNumericValue = (value?: string | number | null) => {
+  if (typeof value === 'number') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value)
+
+    return Number.isFinite(parsedValue) ? parsedValue : 0
+  }
+
+  return 0
+}
+
+const parseArrayField = <T extends string | number>(value?: string | null, predicate?: (item: unknown) => item is T) => {
+  if (!value) {
+    return []
+  }
+
+  try {
+    const parsedValue = JSON.parse(value)
+
+    if (!Array.isArray(parsedValue)) {
+      return []
+    }
+
+    if (!predicate) {
+      return parsedValue as T[]
+    }
+
+    return parsedValue.filter(predicate)
+  }
+  catch {
+    return []
+  }
+}
+
+const parseOutcomePrices = (market: PolymarketMarket) => {
+  return parseArrayField<number | string>(market.outcomePrices, (item): item is number | string => typeof item === 'number' || typeof item === 'string')
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value))
+}
+
+const parseOutcomes = (market: PolymarketMarket) => {
+  return parseArrayField<string>(market.outcomes, (item): item is string => typeof item === 'string')
 }
 
 const buildHaystack = (market: PolymarketMarket) => {
@@ -41,35 +129,60 @@ const isMarketActive = (market: PolymarketMarket) => {
   return Boolean(market.active && !market.closed)
 }
 
-const toNumericValue = (value?: string | number | null) => {
-  if (typeof value === 'number') {
-    return value
-  }
-
-  if (typeof value === 'string') {
-    const parsedValue = Number(value)
-
-    return Number.isFinite(parsedValue) ? parsedValue : 0
-  }
-
-  return 0
+const sortMarketsByVolume = (markets: PolymarketMarket[]) => {
+  return [ ...markets ].sort((left, right) => toNumericValue(right.volume24hr || right.volume) - toNumericValue(left.volume24hr || left.volume))
 }
 
-const boardSections = [
-  { key: 'all', label: 'All' },
-  { key: 'trending', label: 'Trending' },
-  { key: 'new', label: 'New' },
-  ...constants.prediktsTaxonomy.map((category) => ({
-    key: category.slug,
-    label: category.title,
-  })),
-] as const
+const groupMarketsIntoEvents = (markets: PolymarketMarket[]) => {
+  const grouped = new Map<string, PolymarketMarket[]>()
 
-type SubcategoryBucket = {
-  label: string
-  slug: string
-  count: number
-  markets: PolymarketMarket[]
+  sortMarketsByVolume(markets).forEach((market) => {
+    const event = market.events?.[0]
+    const eventKey = event?.slug || event?.title || market.slug
+    const current = grouped.get(eventKey) || []
+    current.push(market)
+    grouped.set(eventKey, current)
+  })
+
+  const events: PrediktBoardEvent[] = Array.from(grouped.entries()).map(([ eventKey, eventMarkets ]) => {
+    const sortedMarkets = sortMarketsByVolume(eventMarkets)
+    const representative = sortedMarkets[0]
+    const event = representative.events?.[0]
+    const rows: PrediktBoardEventRow[] = sortedMarkets.map((market) => {
+      const outcomes = parseOutcomes(market)
+      const prices = parseOutcomePrices(market)
+      const yesPrice = typeof prices[0] === 'number' ? prices[0] : 0
+      const noPrice = Math.max(0, 1 - yesPrice)
+
+      return {
+        market,
+        outcomeLabel: outcomes[0] || market.question,
+        probability: yesPrice,
+        yesPrice,
+        noPrice,
+        volume: toNumericValue(market.volume24hr || market.volume),
+      }
+    })
+
+    const totalVolume = rows.reduce((acc, row) => acc + row.volume, 0)
+
+    return {
+      id: event?.id || representative.id || eventKey,
+      slug: event?.slug || representative.slug,
+      title: event?.title || representative.question,
+      subtitle: event?.category || representative.category || 'Predikt',
+      category: event?.category || representative.category || 'Predikt',
+      image: event?.image || event?.icon || representative.image || representative.icon,
+      event,
+      markets: sortedMarkets,
+      rows,
+      totalMarkets: sortedMarkets.length,
+      volume: totalVolume,
+      endDate: event?.endDate || representative.endDate,
+    }
+  })
+
+  return events.sort((left, right) => right.volume - left.volume)
 }
 
 const usePrediktsMarketBrowser = () => {
@@ -117,53 +230,62 @@ const usePrediktsMarketBrowser = () => {
       })
 
       const markets = dedupeMarkets([ ...fromSearch, ...fromTrending ])
+      const events = groupMarketsIntoEvents(markets)
       const subcategories: SubcategoryBucket[] = category.items.map((item) => {
         const itemTerm = normalize(item)
-        const itemMarkets = markets.filter((market) => buildHaystack(market).includes(itemTerm))
+        const itemEvents = events.filter((event) => {
+          return event.markets.some((market) => buildHaystack(market).includes(itemTerm))
+        })
 
         return {
           label: item,
           slug: `${category.slug}:${itemTerm.replace(/\s+/g, '-')}`,
-          count: itemMarkets.length,
-          markets: itemMarkets,
+          count: itemEvents.length,
+          events: itemEvents,
         }
       }).filter((bucket) => bucket.count > 0)
 
       return {
         ...category,
         markets,
-        count: markets.length,
+        events,
+        count: events.length,
         subcategories,
       }
     })
 
     const lanePool = lanes.flatMap((lane) => lane.markets)
     const allMarkets = dedupeMarkets([ ...trendingMarkets, ...newestMarkets, ...lanePool ])
+    const allEvents = groupMarketsIntoEvents(allMarkets)
+    const trendingEvents = groupMarketsIntoEvents(trendingMarkets)
+    const newestEvents = groupMarketsIntoEvents(newestMarkets)
 
-    const marketBySection: Record<string, PolymarketMarket[]> = {
-      all: allMarkets,
-      trending: trendingMarkets,
-      new: newestMarkets,
+    const eventsBySection: Record<string, PrediktBoardEvent[]> = {
+      all: allEvents,
+      trending: trendingEvents,
+      new: newestEvents,
     }
 
     lanes.forEach((lane) => {
-      marketBySection[lane.slug] = lane.markets
+      eventsBySection[lane.slug] = lane.events
     })
 
     const tagChipPool = dedupeMarkets([ ...trendingMarkets, ...newestMarkets ]).slice(0, 100)
     const tags = Array.from(new Set(tagChipPool.flatMap((market) => [ market.category, ...(market.events || []).map((event) => event.category) ]).filter(Boolean))).slice(0, 18) as string[]
 
-    const featuredMarkets = trendingMarkets.slice(0, 12)
+    const featuredMarkets = trendingEvents.slice(0, 12)
 
     return {
       featuredMarkets,
       allMarkets,
+      allEvents,
       lanes,
-      marketBySection,
+      eventsBySection,
       sections: boardSections,
       tags,
-      totalLiveMarkets: trendingMarkets.length,
+      totalLiveMarkets: trendingEvents.length,
       trendingMarkets,
+      trendingEvents,
     }
   }, [ trendingQuery.data, newestQuery.data, politicsQuery.data, financeQuery.data, sportsQuery.data, techQuery.data, cultureQuery.data, blackSwanQuery.data ])
 
@@ -190,11 +312,11 @@ const usePrediktsMarketBrowser = () => {
   ].some(Boolean)
 
   const totals = useMemo(() => {
-    return Object.fromEntries(Object.entries(data.marketBySection).map(([ key, markets ]) => ([
+    return Object.fromEntries(Object.entries(data.eventsBySection).map(([ key, events ]) => ([
       key,
-      markets.reduce((acc, market) => acc + toNumericValue(market.volume24hr || market.volume), 0),
+      events.reduce((acc, event) => acc + event.volume, 0),
     ])))
-  }, [ data.marketBySection ])
+  }, [ data.eventsBySection ])
 
   return {
     ...data,

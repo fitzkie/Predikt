@@ -54,6 +54,21 @@ export const createPolymarketClient = (config: PolymarketClientConfig): Polymark
       }))
     },
 
+    async getEventBySlug(slug) {
+      const url = buildUrlWithQuery(config.gammaApiUrl, '/events', {
+        slug,
+        limit: 1,
+      })
+      const payload = await readJson<PolymarketEvent[]>(await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+        cache: 'no-store',
+      }))
+
+      return payload[0] || null
+    },
+
     async getTags() {
       const url = safeJoinUrl(config.gammaApiUrl, '/tags')
 
