@@ -28,7 +28,7 @@ const User: React.FC = () => {
   const { appChain } = useChain()
   const { profile, referralLink, updateProfile } = usePrediktUser()
   const { linkGoogle, linkTwitter, linkEmail, isGoogleLinked, isXLinked, isEmailLinked, linkedEmailAddress } = useOptionalPrivy()
-  const { betsCount, betAmount, payout, tokenSymbol } = useProfileStats()
+  const { betsCount, betAmount, payout, winRate, tokenSymbol } = useProfileStats()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -151,8 +151,10 @@ const User: React.FC = () => {
               <div className="mt-2 text-heading-h3 font-semibold text-grey-90">{toLocaleString(payout, { digits: 2 })} {tokenSymbol}</div>
             </div>
             <div className={statsCardClassName}>
-              <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Referral Link</div>
-              <div className="mt-2 truncate text-caption-13 font-semibold text-grey-90">{profile.referralCode}</div>
+              <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Win Rate</div>
+              <div className="mt-2 text-heading-h3 font-semibold text-grey-90">
+                {winRate !== null ? `${winRate}%` : '—'}
+              </div>
             </div>
           </div>
         </div>
