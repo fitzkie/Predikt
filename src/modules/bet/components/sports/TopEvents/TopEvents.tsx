@@ -27,7 +27,10 @@ const HERO_BANNERS: string[] = [
   '/images/hero/banner-4.jpg',
   '/images/hero/banner-5.jpg',
   '/images/hero/banner-6.jpg',
+  '/images/hero/banner-7.jpg',
   '/images/hero/banner-8.jpg',
+  '/images/hero/banner-9.jpg',
+  '/images/hero/banner-10.jpg',
 ]
 
 const HeroBannerCarousel: React.FC = () => {
