@@ -83,16 +83,18 @@ const yesPrice = (market: PolymarketMarket) => {
   return typeof prices[0] === 'number' ? prices[0] : 0
 }
 
-const noPrice = (market: PolymarketMarket) => {
-  return Math.max(0, 1 - yesPrice(market))
-}
-
-const outcomeLabel = (market: PolymarketMarket) => {
-  return parsePolymarketOutcomes(market)[0] || market.question
-}
-
 const eventImage = (event?: PolymarketEvent | null, market?: PolymarketMarket | null) => {
   return event?.image || event?.icon || market?.image || market?.icon || market?.events?.[0]?.image || market?.events?.[0]?.icon || ''
+}
+
+const getResolutionRules = (event?: PolymarketEvent | null, market?: PolymarketMarket | null): string => {
+  const extra = event as Record<string, unknown> | null
+  const mExtra = market as Record<string, unknown> | null
+  const source = String(extra?.resolutionSource || mExtra?.resolutionSource || '')
+  const rules = String(extra?.rules || mExtra?.rules || '')
+  const description = String(market?.description || event?.description || '')
+
+  return rules || description || source || ''
 }
 
 const OrderBookPanel: React.FC<{ market: PolymarketMarket }> = ({ market }) => {
@@ -105,35 +107,34 @@ const OrderBookPanel: React.FC<{ market: PolymarketMarket }> = ({ market }) => {
   const asks = orderBookQuery.data?.asks.slice(0, 6) || []
 
   return (
-    <div className="rounded-[1.35rem] border border-white/10 bg-[#161616] p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Live Order Book</div>
-          <div className="mt-2 text-caption-13 text-grey-70">Current depth for the selected contract.</div>
-        </div>
-        <div className="text-caption-12 text-grey-60">Last {orderBookQuery.data?.last_trade_price || '--'}</div>
+    <div className="pt-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Live Order Book</div>
+        {orderBookQuery.data?.last_trade_price && (
+          <div className="text-caption-12 text-grey-60">Last {orderBookQuery.data.last_trade_price}</div>
+        )}
       </div>
-      <div className="mt-4 grid gap-4 ds:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Bids</div>
-          <div className="space-y-2">
+          <div className="mb-2 text-caption-11 uppercase tracking-[0.14em] text-grey-60">Bids</div>
+          <div className="space-y-1.5">
             {bids.length ? bids.map((bid, index) => (
-              <div key={`${bid.price}-${index}`} className="flex items-center justify-between rounded-xl bg-[#0f0f10] px-3 py-2 text-caption-13">
+              <div key={`${bid.price}-${index}`} className="flex items-center justify-between rounded-lg bg-[#0f1810] px-3 py-1.5 text-caption-12">
                 <span className="text-[#7ef0a5]">{bid.price}</span>
                 <span className="text-grey-60">{bid.size}</span>
               </div>
-            )) : <div className="text-caption-13 text-grey-60">No bid depth loaded.</div>}
+            )) : <div className="text-caption-13 text-grey-60">No bids.</div>}
           </div>
         </div>
         <div>
-          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Asks</div>
-          <div className="space-y-2">
+          <div className="mb-2 text-caption-11 uppercase tracking-[0.14em] text-grey-60">Asks</div>
+          <div className="space-y-1.5">
             {asks.length ? asks.map((ask, index) => (
-              <div key={`${ask.price}-${index}`} className="flex items-center justify-between rounded-xl bg-[#0f0f10] px-3 py-2 text-caption-13">
+              <div key={`${ask.price}-${index}`} className="flex items-center justify-between rounded-lg bg-[#1a0f10] px-3 py-1.5 text-caption-12">
                 <span className="text-[#ff6f7c]">{ask.price}</span>
                 <span className="text-grey-60">{ask.size}</span>
               </div>
-            )) : <div className="text-caption-13 text-grey-60">No ask depth loaded.</div>}
+            )) : <div className="text-caption-13 text-grey-60">No asks.</div>}
           </div>
         </div>
       </div>
@@ -184,9 +185,7 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
         <div>
           <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
           <div className="space-y-2">
-            {!account ? (
-              <div className="text-caption-13 text-grey-60">Connect a wallet to load open orders.</div>
-            ) : openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => (
+            {openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => (
               <div key={order.id} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold text-grey-90">{order.side} {order.outcome}</span>
@@ -206,9 +205,7 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
         <div>
           <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Recent fills</div>
           <div className="space-y-2">
-            {!account ? (
-              <div className="text-caption-13 text-grey-60">Connect a wallet to load fills.</div>
-            ) : fills.length ? fills.map((fill) => (
+            {fills.length ? fills.map((fill) => (
               <div key={`${fill.transactionHash}-${fill.timestamp}`} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold text-grey-90">{fill.side || fill.type} {fill.outcome || ''}</span>
@@ -238,12 +235,10 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
   const [ selectedMarketSlug, setSelectedMarketSlug ] = useState(searchParams.get('market') || slug)
   const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(Number(searchParams.get('outcome') || '0'))
   const [ expandedMarketId, setExpandedMarketId ] = useState<string | null>(null)
-  const [ detailTab, setDetailTab ] = useState<'order-book' | 'rules'>('order-book')
 
   const selectOutcome = (marketSlug: string, outcomeIndex: number) => {
     setSelectedMarketSlug(marketSlug)
     setSelectedOutcomeIndex(outcomeIndex)
-    document.getElementById('trade')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const toggleExpanded = (marketId: string) => {
@@ -309,21 +304,25 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
   const image = eventImage(event, selectedMarket)
   const totalVolume = eventMarkets.reduce((acc, market) => acc + marketVolume(market), 0)
-  const marketContext = event?.description || selectedMarket.description || 'Live market context and contract details for this event will appear here.'
-  const rulesBody = String((event as Record<string, unknown> | null)?.resolutionSource || selectedMarket.description || event?.description || '')
+  const marketContext = event?.description || selectedMarket.description || ''
+  const rules = getResolutionRules(event, selectedMarket)
 
   return (
     <div className="px-2 py-6 ds:px-4">
-      <section className="flex flex-col gap-5 lg:flex-row">
+      <section className="flex flex-col gap-5 ds:flex-row ds:items-start">
+
+        {/* LEFT: header + market list + context + rules */}
         <div className="min-w-0 flex-1 space-y-5">
+
+          {/* Event header */}
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
             <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
             <div className="mt-4 flex items-start gap-4">
               {
                 image ? (
-                  <img alt="" className="size-16 rounded-2xl object-cover" src={image} />
+                  <img alt="" className="w-16 h-16 flex-none rounded-2xl object-cover" src={image} />
                 ) : (
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-brand-50/15 text-heading-h3 font-semibold text-brand-50">
+                  <div className="flex w-16 h-16 flex-none items-center justify-center rounded-2xl bg-brand-50/15 text-heading-h3 font-semibold text-brand-50">
                     {(event?.category || selectedMarket.category || 'P').slice(0, 2)}
                   </div>
                 )
@@ -343,6 +342,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             </div>
           </div>
 
+          {/* Market list */}
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] overflow-hidden">
             <div className="grid grid-cols-[minmax(0,1fr)_5rem_18rem] gap-3 border-b border-white/10 bg-[#101010] px-5 py-3 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
               <div>Question</div>
@@ -397,37 +397,8 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
                       {
                         isExpanded ? (
-                          <div className="border-t border-white/10 bg-[#121212] px-5 py-4">
-                            <div className="flex items-center gap-6 border-b border-white/10 pb-3">
-                              <button
-                                className={`pb-2 text-[0.95rem] font-semibold ${detailTab === 'order-book' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
-                                onClick={() => setDetailTab('order-book')}
-                                type="button"
-                              >
-                                Order Book
-                              </button>
-                              <button
-                                className={`pb-2 text-[0.95rem] font-semibold ${detailTab === 'rules' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
-                                onClick={() => setDetailTab('rules')}
-                                type="button"
-                              >
-                                Rules
-                              </button>
-                            </div>
-                            <div className="pt-4">
-                              {
-                                detailTab === 'order-book' ? (
-                                  <OrderBookPanel market={market} />
-                                ) : (
-                                  <div className="rounded-[1.25rem] border border-white/10 bg-[#151515] p-5">
-                                    <div className="text-[1.2rem] font-semibold tracking-[-0.02em] text-grey-90">Rules</div>
-                                    <p className="mt-3 text-[0.95rem] leading-7 text-grey-70">
-                                      {truncateBody(String((event as Record<string, unknown> | null)?.resolutionSource || market.description || event?.description || ''), 560)}
-                                    </p>
-                                  </div>
-                                )
-                              }
-                            </div>
+                          <div className="border-t border-white/10 bg-[#121212] px-5 pb-5">
+                            <OrderBookPanel market={market} />
                           </div>
                         ) : null
                       }
@@ -438,19 +409,32 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             </div>
           </div>
 
-          <div className="grid gap-4">
+          {/* Market Context */}
+          {marketContext ? (
             <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
-              <div className="text-[1.7rem] font-semibold tracking-[-0.03em] text-grey-90">Market Context</div>
-              <p className="mt-5 max-w-4xl text-[1.1rem] leading-8 text-grey-70">
+              <div className="text-[1.3rem] font-semibold tracking-[-0.03em] text-grey-90">Market Context</div>
+              <p className="mt-4 text-[1rem] leading-7 text-grey-70">
                 {truncateBody(marketContext, 520)}
               </p>
             </div>
+          ) : null}
 
-            <MarketExecutionPanel market={selectedMarket} />
-          </div>
+          {/* Resolution Rules */}
+          {rules ? (
+            <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
+              <div className="text-[1.3rem] font-semibold tracking-[-0.03em] text-grey-90">Resolution Rules</div>
+              <p className="mt-4 text-[1rem] leading-7 text-grey-70 whitespace-pre-line">
+                {truncateBody(rules, 800)}
+              </p>
+            </div>
+          ) : null}
+
+          {/* Orders and fills */}
+          <MarketExecutionPanel market={selectedMarket} />
         </div>
 
-        <aside id="trade" className="w-full shrink-0 space-y-4 lg:sticky lg:top-6 lg:w-[22rem] lg:self-start">
+        {/* RIGHT: trading panel — sticky on desktop */}
+        <aside className="w-full shrink-0 space-y-4 ds:sticky ds:top-6 ds:w-[22rem] ds:self-start">
           <PrediktsTradingPanel
             initialOutcomeIndex={selectedOutcomeIndex}
             market={selectedMarket}

@@ -189,25 +189,25 @@ const usePrediktsMarketBrowser = () => {
   const trendingQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 500,
+    limit: 2000,
     order: 'volume24hr',
     ascending: false,
   })
   const newestQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 300,
+    limit: 1000,
     order: 'createdAt',
     ascending: false,
   })
-  const politicsQuery = usePolymarketSearchMarkets('politics', 300)
-  const financeQuery = usePolymarketSearchMarkets('finance', 300)
-  const cryptoQuery = usePolymarketSearchMarkets('crypto bitcoin ethereum solana meme', 300)
-  const geopoliticsQuery = usePolymarketSearchMarkets('geopolitics china war sanctions taiwan world leader', 300)
-  const sportsQuery = usePolymarketSearchMarkets('sports', 300)
-  const techQuery = usePolymarketSearchMarkets('tech', 300)
-  const cultureQuery = usePolymarketSearchMarkets('culture', 300)
-  const climateQuery = usePolymarketSearchMarkets('climate weather hurricane pandemic science space', 300)
+  const politicsQuery = usePolymarketSearchMarkets('politics', 500)
+  const financeQuery = usePolymarketSearchMarkets('finance', 500)
+  const cryptoQuery = usePolymarketSearchMarkets('crypto bitcoin ethereum solana meme', 500)
+  const geopoliticsQuery = usePolymarketSearchMarkets('geopolitics china war sanctions taiwan world leader', 500)
+  const sportsQuery = usePolymarketSearchMarkets('sports', 500)
+  const techQuery = usePolymarketSearchMarkets('tech', 500)
+  const cultureQuery = usePolymarketSearchMarkets('culture', 500)
+  const climateQuery = usePolymarketSearchMarkets('climate weather hurricane pandemic science space', 500)
 
   const laneResults = {
     politics: politicsQuery.data || [],

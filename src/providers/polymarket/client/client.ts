@@ -35,32 +35,25 @@ export const createPolymarketClient = (config: PolymarketClientConfig): Polymark
     async getMarkets(params) {
       const requestedLimit = Number(params?.limit || 100)
       const requestedOffset = Number(params?.offset || 0)
-      const pageSize = Math.min(Math.max(requestedLimit, 1), 100)
-      const pageCount = Math.max(1, Math.ceil(requestedLimit / 100))
-      const collected: PolymarketMarket[] = []
+      const pageSize = 100
+      const pageCount = Math.max(1, Math.ceil(requestedLimit / pageSize))
 
-      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-        const url = buildUrlWithQuery(config.gammaApiUrl, '/markets', {
-          ...params,
-          limit: pageSize,
-          offset: requestedOffset + (pageIndex * 100),
+      const pages = await Promise.all(
+        Array.from({ length: pageCount }, (_, pageIndex) => {
+          const url = buildUrlWithQuery(config.gammaApiUrl, '/markets', {
+            ...params,
+            limit: pageSize,
+            offset: requestedOffset + (pageIndex * pageSize),
+          })
+
+          return fetch(url, {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store',
+          }).then((res) => readJson<PolymarketMarket[]>(res))
         })
+      )
 
-        const page = await readJson<PolymarketMarket[]>(await fetch(url, {
-          headers: {
-            Accept: 'application/json',
-          },
-          cache: 'no-store',
-        }))
-
-        collected.push(...page)
-
-        if (page.length < pageSize) {
-          break
-        }
-      }
-
-      return collected.slice(0, requestedLimit)
+      return pages.flat().slice(0, requestedLimit)
     },
 
     async getEvents(params) {
