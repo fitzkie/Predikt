@@ -279,7 +279,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
     <div className="px-2 py-6 ds:px-4">
       <section className="grid gap-5 ds:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.85fr)]">
         <div className="space-y-5">
-          <div className="rounded-[1.5rem] border border-white/10 bg-[#161616] p-6">
+          <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
             <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
             <div className="mt-4 flex items-start gap-4">
               {
@@ -292,7 +292,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                 )
               }
               <div className="min-w-0 flex-1">
-                <h1 className="text-[2.2rem] font-semibold leading-[1.05] tracking-[-0.05em] text-grey-90 ds:text-[3rem]">
+                <h1 className="text-[2rem] font-semibold leading-[1.08] tracking-[-0.05em] text-grey-90 ds:text-[2.8rem]">
                   {event?.title || selectedMarket.question}
                 </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-caption-13 text-grey-60">
@@ -306,8 +306,8 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-[#161616]">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-white/10 px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+          <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] overflow-hidden">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-white/10 bg-[#101010] px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
               <div>Question</div>
               <div>% Chance</div>
               <div />
@@ -321,7 +321,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                   return (
                     <div
                       key={market.id}
-                      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 border-b border-white/10 px-5 py-5 transition last:border-b-0 ${active ? 'bg-white/4' : ''}`}
+                      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 border-b border-white/10 px-5 py-5 transition last:border-b-0 ${active ? 'bg-white/5' : 'bg-[#151515] hover:bg-white/2'}`}
                     >
                       <button
                         className="min-w-0 text-left"
@@ -331,15 +331,15 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                         }}
                         type="button"
                       >
-                        <div className="text-[1.2rem] leading-8 text-grey-90">{market.question}</div>
+                        <div className="text-[1.15rem] leading-8 text-grey-90">{market.question}</div>
                         <div className="mt-1 text-caption-13 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
                       </button>
-                      <div className="flex items-center text-[1.6rem] font-semibold text-grey-90">
+                      <div className="flex items-center text-[1.45rem] font-semibold text-grey-90">
                         {formatPercent(probability)}
                       </div>
                       <div className="flex items-center gap-3">
                         <button
-                          className="min-w-[11rem] rounded-2xl px-5 py-3 text-[1.1rem] font-semibold transition"
+                          className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
                           onClick={() => {
                             setSelectedMarketSlug(market.slug)
                             setSelectedOutcomeIndex(0)
@@ -347,10 +347,10 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                           style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
                           type="button"
                         >
-                          Buy Yes {formatPercent(probability)}
+                          Buy Yes {Math.round(probability * 1000) / 10}¢
                         </button>
                         <button
-                          className="min-w-[11rem] rounded-2xl px-5 py-3 text-[1.1rem] font-semibold transition"
+                          className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
                           onClick={() => {
                             setSelectedMarketSlug(market.slug)
                             setSelectedOutcomeIndex(1)
@@ -358,7 +358,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                           style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
                           type="button"
                         >
-                          Buy No {formatPercent(1 - probability)}
+                          Buy No {Math.round((1 - probability) * 1000) / 10}¢
                         </button>
                       </div>
                     </div>

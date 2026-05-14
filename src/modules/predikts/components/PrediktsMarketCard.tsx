@@ -58,7 +58,7 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
 
   return (
     <div
-      className="cursor-pointer rounded-[1.5rem] border border-white/10 bg-[#161616] p-5 transition hover:border-white/20 hover:bg-[#1b1b1b]"
+      className="cursor-pointer rounded-[1.5rem] border border-white/10 bg-[#151515] p-4 transition hover:border-white/20 hover:bg-[#1a1a1a]"
       onClick={openDetail}
       role="button"
       tabIndex={0}
@@ -80,26 +80,28 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
           )
         }
         <div className="min-w-0 flex-1">
-          <div className="line-clamp-2 text-[2rem] font-semibold leading-[1.15] tracking-[-0.04em] text-grey-90">
+          <div className="line-clamp-2 text-[1.6rem] font-semibold leading-[1.2] tracking-[-0.03em] text-grey-90">
             {event.title}
           </div>
-          <div className="mt-2 text-caption-12 text-grey-60">
-            {event.subtitle}
+          <div className="mt-2 flex items-center gap-2 text-caption-12 text-grey-60">
+            <span>{event.subtitle}</span>
+            <span className="text-grey-40">•</span>
+            <span>{event.totalMarkets} contracts</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-4 space-y-2">
         {
           displayRows.map((row) => (
-            <div key={row.market.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3">
+            <div key={row.market.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[1rem] bg-[#1b1b1c] px-3 py-3">
               <div className="min-w-0">
-                <div className="truncate text-[1.15rem] text-grey-80">{row.outcomeLabel}</div>
+                <div className="truncate text-[1.05rem] font-medium text-grey-80">{row.outcomeLabel}</div>
               </div>
-              <div className="text-[1.25rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
+              <div className="text-[1.1rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded-full px-4 py-2 text-[1.05rem] font-semibold transition"
+                  className="rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
                   onClick={(clickEvent) => {
                     clickEvent.stopPropagation()
                     openTrade(row.market.slug, 0)
@@ -107,10 +109,10 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
                   style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
                   type="button"
                 >
-                  Yes
+                  Yes {formatCents(row.yesPrice)}
                 </button>
                 <button
-                  className="rounded-full px-4 py-2 text-[1.05rem] font-semibold transition"
+                  className="rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
                   onClick={(clickEvent) => {
                     clickEvent.stopPropagation()
                     openTrade(row.market.slug, 1)
@@ -118,7 +120,7 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
                   style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
                   type="button"
                 >
-                  No
+                  No {formatCents(row.noPrice)}
                 </button>
               </div>
             </div>
@@ -127,16 +129,16 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
 
         {
           hasMoreRows ? (
-            <div className="text-caption-13 text-grey-60">
+            <div className="px-1 text-caption-13 text-grey-60">
               +{event.rows.length - displayRows.length} more outcomes
             </div>
           ) : null
         }
       </div>
 
-      <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4 text-caption-13 text-grey-60">
+      <div className="mt-4 flex items-center justify-between rounded-[1rem] border border-white/8 bg-[#121212] px-3 py-3 text-caption-13 text-grey-60">
         <span>{formatVolume(event.volume)}</span>
-        <span>{event.totalMarkets} contracts</span>
+        <span>Open event</span>
       </div>
     </div>
   )
