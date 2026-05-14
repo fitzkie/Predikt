@@ -237,7 +237,18 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
   const relatedEventQuery = usePolymarketEventBySlug(relatedEventSlug)
   const [ selectedMarketSlug, setSelectedMarketSlug ] = useState(searchParams.get('market') || slug)
   const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(Number(searchParams.get('outcome') || '0'))
+  const [ expandedMarketId, setExpandedMarketId ] = useState<string | null>(null)
   const [ detailTab, setDetailTab ] = useState<'order-book' | 'rules'>('order-book')
+
+  const selectOutcome = (marketSlug: string, outcomeIndex: number) => {
+    setSelectedMarketSlug(marketSlug)
+    setSelectedOutcomeIndex(outcomeIndex)
+    document.getElementById('trade')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const toggleExpanded = (marketId: string) => {
+    setExpandedMarketId((prev) => (prev === marketId ? null : marketId))
+  }
 
   const event = directEventQuery.data || relatedEventQuery.data || null
   const directMarket = directMarketQuery.data || null
@@ -333,7 +344,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           </div>
 
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] overflow-hidden">
-            <div className="grid grid-cols-[minmax(0,1fr)_7rem_20rem] gap-4 border-b border-white/10 bg-[#101010] px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+            <div className="grid grid-cols-[minmax(0,1fr)_5rem_18rem] gap-3 border-b border-white/10 bg-[#101010] px-5 py-3 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
               <div>Question</div>
               <div className="text-center">% Chance</div>
               <div />
@@ -341,51 +352,41 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             <div>
               {
                 eventMarkets.map((market) => {
-                  const active = market.slug === selectedMarket.slug
+                  const isSelected = market.slug === selectedMarket.slug
+                  const isExpanded = expandedMarketId === market.id
                   const probability = yesPrice(market)
 
                   return (
-                    <div key={market.id} className={`border-b border-white/10 last:border-b-0 ${active ? 'bg-white/5' : 'bg-[#151515]'}`}>
-                      <div
-                        className={`grid grid-cols-[minmax(0,1fr)_7rem_20rem] gap-4 px-5 py-5 transition ${active ? '' : 'hover:bg-white/2'}`}
-                      >
+                    <div key={market.id} className={`border-b border-white/10 last:border-b-0 ${isSelected ? 'bg-white/5' : 'bg-[#151515]'}`}>
+                      <div className="grid grid-cols-[minmax(0,1fr)_5rem_18rem] gap-3 px-5 py-3 transition hover:bg-white/[0.03]">
                         <button
                           className="min-w-0 text-left"
-                          onClick={() => {
-                            setSelectedMarketSlug(market.slug)
-                            setSelectedOutcomeIndex(0)
-                          }}
+                          onClick={() => toggleExpanded(market.id)}
                           type="button"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-[1.15rem] leading-8 text-grey-90">{market.question}</div>
-                              <div className="mt-1 text-caption-13 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="line-clamp-2 text-[0.95rem] leading-[1.4] text-grey-90">{market.question}</div>
+                              <div className="mt-0.5 text-caption-12 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
                             </div>
-                            <span className="mt-1 text-grey-50">{active ? '▴' : '▾'}</span>
+                            <span className="shrink-0 text-[0.7rem] text-grey-50">{isExpanded ? '▴' : '▾'}</span>
                           </div>
                         </button>
-                        <div className="flex items-center justify-center self-center text-[1.45rem] font-semibold text-grey-90">
+                        <div className="flex items-center justify-center self-center text-[1.1rem] font-semibold text-grey-90">
                           {formatPercent(probability)}
                         </div>
-                        <div className="flex items-center justify-end gap-3 self-center">
+                        <div className="flex items-center justify-end gap-2 self-center">
                           <button
-                            className="min-w-[9.25rem] rounded-[1rem] px-4 py-3 text-[0.98rem] font-semibold transition hover:brightness-110"
-                            onClick={() => {
-                              setSelectedMarketSlug(market.slug)
-                              setSelectedOutcomeIndex(0)
-                            }}
+                            className="rounded-[0.75rem] px-3 py-2 text-[0.88rem] font-semibold transition hover:brightness-110"
+                            onClick={() => selectOutcome(market.slug, 0)}
                             style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
                             type="button"
                           >
                             Buy Yes {Math.round(probability * 1000) / 10}¢
                           </button>
                           <button
-                            className="min-w-[9.25rem] rounded-[1rem] px-4 py-3 text-[0.98rem] font-semibold transition hover:brightness-110"
-                            onClick={() => {
-                              setSelectedMarketSlug(market.slug)
-                              setSelectedOutcomeIndex(1)
-                            }}
+                            className="rounded-[0.75rem] px-3 py-2 text-[0.88rem] font-semibold transition hover:brightness-110"
+                            onClick={() => selectOutcome(market.slug, 1)}
                             style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
                             type="button"
                           >
@@ -395,18 +396,18 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                       </div>
 
                       {
-                        active ? (
+                        isExpanded ? (
                           <div className="border-t border-white/10 bg-[#121212] px-5 py-4">
                             <div className="flex items-center gap-6 border-b border-white/10 pb-3">
                               <button
-                                className={`pb-2 text-[1rem] font-semibold ${detailTab === 'order-book' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+                                className={`pb-2 text-[0.95rem] font-semibold ${detailTab === 'order-book' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
                                 onClick={() => setDetailTab('order-book')}
                                 type="button"
                               >
                                 Order Book
                               </button>
                               <button
-                                className={`pb-2 text-[1rem] font-semibold ${detailTab === 'rules' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+                                className={`pb-2 text-[0.95rem] font-semibold ${detailTab === 'rules' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
                                 onClick={() => setDetailTab('rules')}
                                 type="button"
                               >
@@ -419,8 +420,8 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                                   <OrderBookPanel market={market} />
                                 ) : (
                                   <div className="rounded-[1.25rem] border border-white/10 bg-[#151515] p-5">
-                                    <div className="text-[1.4rem] font-semibold tracking-[-0.02em] text-grey-90">Rules</div>
-                                    <p className="mt-4 text-[1rem] leading-7 text-grey-70">
+                                    <div className="text-[1.2rem] font-semibold tracking-[-0.02em] text-grey-90">Rules</div>
+                                    <p className="mt-3 text-[0.95rem] leading-7 text-grey-70">
                                       {truncateBody(String((event as Record<string, unknown> | null)?.resolutionSource || market.description || event?.description || ''), 560)}
                                     </p>
                                   </div>

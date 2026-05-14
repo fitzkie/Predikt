@@ -24,7 +24,7 @@ const Content: React.CFC = ({ children }) => {
   const mainClassName = cx(ns.main, ws.main,
     'mx-auto flex-1 w-full wd:h-auto',
     {
-      [ws.withRightSidebar]: true,
+      [ws.withRightSidebar]: !isPredikts,
     }
   )
   const sidebarClassName = 'sticky top-0 z-[100] shrink-0 no-scrollbar'
@@ -58,7 +58,7 @@ const Content: React.CFC = ({ children }) => {
         </div>
       </main>
       {
-        !isPrediktsDetail && (
+        !isPredikts && (
           <Media className={cx('h-[calc(100vh_-_0.5rem)]', ws.rightSidebar, sidebarClassName)} wide>
             <RightSidebar />
           </Media>
