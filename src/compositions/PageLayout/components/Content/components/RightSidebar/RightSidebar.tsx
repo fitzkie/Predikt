@@ -8,6 +8,7 @@ import { PrediktsPortfolioPanel, usePrediktsMarketBrowser } from 'modules/predik
 import { useOptionalPrivy } from 'providers/auth'
 
 import { Button, buttonMessages } from 'components/inputs'
+import { Href } from 'components/navigation'
 import TabbedBetslip from 'compositions/TabbedBetslip/TabbedBetslip'
 import LiveStatistics from 'compositions/LiveStatistics/LiveStatistics'
 
@@ -63,12 +64,15 @@ const RightSidebar: React.FC = () => {
                 <div className="mt-4 space-y-3">
                   {
                     (isPrediktsHome ? prediktBrowser.trendingMarkets : prediktBrowser.featuredMarkets).slice(0, 4).map((market) => (
-                      <div key={market.id} className="rounded-md border border-white/10 bg-bg-l1 px-3 py-3">
+                      <Href key={market.id} to={`/predikts/${market.slug}`} className="block rounded-md border border-white/10 bg-bg-l1 px-3 py-3 transition hover:border-white/20 hover:bg-bg-l0">
                         <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">{market.question}</div>
                         <div className="mt-2 text-caption-12 text-grey-60">
                           {market.category || market.events?.[0]?.category || 'Trending market'}
                         </div>
-                      </div>
+                        <div className="mt-2 text-caption-12" style={{ color: '#9cf5bb' }}>
+                          Open market
+                        </div>
+                      </Href>
                     ))
                   }
                 </div>

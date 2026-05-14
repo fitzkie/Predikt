@@ -53,8 +53,28 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
   const secondOutcome = outcomes[1] || 'No'
   const marketVolume = market.volume24hr || market.volume
   const secondaryLines = outcomes.slice(0, compact ? 2 : 3)
-  const yesPillClassName = 'rounded-full bg-[#193724] px-3 py-1 text-caption-13 font-semibold text-[#72f29c]'
-  const noPillClassName = 'rounded-full bg-[#421a22] px-3 py-1 text-caption-13 font-semibold text-[#ff6a78]'
+
+  const renderYesNoPills = (probability?: number) => {
+    const yesText = `Yes ${formatPercent(probability)}`
+    const noText = `No ${formatPercent(typeof probability === 'number' ? 1 - probability : undefined)}`
+
+    return (
+      <div className="flex items-center gap-2">
+        <span
+          className="rounded-full px-3 py-1 text-caption-13 font-semibold"
+          style={{ backgroundColor: '#1f5f34', color: '#9cf5bb' }}
+        >
+          {yesText}
+        </span>
+        <span
+          className="rounded-full px-3 py-1 text-caption-13 font-semibold"
+          style={{ backgroundColor: '#5a2028', color: '#ff8a95' }}
+        >
+          {noText}
+        </span>
+      </div>
+    )
+  }
 
   return (
     <Href
@@ -87,19 +107,13 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
             <div key={`${market.id}-${outcome}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
               <div className="truncate text-grey-70">{outcome}</div>
               <div className="font-semibold text-grey-90">{formatPercent(outcomePrices[index])}</div>
-              <div className="flex items-center gap-2">
-                <span className={yesPillClassName}>Yes</span>
-                <span className={noPillClassName}>No</span>
-              </div>
+              {renderYesNoPills(outcomePrices[index])}
             </div>
           )) : (
             <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
               <div className="truncate text-grey-70">{outcomes[0] || 'Yes'}</div>
               <div className="font-semibold text-grey-90">{formatPercent(yesPrice)}</div>
-              <div className="flex items-center gap-2">
-                <span className={yesPillClassName}>Yes</span>
-                <span className={noPillClassName}>{secondOutcome}</span>
-              </div>
+              {renderYesNoPills(yesPrice)}
             </div>
           )
         }
@@ -116,8 +130,8 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
       <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4 text-caption-13 text-grey-60">
         <span>{formatVolume(marketVolume)}</span>
         <div className="flex items-center gap-3">
-          <span className="text-[#72f29c]">Yes {formatPercent(yesPrice)}</span>
-          <span className="text-[#ff6a78]">No {formatPercent(noPrice)}</span>
+          <span style={{ color: '#9cf5bb' }}>Yes {formatPercent(yesPrice)}</span>
+          <span style={{ color: '#ff8a95' }}>No {formatPercent(noPrice)}</span>
           <span>{orderBookQuery.data?.last_trade_price ? `Last ${orderBookQuery.data.last_trade_price}` : ''}</span>
         </div>
       </div>

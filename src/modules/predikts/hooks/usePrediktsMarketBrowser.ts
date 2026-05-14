@@ -76,23 +76,23 @@ const usePrediktsMarketBrowser = () => {
   const trendingQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 300,
+    limit: 1000,
     order: 'volume24hr',
     ascending: false,
   })
   const newestQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 160,
+    limit: 500,
     order: 'createdAt',
     ascending: false,
   })
-  const politicsQuery = usePolymarketSearchMarkets('politics', 120)
-  const financeQuery = usePolymarketSearchMarkets('finance', 120)
-  const sportsQuery = usePolymarketSearchMarkets('sports', 120)
-  const techQuery = usePolymarketSearchMarkets('tech', 120)
-  const cultureQuery = usePolymarketSearchMarkets('culture', 120)
-  const blackSwanQuery = usePolymarketSearchMarkets('geopolitics war weather pandemic space', 120)
+  const politicsQuery = usePolymarketSearchMarkets('politics', 300)
+  const financeQuery = usePolymarketSearchMarkets('finance', 300)
+  const sportsQuery = usePolymarketSearchMarkets('sports', 300)
+  const techQuery = usePolymarketSearchMarkets('tech', 300)
+  const cultureQuery = usePolymarketSearchMarkets('culture', 300)
+  const blackSwanQuery = usePolymarketSearchMarkets('geopolitics war weather pandemic space', 300)
 
   const laneResults = {
     politics: politicsQuery.data || [],
@@ -137,8 +137,11 @@ const usePrediktsMarketBrowser = () => {
       }
     })
 
+    const lanePool = lanes.flatMap((lane) => lane.markets)
+    const allMarkets = dedupeMarkets([ ...trendingMarkets, ...newestMarkets, ...lanePool ])
+
     const marketBySection: Record<string, PolymarketMarket[]> = {
-      all: dedupeMarkets([ ...trendingMarkets, ...newestMarkets ]),
+      all: allMarkets,
       trending: trendingMarkets,
       new: newestMarkets,
     }
@@ -154,7 +157,7 @@ const usePrediktsMarketBrowser = () => {
 
     return {
       featuredMarkets,
-      allMarkets: marketBySection.all,
+      allMarkets,
       lanes,
       marketBySection,
       sections: boardSections,
