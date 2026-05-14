@@ -9,6 +9,7 @@ const config: Config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/compositions/**/*.{ts,tsx}',
     './src/views/**/*.{ts,tsx}',
+    './src/modules/**/*.{ts,tsx}',
   ],
   theme: {
     screens: {

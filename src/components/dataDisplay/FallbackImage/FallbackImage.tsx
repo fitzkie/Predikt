@@ -20,27 +20,27 @@ const FallbackImage: React.FC<FallbackImageProps> = (props) => {
   const ref = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
-    const handleError = () => {
+    if (!src) {
       if (iconFallback) {
         setFallbackIcon(true)
       }
-      else if (ref.current && fallback) {
-        ref.current.src = fallback
-      }
-    }
-
-    if (!src) {
-      handleError()
 
       return
     }
 
+    // src arrived or changed — show the image optimistically, fall back on error
+    setFallbackIcon(false)
+
     const img = new window.Image()
 
     img.onerror = () => {
-      // check if component still mounted
       if (ref.current) {
-        handleError()
+        if (iconFallback) {
+          setFallbackIcon(true)
+        }
+        else if (fallback) {
+          ref.current.src = fallback
+        }
       }
     }
 

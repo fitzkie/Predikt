@@ -65,9 +65,9 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
       <div className="flex items-start gap-3">
         {
           event.image ? (
-            <img alt="" className="mt-0.5 size-10 shrink-0 rounded-xl object-cover" src={event.image} />
+            <img alt="" className="mt-0.5 w-10 h-10 flex-none rounded-xl object-cover overflow-hidden" src={event.image} />
           ) : (
-            <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50/15 text-caption-12 font-semibold uppercase tracking-[0.14em] text-brand-50">
+            <div className="mt-0.5 flex w-10 h-10 flex-none items-center justify-center rounded-xl bg-brand-50/15 text-caption-12 font-semibold uppercase tracking-[0.14em] text-brand-50">
               {(event.category || 'P').slice(0, 2)}
             </div>
           )
