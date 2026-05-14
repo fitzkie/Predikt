@@ -275,7 +275,7 @@ const PrediktsHub: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 ds:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 ds:grid-cols-3 xl:grid-cols-4">
             {
               filteredEvents.length ? filteredEvents.map((event) => (
                 <PrediktsMarketCard key={event.id} event={event} />
