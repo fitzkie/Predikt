@@ -41,7 +41,9 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
 
   try {
     const { authenticated, ready, connectOrCreateWallet, login, logout, user } = usePrivy()
-    const { linkGoogle, linkTwitter, linkEmail } = useLinkAccount()
+    const { linkGoogle, linkTwitter, linkEmail } = useLinkAccount({
+      onError: (error) => console.error('[Privy linkAccount error]', error),
+    })
     const connectWallet = typeof connectOrCreateWallet === 'function' ? connectOrCreateWallet : login
 
     const isGoogleLinked = user?.linkedAccounts.some(a => a.type === 'google_oauth') ?? false
@@ -56,8 +58,8 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
       connectWallet,
       logout: typeof logout === 'function' ? logout : (() => undefined),
       canLogin: typeof connectWallet === 'function',
-      linkGoogle: typeof linkGoogle === 'function' ? linkGoogle : () => undefined,
-      linkTwitter: typeof linkTwitter === 'function' ? linkTwitter : () => undefined,
+      linkGoogle: authenticated && typeof linkGoogle === 'function' ? linkGoogle : () => console.warn('[Privy] linkGoogle called but user is not authenticated'),
+      linkTwitter: authenticated && typeof linkTwitter === 'function' ? linkTwitter : () => console.warn('[Privy] linkTwitter called but user is not authenticated'),
       linkEmail: typeof linkEmail === 'function' ? linkEmail : () => undefined,
       isGoogleLinked,
       isXLinked,
