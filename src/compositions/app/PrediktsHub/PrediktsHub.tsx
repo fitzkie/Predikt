@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import cx from 'classnames'
 import { constants } from 'helpers'
 import { PrediktsMarketCard, usePrediktsMarketBrowser } from 'modules/predikts'
@@ -43,10 +43,23 @@ const skeletonCards = new Array(12).fill(0)
 const PrediktsHub: React.FC = () => {
   const browser = usePrediktsMarketBrowser()
   const [ activeSection, setActiveSection ] = useState<string>('trending')
+  const [ activeSubcategory, setActiveSubcategory ] = useState<string>('all')
   const [ search, setSearch ] = useState('')
+  const tabsRef = useRef<HTMLDivElement>(null)
 
   const normalizedSearch = search.trim().toLowerCase()
-  const baseMarkets = browser.marketBySection[activeSection] || browser.allMarkets
+  const activeLane = browser.lanes.find((lane) => lane.slug === activeSection)
+  const baseMarkets = useMemo(() => {
+    if (activeSubcategory !== 'all' && activeLane) {
+      return activeLane.subcategories.find((subcategory) => subcategory.slug === activeSubcategory)?.markets || activeLane.markets
+    }
+
+    return browser.marketBySection[activeSection] || browser.allMarkets
+  }, [ activeLane, activeSection, activeSubcategory, browser.allMarkets, browser.marketBySection ])
+
+  useEffect(() => {
+    setActiveSubcategory('all')
+  }, [ activeSection ])
 
   const filteredMarkets = useMemo(() => {
     const sourceMarkets = normalizedSearch ? browser.allMarkets : baseMarkets
@@ -69,16 +82,28 @@ const PrediktsHub: React.FC = () => {
   }, [ baseMarkets, browser.allMarkets, normalizedSearch ])
 
   const activeSectionMeta = browser.sections.find((section) => section.key === activeSection) || browser.sections[0]
+  const activeSubcategoryMeta = activeLane?.subcategories.find((subcategory) => subcategory.slug === activeSubcategory)
   const activeSectionDescription = normalizedSearch
     ? 'Search results across all live Predikt markets.'
-    : (sectionDescriptions[activeSection] || sectionDescriptions.trending)
+    : activeSubcategoryMeta
+      ? `${activeSubcategoryMeta.label} markets inside ${activeSectionMeta.label}.`
+      : (sectionDescriptions[activeSection] || sectionDescriptions.trending)
   const activeSectionVolume = normalizedSearch
     ? browser.allMarkets.reduce((acc, market) => acc + Number(market.volume24hr || market.volume || 0), 0)
-    : browser.totals[activeSection]
+    : activeSubcategoryMeta
+      ? activeSubcategoryMeta.markets.reduce((acc, market) => acc + Number(market.volume24hr || market.volume || 0), 0)
+      : browser.totals[activeSection]
   const visibleCount = filteredMarkets.length
   const supportingTags = activeSection === 'all'
     ? browser.tags.slice(0, 12)
     : (browser.lanes.find((lane) => lane.slug === activeSection)?.items || browser.tags.slice(0, 12))
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    tabsRef.current?.scrollBy({
+      left: direction === 'left' ? -320 : 320,
+      behavior: 'smooth',
+    })
+  }
 
   return (
     <div className="px-2 py-5 ds:px-4">
@@ -103,13 +128,12 @@ const PrediktsHub: React.FC = () => {
               </label>
 
               <Href className="hidden ds:block" href={constants.links.sportsApp}>
-                <Button size={40} style="secondary" title="Switch to Sports" />
+                <Button size={40} title="Switch to Sports" />
               </Href>
             </div>
 
             <div className="flex flex-col gap-2 ds:flex-row ds:items-end ds:justify-between">
               <div>
-                <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Predikt</div>
                 <h1 className="mt-2 text-[1.9rem] font-semibold leading-tight tracking-[-0.04em] text-grey-90 ds:text-[2.5rem]">
                   Browse live event-driven markets
                 </h1>
@@ -123,8 +147,30 @@ const PrediktsHub: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-auto no-scrollbar">
-              <div className="flex min-w-max items-stretch gap-2">
+            <div className="rounded-2xl border border-white/10 bg-bg-l3/40 p-2">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+                  {normalizedSearch ? 'Searching all markets' : 'Browse categories'}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded-full border border-white/10 bg-bg-l2 px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
+                    onClick={() => scrollTabs('left')}
+                    type="button"
+                  >
+                    ←
+                  </button>
+                  <button
+                    className="rounded-full border border-white/10 bg-bg-l2 px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
+                    onClick={() => scrollTabs('right')}
+                    type="button"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+              <div ref={tabsRef} className="overflow-x-auto no-scrollbar">
+                <div className="flex min-w-max items-stretch gap-2 pb-1">
                 {
                   browser.sections.map((section) => {
                     const isActive = section.key === activeSection && !normalizedSearch
@@ -133,7 +179,7 @@ const PrediktsHub: React.FC = () => {
                       <button
                         key={section.key}
                         className={cx(
-                          'rounded-2xl border px-4 py-3 text-left transition min-w-[10.5rem]',
+                          'rounded-2xl border px-4 py-3 text-left transition min-w-[12rem] snap-start',
                           isActive
                             ? 'border-brand-50 bg-brand-50/12'
                             : 'border-white/10 bg-bg-l3 hover:border-white/20'
@@ -151,20 +197,59 @@ const PrediktsHub: React.FC = () => {
                     )
                   })
                 }
+                </div>
               </div>
             </div>
 
-            <div className="overflow-auto no-scrollbar">
-              <div className="flex min-w-max items-center gap-2">
-                {
-                  supportingTags.map((chip) => (
-                    <span key={chip} className="rounded-full border border-white/10 bg-bg-l3 px-3 py-1.5 text-caption-12 text-grey-60">
-                      {chip}
-                    </span>
-                  ))
-                }
-              </div>
-            </div>
+            {
+              activeLane?.subcategories.length ? (
+                <div className="overflow-auto no-scrollbar">
+                  <div className="flex min-w-max items-center gap-2">
+                    <button
+                      className={cx(
+                        'rounded-full border px-3 py-1.5 text-caption-12 font-semibold transition',
+                        activeSubcategory === 'all'
+                          ? 'border-brand-50 bg-brand-50/15 text-brand-50'
+                          : 'border-white/10 bg-bg-l3 text-grey-60 hover:text-grey-90'
+                      )}
+                      onClick={() => setActiveSubcategory('all')}
+                      type="button"
+                    >
+                      All {activeSectionMeta.label}
+                    </button>
+                    {
+                      activeLane.subcategories.map((subcategory) => (
+                        <button
+                          key={subcategory.slug}
+                          className={cx(
+                            'rounded-full border px-3 py-1.5 text-caption-12 font-semibold transition',
+                            activeSubcategory === subcategory.slug
+                              ? 'border-brand-50 bg-brand-50/15 text-brand-50'
+                              : 'border-white/10 bg-bg-l3 text-grey-60 hover:text-grey-90'
+                          )}
+                          onClick={() => setActiveSubcategory(subcategory.slug)}
+                          type="button"
+                        >
+                          {subcategory.label} <span className="ml-1 text-grey-40">{subcategory.count}</span>
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-auto no-scrollbar">
+                  <div className="flex min-w-max items-center gap-2">
+                    {
+                      supportingTags.map((chip) => (
+                        <span key={chip} className="rounded-full border border-white/10 bg-bg-l3 px-3 py-1.5 text-caption-12 text-grey-60">
+                          {chip}
+                        </span>
+                      ))
+                    }
+                  </div>
+                </div>
+              )
+            }
           </div>
         </section>
 

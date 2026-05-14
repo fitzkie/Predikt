@@ -53,11 +53,13 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
   const secondOutcome = outcomes[1] || 'No'
   const marketVolume = market.volume24hr || market.volume
   const secondaryLines = outcomes.slice(0, compact ? 2 : 3)
+  const yesPillClassName = 'rounded-full bg-[#193724] px-3 py-1 text-caption-13 font-semibold text-[#72f29c]'
+  const noPillClassName = 'rounded-full bg-[#421a22] px-3 py-1 text-caption-13 font-semibold text-[#ff6a78]'
 
   return (
     <Href
       to={`/predikts/${market.slug}`}
-      className="block rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.015))] p-4 transition hover:border-white/20 hover:bg-bg-l2"
+      className="block rounded-[1.35rem] border border-white/10 bg-[#161616] p-4 transition hover:border-white/20 hover:bg-[#1b1b1b]"
     >
       <div className="flex items-start gap-3">
         {
@@ -85,29 +87,18 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
             <div key={`${market.id}-${outcome}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
               <div className="truncate text-grey-70">{outcome}</div>
               <div className="font-semibold text-grey-90">{formatPercent(outcomePrices[index])}</div>
-              {
-                index === 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-[#1f4e2d] px-3 py-1 text-caption-13 font-semibold text-[#7ef0a4]">Yes</span>
-                    <span className="rounded-full bg-[#4e1f27] px-3 py-1 text-caption-13 font-semibold text-[#ff6c79]">No</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-[#1f4e2d] px-3 py-1 text-caption-13 font-semibold text-[#7ef0a4]">{formatPercent(outcomePrices[index])}</span>
-                    <span className="rounded-full bg-[#4e1f27] px-3 py-1 text-caption-13 font-semibold text-[#ff6c79]">
-                      {formatPercent(typeof outcomePrices[index] === 'number' ? 1 - outcomePrices[index] : undefined)}
-                    </span>
-                  </div>
-                )
-              }
+              <div className="flex items-center gap-2">
+                <span className={yesPillClassName}>Yes</span>
+                <span className={noPillClassName}>No</span>
+              </div>
             </div>
           )) : (
             <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 text-caption-13">
               <div className="truncate text-grey-70">{outcomes[0] || 'Yes'}</div>
               <div className="font-semibold text-grey-90">{formatPercent(yesPrice)}</div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-[#1f4e2d] px-3 py-1 text-caption-13 font-semibold text-[#7ef0a4]">Yes</span>
-                <span className="rounded-full bg-[#4e1f27] px-3 py-1 text-caption-13 font-semibold text-[#ff6c79]">{secondOutcome}</span>
+                <span className={yesPillClassName}>Yes</span>
+                <span className={noPillClassName}>{secondOutcome}</span>
               </div>
             </div>
           )
@@ -125,8 +116,8 @@ const PrediktsMarketCard: React.FC<Props> = ({ market, compact = false }) => {
       <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4 text-caption-13 text-grey-60">
         <span>{formatVolume(marketVolume)}</span>
         <div className="flex items-center gap-3">
-          <span>Yes {formatPercent(yesPrice)}</span>
-          <span>No {formatPercent(noPrice)}</span>
+          <span className="text-[#72f29c]">Yes {formatPercent(yesPrice)}</span>
+          <span className="text-[#ff6a78]">No {formatPercent(noPrice)}</span>
           <span>{orderBookQuery.data?.last_trade_price ? `Last ${orderBookQuery.data.last_trade_price}` : ''}</span>
         </div>
       </div>

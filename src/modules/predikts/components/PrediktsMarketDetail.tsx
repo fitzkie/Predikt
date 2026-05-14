@@ -28,6 +28,28 @@ const formatCurrency = (value?: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value)
 }
 
+const formatVolume = (value?: string | number) => {
+  const numericValue = typeof value === 'number' ? value : Number(value || 0)
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return '$0'
+  }
+
+  if (numericValue >= 1_000_000) {
+    return `$${Math.round(numericValue / 100_000) / 10}m`
+  }
+
+  if (numericValue >= 1_000) {
+    return `$${Math.round(numericValue / 100) / 10}k`
+  }
+
+  return `$${Math.round(numericValue)}`
+}
+
+const marketImage = (market: PolymarketMarket) => {
+  return market.image || market.icon || market.events?.[0]?.image || market.events?.[0]?.icon || ''
+}
+
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) {
     return 'Unknown'
@@ -194,34 +216,67 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
   const outcomes = parsePolymarketOutcomes(market)
   const prices = parsePolymarketOutcomePrices(market)
+  const image = marketImage(market)
 
   return (
     <div className="px-2 py-6 ds:px-4">
-      <section className="rounded-[1.5rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(235,180,55,0.16),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-6 ds:p-8">
-        <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
-        <div className="mt-4 max-w-4xl">
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">{market.category || 'Predikt'}</div>
-          <h1 className="mt-3 text-[2.1rem] font-semibold leading-[0.98] tracking-[-0.05em] text-grey-90 ds:text-[3.75rem]">
-            {market.question}
-          </h1>
-          <p className="mt-5 max-w-3xl text-base leading-7 text-grey-70 ds:text-lg">
-            {market.description || 'This market is being pulled live and enriched with real-time order-book depth for Predikt.'}
-          </p>
+      <section className="grid gap-4 ds:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.85fr)]">
+        <div className="rounded-[1.5rem] border border-white/10 bg-[#161616] p-5 ds:p-6">
+          <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
+          <div className="mt-4 grid gap-5 ds:grid-cols-[minmax(0,1fr)_14rem]">
+            <div>
+              <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">{market.category || market.events?.[0]?.category || 'Predikt'}</div>
+              <h1 className="mt-3 text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-grey-90 ds:text-[3.1rem]">
+                {market.question}
+              </h1>
+              <p className="mt-4 max-w-3xl text-caption-14 leading-7 text-grey-70 ds:text-base">
+                {market.description || 'Live market pricing, real-time depth, and wallet-native execution for this contract.'}
+              </p>
+              <div className="mt-5 grid gap-3 ds:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
+                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">24H Volume</div>
+                  <div className="mt-2 text-heading-h4 font-semibold text-grey-90">{formatVolume(market.volume24hr || market.volume)}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
+                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Liquidity</div>
+                  <div className="mt-2 text-heading-h4 font-semibold text-grey-90">{formatVolume(market.liquidity)}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-bg-l2 px-4 py-3">
+                  <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Ends</div>
+                  <div className="mt-2 text-caption-13 font-semibold text-grey-90">{market.endDate ? new Date(market.endDate).toLocaleDateString() : 'Open'}</div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {
+                image ? (
+                  <img alt="" className="h-28 w-full rounded-2xl object-cover" src={image} />
+                ) : (
+                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-brand-50/15 text-heading-h2 font-semibold text-brand-50">
+                    {(market.category || 'P').slice(0, 2)}
+                  </div>
+                )
+              }
+              <div className="rounded-2xl border border-white/10 bg-bg-l2 p-3">
+                <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Outcomes</div>
+                <div className="mt-3 space-y-2">
+                  {
+                    outcomes.slice(0, 4).map((outcome, index) => (
+                      <div key={`${market.id}-${outcome}`} className="flex items-center justify-between rounded-xl border border-white/8 bg-bg-l0 px-3 py-2">
+                        <span className="truncate pr-3 text-caption-13 text-grey-70">{outcome}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-[#193724] px-3 py-1 text-caption-13 font-semibold text-[#72f29c]">Yes {formatPercent(prices[index])}</span>
+                          <span className="rounded-full bg-[#421a22] px-3 py-1 text-caption-13 font-semibold text-[#ff6a78]">No {formatPercent(typeof prices[index] === 'number' ? 1 - prices[index] : undefined)}</span>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {outcomes.map((outcome, index) => (
-            <span key={`${market.id}-${outcome}`} className="rounded-full border border-white/10 px-3 py-1.5 text-caption-12 text-grey-60">
-              {outcome}: {formatPercent(prices[index])}
-            </span>
-          ))}
-        </div>
-      </section>
 
-      <section className="mt-8 grid gap-4 ds:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)]">
-        <div className="space-y-4">
-          <OrderBookPanel market={market} />
-          <MarketExecutionPanel market={market} />
-        </div>
         <div className="space-y-4">
           <PrediktsTradingPanel market={market} />
           <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
@@ -229,12 +284,17 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             <div className="mt-4 space-y-2 text-caption-13 text-grey-70">
               <div>Slug: {market.slug}</div>
               <div>Condition ID: {market.conditionId || 'N/A'}</div>
-              <div>Volume: {market.volume || 'N/A'}</div>
-              <div>Liquidity: {market.liquidity || 'N/A'}</div>
-              <div>Ends: {market.endDate || 'N/A'}</div>
+              <div>Volume: {formatVolume(market.volume)}</div>
+              <div>Liquidity: {formatVolume(market.liquidity)}</div>
+              <div>Ends: {market.endDate ? new Date(market.endDate).toLocaleString() : 'N/A'}</div>
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mt-6 grid gap-4 ds:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <OrderBookPanel market={market} />
+        <MarketExecutionPanel market={market} />
       </section>
     </div>
   )

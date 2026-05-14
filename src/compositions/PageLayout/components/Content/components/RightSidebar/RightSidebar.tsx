@@ -4,8 +4,7 @@ import React from 'react'
 import { usePathname } from 'next/navigation'
 import { openModal } from '@locmod/modal'
 import { useWallet } from 'wallet'
-import { constants } from 'helpers'
-import { PrediktsPortfolioPanel } from 'modules/predikts'
+import { PrediktsPortfolioPanel, usePrediktsMarketBrowser } from 'modules/predikts'
 import { useOptionalPrivy } from 'providers/auth'
 
 import { Button, buttonMessages } from 'components/inputs'
@@ -18,8 +17,10 @@ import Controls from '../Controls/Controls'
 const RightSidebar: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
+  const isPrediktsHome = pathname === '/predikts'
   const { account, isReconnecting, isConnecting } = useWallet()
   const { connectWallet, canLogin, ready } = useOptionalPrivy()
+  const prediktBrowser = usePrediktsMarketBrowser()
 
   const handleConnect = () => {
     if (canLogin && ready) {
@@ -58,13 +59,16 @@ const RightSidebar: React.FC = () => {
             <div className="space-y-2">
               <PrediktsPortfolioPanel />
               <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
-                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Featured lanes</div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Featured Markets</div>
+                <div className="mt-4 space-y-3">
                   {
-                    constants.prediktsTaxonomy.map((category) => (
-                      <span key={category.slug} className="rounded-full border border-white/10 px-3 py-1.5 text-caption-12 text-grey-60">
-                        {category.title}
-                      </span>
+                    (isPrediktsHome ? prediktBrowser.trendingMarkets : prediktBrowser.featuredMarkets).slice(0, 4).map((market) => (
+                      <div key={market.id} className="rounded-md border border-white/10 bg-bg-l1 px-3 py-3">
+                        <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">{market.question}</div>
+                        <div className="mt-2 text-caption-12 text-grey-60">
+                          {market.category || market.events?.[0]?.category || 'Trending market'}
+                        </div>
+                      </div>
                     ))
                   }
                 </div>

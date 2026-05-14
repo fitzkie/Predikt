@@ -65,6 +65,13 @@ const boardSections = [
   })),
 ] as const
 
+type SubcategoryBucket = {
+  label: string
+  slug: string
+  count: number
+  markets: PolymarketMarket[]
+}
+
 const usePrediktsMarketBrowser = () => {
   const trendingQuery = usePolymarketMarkets({
     active: true,
@@ -110,11 +117,23 @@ const usePrediktsMarketBrowser = () => {
       })
 
       const markets = dedupeMarkets([ ...fromSearch, ...fromTrending ])
+      const subcategories: SubcategoryBucket[] = category.items.map((item) => {
+        const itemTerm = normalize(item)
+        const itemMarkets = markets.filter((market) => buildHaystack(market).includes(itemTerm))
+
+        return {
+          label: item,
+          slug: `${category.slug}:${itemTerm.replace(/\s+/g, '-')}`,
+          count: itemMarkets.length,
+          markets: itemMarkets,
+        }
+      }).filter((bucket) => bucket.count > 0)
 
       return {
         ...category,
         markets,
         count: markets.length,
+        subcategories,
       }
     })
 
