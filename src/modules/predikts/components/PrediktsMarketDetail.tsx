@@ -303,8 +303,8 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
   return (
     <div className="px-2 py-6 ds:px-4">
-      <section className="grid gap-5 ds:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.85fr)]">
-        <div className="space-y-5">
+      <section className="flex flex-col gap-5 xl:flex-row">
+        <div className="min-w-0 flex-1 space-y-5">
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
             <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
             <div className="mt-4 flex items-start gap-4">
@@ -333,9 +333,9 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           </div>
 
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] overflow-hidden">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-white/10 bg-[#101010] px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
+            <div className="grid grid-cols-[minmax(0,1fr)_7rem_20rem] gap-4 border-b border-white/10 bg-[#101010] px-5 py-4 text-caption-12 uppercase tracking-[0.16em] text-grey-60">
               <div>Question</div>
-              <div>% Chance</div>
+              <div className="text-center">% Chance</div>
               <div />
             </div>
             <div>
@@ -347,7 +347,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                   return (
                     <div key={market.id} className={`border-b border-white/10 last:border-b-0 ${active ? 'bg-white/5' : 'bg-[#151515]'}`}>
                       <div
-                        className={`grid grid-cols-[minmax(0,1fr)_7rem_24rem] gap-4 px-5 py-5 transition ${active ? '' : 'hover:bg-white/2'}`}
+                        className={`grid grid-cols-[minmax(0,1fr)_7rem_20rem] gap-4 px-5 py-5 transition ${active ? '' : 'hover:bg-white/2'}`}
                       >
                         <button
                           className="min-w-0 text-left"
@@ -365,12 +365,12 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                             <span className="mt-1 text-grey-50">{active ? '▴' : '▾'}</span>
                           </div>
                         </button>
-                        <div className="flex items-center justify-center text-[1.45rem] font-semibold text-grey-90">
+                        <div className="flex items-center justify-center self-center text-[1.45rem] font-semibold text-grey-90">
                           {formatPercent(probability)}
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-end gap-3 self-center">
                           <button
-                            className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
+                            className="min-w-[9.25rem] rounded-[1rem] px-4 py-3 text-[0.98rem] font-semibold transition hover:brightness-110"
                             onClick={() => {
                               setSelectedMarketSlug(market.slug)
                               setSelectedOutcomeIndex(0)
@@ -381,7 +381,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                             Buy Yes {Math.round(probability * 1000) / 10}¢
                           </button>
                           <button
-                            className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
+                            className="min-w-[9.25rem] rounded-[1rem] px-4 py-3 text-[0.98rem] font-semibold transition hover:brightness-110"
                             onClick={() => {
                               setSelectedMarketSlug(market.slug)
                               setSelectedOutcomeIndex(1)
@@ -449,12 +449,12 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           </div>
         </div>
 
-        <div id="trade" className="space-y-4 ds:sticky ds:top-6 ds:self-start">
+        <aside id="trade" className="w-full shrink-0 space-y-4 xl:sticky xl:top-6 xl:w-[24rem] xl:self-start">
           <PrediktsTradingPanel
             initialOutcomeIndex={selectedOutcomeIndex}
             market={selectedMarket}
           />
-        </div>
+        </aside>
       </section>
     </div>
   )
