@@ -19,58 +19,75 @@ import messages from './messages'
 
 
 // Drop banner images into public/images/hero/ and add their paths here.
-// Auto-advances every 5 seconds.
+// Auto-advances every 5 seconds. Banners should be 2:1 ratio (e.g. 1600×800).
 const HERO_BANNERS: string[] = [
-  '/images/hero/banner-1.png',
-  '/images/hero/banner-2.png',
-  '/images/hero/banner-3.png',
-  '/images/hero/banner-4.png',
-  '/images/hero/banner-5.png',
-  '/images/hero/banner-6.png',
-  '/images/hero/banner-7.png',
-  '/images/hero/banner-8.png',
+  '/images/hero/banner-1.jpg',
+  '/images/hero/banner-2.jpg',
+  '/images/hero/banner-3.jpg',
+  '/images/hero/banner-4.jpg',
+  '/images/hero/banner-5.jpg',
+  '/images/hero/banner-6.jpg',
+  '/images/hero/banner-7.jpg',
+  '/images/hero/banner-8.jpg',
 ]
 
 const HeroBannerCarousel: React.FC = () => {
   const [ current, setCurrent ] = useState(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (HERO_BANNERS.length <= 1) {
       return
     }
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setCurrent(prev => (prev + 1) % HERO_BANNERS.length)
     }, 5000)
 
-    return () => clearInterval(interval)
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
   }, [])
 
   if (!HERO_BANNERS.length) {
     return null
   }
 
+  const goTo = (i: number) => {
+    setCurrent(i)
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+
+    intervalRef.current = setInterval(() => {
+      setCurrent(prev => (prev + 1) % HERO_BANNERS.length)
+    }, 5000)
+  }
+
   return (
-    <div className="relative mt-4 w-full rounded-md overflow-hidden" style={{ aspectRatio: '16/5' }}>
+    <div className="relative mt-4 w-full rounded-md overflow-hidden" style={{ aspectRatio: '2/1' }}>
       {HERO_BANNERS.map((src, i) => (
         <img
           key={src}
           src={src}
           alt=""
-          className={cx('absolute inset-0 w-full h-full object-cover transition-opacity duration-700', {
-            'opacity-100': i === current,
-            'opacity-0': i !== current,
-          })}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          className={cx(
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
+            i === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
+          )}
         />
       ))}
       {HERO_BANNERS.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
           {HERO_BANNERS.map((_, i) => (
             <button
               key={i}
-              onClick={() => setCurrent(i)}
+              onClick={() => goTo(i)}
               className={cx('size-2 rounded-full transition-all', {
-                'bg-white scale-110': i === current,
+                'bg-white scale-125': i === current,
                 'bg-white/40 hover:bg-white/70': i !== current,
               })}
             />
