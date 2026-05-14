@@ -199,298 +199,247 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     })
   }
 
+  const balance = readinessQuery.data?.balance ?? 0
+  const quickAmounts = [ 0.1, 0.25, 0.5, 1 ]
+
   return (
-    <div className="rounded-xl border border-white/10 bg-bg-l2 p-5">
-      <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Trading readiness</div>
-      <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Trade this market</div>
-      <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-        {!account
-          ? 'Connect your wallet to view balances, enable trading, and place live orders on this market.'
-          : !trading.isOnSupportedChain
-            ? 'Predikt trading runs on Polygon. Switch your wallet to Polygon before placing an order.'
-            : !trading.hasCredentials
-              ? 'Enable trading once for this wallet. Predikt will handle the market authorization step for you.'
-              : 'Trading is enabled for this wallet. Review your order details, then place the trade.'}
-      </p>
-      {
-        trading.authError ? (
-          <div className="mt-4 rounded-md border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-13 text-risk-red">
-            {trading.authError}
+    <div className="rounded-xl border border-white/10 bg-bg-l2 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 items-center justify-center rounded-full bg-brand-50/15 text-caption-12 font-semibold text-brand-50">
+            {selectedOutcome.slice(0, 1)}
           </div>
-        ) : null
-      }
-      {
-        trading.executionError || ticketError ? (
-          <div className="mt-4 rounded-md border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-13 text-risk-red">
-            {trading.executionError || ticketError}
-          </div>
-        ) : null
-      }
-      {
-        trading.lastExecutionMessage ? (
-          <div className="mt-4 rounded-md border border-success-green/20 bg-success-green/10 px-3 py-3 text-caption-13 text-success-green">
-            {trading.lastExecutionMessage}
-          </div>
-        ) : null
-      }
-      {
-        readinessQuery.data ? (
-          <div className={`mt-4 rounded-md border px-3 py-3 text-caption-13 ${readinessQuery.data.reason ? 'border-risk-red/30 bg-risk-red/10 text-risk-red' : 'border-success-green/20 bg-success-green/10 text-success-green'}`}>
-            <div className="font-semibold">
-              {readinessQuery.data.reason ? 'Balance or allowance check failed' : 'Balance and allowance look ready'}
-            </div>
-            <div className="mt-2 text-caption-12">
-              Required: {formatCurrency(readinessQuery.data.requiredAmount)} • Balance: {formatCurrency(readinessQuery.data.balance)} • Max allowance: {formatCurrency(readinessQuery.data.maxAllowance)}
-            </div>
-            {
-              readinessQuery.data.reason ? (
-                <div className="mt-2 space-y-3 text-caption-12">
-                  <div>{readinessQuery.data.reason}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {
-                      !readinessQuery.data.isAllowanceSufficient ? (
-                        <button
-                          className="rounded-md border border-brand-50/30 bg-brand-50/10 px-3 py-2 text-caption-12 font-semibold text-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={trading.isFixingAllowance}
-                          onClick={() => {
-                            void handleFixAllowance()
-                          }}
-                        >
-                          {trading.isFixingAllowance ? 'Updating Allowance...' : `Fix allowance for ${readinessQuery.data.assetType === 'COLLATERAL' ? 'USDC' : 'shares'}`}
-                        </button>
-                      ) : null
-                    }
-                    {
-                      !readinessQuery.data.isBalanceSufficient ? (
-                        <button
-                          className="rounded-md border border-white/10 bg-bg-l2 px-3 py-2 text-caption-12 font-semibold text-grey-90"
-                          onClick={handleFundWallet}
-                        >
-                          Fund wallet
-                        </button>
-                      ) : null
-                    }
-                  </div>
-                  {
-                    !readinessQuery.data.isBalanceSufficient ? (
-                      <div className="text-grey-60">
-                        Open the funding flow to top up {balanceAssetLabel} before retrying this order.
-                      </div>
-                    ) : null
-                  }
-                </div>
-              ) : null
-            }
-          </div>
-        ) : readinessQuery.isFetching || trading.isCheckingReadiness ? (
-          <div className="mt-4 rounded-md border border-white/10 bg-bg-l3 px-3 py-3 text-caption-12 text-grey-60">
-            Checking balance and allowance for this order...
-          </div>
-        ) : null
-      }
-
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        <button
-          className={`rounded-md border px-3 py-2 text-caption-13 font-semibold transition ${orderMode === 'LIMIT' ? 'border-brand-50 bg-brand-50/10 text-grey-90' : 'border-white/10 text-grey-60'}`}
-          onClick={() => setOrderMode('LIMIT')}
+          <span className="text-caption-13 font-semibold text-grey-90">{selectedOutcome}</span>
+        </div>
+        <select
+          className="rounded-md border border-white/10 bg-transparent px-2 py-1 text-caption-12 text-grey-60 outline-none"
+          value={orderMode}
+          onChange={(e) => setOrderMode(e.target.value as 'LIMIT' | 'MARKET')}
         >
-          Limit
-        </button>
-        <button
-          className={`rounded-md border px-3 py-2 text-caption-13 font-semibold transition ${orderMode === 'MARKET' ? 'border-brand-50 bg-brand-50/10 text-grey-90' : 'border-white/10 text-grey-60'}`}
-          onClick={() => setOrderMode('MARKET')}
-        >
-          Market
-        </button>
+          <option value="LIMIT">Limit</option>
+          <option value="MARKET">Market</option>
+        </select>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          className={`rounded-md border px-3 py-2 text-caption-13 font-semibold transition ${side === 'BUY' ? 'border-brand-50 bg-brand-50/10 text-grey-90' : 'border-white/10 text-grey-60'}`}
-          onClick={() => setSide('BUY')}
-        >
-          Buy
-        </button>
-        <button
-          className={`rounded-md border px-3 py-2 text-caption-13 font-semibold transition ${side === 'SELL' ? 'border-brand-50 bg-brand-50/10 text-grey-90' : 'border-white/10 text-grey-60'}`}
-          onClick={() => setSide('SELL')}
-        >
-          Sell
-        </button>
-      </div>
+      <div className="p-5">
+        {/* Market question */}
+        <p className="text-caption-13 leading-5 text-grey-60">{market.question}</p>
 
-      <div className="mt-4 space-y-3">
-        <label className="block">
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Outcome</div>
-          <select
-            className="mt-2 w-full rounded-md border border-white/10 bg-bg-l3 px-3 py-2 text-caption-13 text-grey-90"
-            value={selectedOutcomeIndex}
-            onChange={(event) => {
-              const nextIndex = Number(event.target.value)
-              setSelectedOutcomeIndex(nextIndex)
-              setPrice(String(prices[nextIndex] || price))
-            }}
+        {/* Buy / Sell tabs */}
+        <div className="mt-4 flex gap-1 border-b border-white/10">
+          <button
+            className={`pb-2 pr-4 text-caption-13 font-semibold transition ${side === 'BUY' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+            onClick={() => setSide('BUY')}
+            type="button"
           >
-            {outcomes.map((outcome, index) => (
-              <option key={`${market.id}-${outcome}`} value={index}>{outcome}</option>
-            ))}
-          </select>
-        </label>
+            Buy
+          </button>
+          <button
+            className={`pb-2 pr-4 text-caption-13 font-semibold transition ${side === 'SELL' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+            onClick={() => setSide('SELL')}
+            type="button"
+          >
+            Sell
+          </button>
+        </div>
 
-        <label className="block">
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">
-            {orderMode === 'LIMIT' ? 'Price' : 'Price cap (optional)'}
-          </div>
-          <input
-            className="mt-2 w-full rounded-md border border-white/10 bg-bg-l3 px-3 py-2 text-caption-13 text-grey-90"
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            placeholder={orderMode === 'LIMIT' ? '0.57' : 'Leave blank to use market price'}
-          />
-        </label>
-
-        <label className="block">
-          <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">
-            {orderMode === 'LIMIT'
-              ? 'Size'
-              : side === 'BUY'
-                ? 'Amount (USDC)'
-                : 'Shares to sell'}
-          </div>
-          <input
-            className="mt-2 w-full rounded-md border border-white/10 bg-bg-l3 px-3 py-2 text-caption-13 text-grey-90"
-            value={size}
-            onChange={(event) => setSize(event.target.value)}
-          />
-        </label>
-
-        {
-          orderMode === 'MARKET' ? (
-            <label className="block">
-              <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Execution</div>
-              <select
-                className="mt-2 w-full rounded-md border border-white/10 bg-bg-l3 px-3 py-2 text-caption-13 text-grey-90"
-                value={marketOrderType}
-                onChange={(event) => setMarketOrderType(event.target.value as 'FOK' | 'FAK')}
+        {/* Outcome selector buttons */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {outcomes.map((outcome, index) => {
+            const outcomePrice = prices[index]
+            const cents = typeof outcomePrice === 'number' ? `${Math.round(outcomePrice * 1000) / 10}¢` : '--'
+            const isYes = index === 0
+            const isSelected = selectedOutcomeIndex === index
+            return (
+              <button
+                key={`${market.id}-outcome-${index}`}
+                className={`rounded-xl px-3 py-3 text-caption-13 font-semibold transition ${isSelected ? 'ring-2' : 'opacity-70 hover:opacity-90'}`}
+                onClick={() => {
+                  setSelectedOutcomeIndex(index)
+                  setPrice(String(prices[index] || price))
+                }}
+                style={
+                  isYes
+                    ? { backgroundColor: '#234f31', color: '#7ef0a5', ...(isSelected ? { outline: 'none', boxShadow: '0 0 0 2px #7ef0a5' } : {}) }
+                    : { backgroundColor: '#4c2229', color: '#ff6f7c', ...(isSelected ? { outline: 'none', boxShadow: '0 0 0 2px #ff6f7c' } : {}) }
+                }
+                type="button"
               >
-                <option value="FOK">FOK • Fill or Kill</option>
-                <option value="FAK">FAK • Fill and Kill</option>
-              </select>
-            </label>
+                {outcome} {cents}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Amount input */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-caption-12 text-grey-60">
+            <span>Amount</span>
+            <span>Min. $1.00</span>
+          </div>
+          <div className="mt-2 flex items-center rounded-xl border border-white/10 bg-bg-l3 px-3 py-3">
+            <span className="mr-2 text-caption-13 text-grey-60">$</span>
+            <input
+              className="min-w-0 flex-1 bg-transparent text-caption-13 text-grey-90 outline-none"
+              min="0"
+              placeholder="0"
+              type="number"
+              value={size}
+              onChange={(e) => setSize(e.target.value)}
+            />
+          </div>
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
+            {quickAmounts.map((pct) => {
+              const label = pct === 1 ? 'Max' : `${pct * 100}%`
+              const amount = balance > 0 ? (balance * pct).toFixed(2) : null
+              return (
+                <button
+                  key={label}
+                  className="rounded-lg border border-white/10 py-1.5 text-caption-12 font-semibold text-grey-60 transition hover:border-white/20 hover:text-grey-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={balance <= 0}
+                  onClick={() => amount && setSize(amount)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Limit price (shown only in limit mode) */}
+        {
+          orderMode === 'LIMIT' ? (
+            <div className="mt-3">
+              <div className="text-caption-12 text-grey-60">Price</div>
+              <input
+                className="mt-2 w-full rounded-xl border border-white/10 bg-bg-l3 px-3 py-3 text-caption-13 text-grey-90 outline-none"
+                placeholder="0.57"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
           ) : null
         }
-      </div>
 
-      <div className="mt-4 rounded-md border border-white/10 px-3 py-3 text-caption-13 text-grey-60">
-        <div className="flex items-center justify-between gap-3">
-          <span>Order type</span>
-          <span className="text-grey-90">{orderMode}{orderMode === 'MARKET' ? ` • ${marketOrderType}` : ''}</span>
+        {/* Estimated notional */}
+        <div className="mt-4 flex items-center justify-between text-caption-12 text-grey-60">
+          <span>Estimated total</span>
+          <span className="font-semibold text-grey-90">{estimatedNotional}</span>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <span>Side</span>
-          <span className="text-grey-90">{side} {selectedOutcome}</span>
-        </div>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span>Estimated notional</span>
-          <span className="text-grey-90">{estimatedNotional}</span>
-        </div>
-      </div>
 
-      <div className="mt-5 space-y-2">
-        {!account ? (
-          <Button className="w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
-        ) : !trading.isOnSupportedChain ? (
-          <button
-            className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black"
-            onClick={handleSwitchToPolygon}
-          >
-            Switch To Polygon
-          </button>
-        ) : !trading.hasCredentials ? (
-          <button
-            className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={trading.isAuthenticating || !trading.isReadyForAuthentication}
-            onClick={() => {
-              void handleEnableTrading()
-            }}
-          >
-            {trading.isAuthenticating ? 'Enabling Trading...' : 'Enable Trading'}
-          </button>
+        {/* Errors / messages */}
+        {(trading.authError || trading.executionError || ticketError) ? (
+          <div className="mt-3 rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
+            {trading.authError || trading.executionError || ticketError}
+          </div>
+        ) : null}
+        {trading.lastExecutionMessage ? (
+          <div className="mt-3 rounded-lg border border-success-green/20 bg-success-green/10 px-3 py-3 text-caption-12 text-success-green">
+            {trading.lastExecutionMessage}
+          </div>
+        ) : null}
+        {readinessQuery.data?.reason ? (
+          <div className="mt-3 rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
+            <div>{readinessQuery.data.reason}</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {!readinessQuery.data.isAllowanceSufficient ? (
+                <button
+                  className="rounded-md border border-brand-50/30 bg-brand-50/10 px-3 py-1.5 text-caption-12 font-semibold text-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={trading.isFixingAllowance}
+                  onClick={() => { void handleFixAllowance() }}
+                  type="button"
+                >
+                  {trading.isFixingAllowance ? 'Updating...' : `Fix allowance`}
+                </button>
+              ) : null}
+              {!readinessQuery.data.isBalanceSufficient ? (
+                <button
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-caption-12 font-semibold text-grey-90"
+                  onClick={handleFundWallet}
+                  type="button"
+                >
+                  Fund wallet
+                </button>
+              ) : null}
+            </div>
+          </div>
         ) : null}
 
-        <div className="rounded-md border border-white/10 px-3 py-3 text-caption-12 text-grey-60">
-          Wallet: {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Not connected'} • Chain: {chainId || 'Unknown'} {trading.isOnSupportedChain ? '• Polygon ready' : '• Switch to Polygon'} {isAAWallet ? '• Smart wallet' : '• External wallet'}
+        {/* Primary action button */}
+        <div className="mt-5 space-y-2">
+          {!account ? (
+            <Button className="w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
+          ) : !trading.isOnSupportedChain ? (
+            <button
+              className="w-full rounded-xl bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black"
+              onClick={handleSwitchToPolygon}
+              type="button"
+            >
+              Switch to Polygon
+            </button>
+          ) : !trading.hasCredentials ? (
+            <button
+              className="w-full rounded-xl bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={trading.isAuthenticating || !trading.isReadyForAuthentication}
+              onClick={() => { void handleEnableTrading() }}
+              type="button"
+            >
+              {trading.isAuthenticating ? 'Enabling Trading...' : 'Enable Trading'}
+            </button>
+          ) : (
+            <button
+              className="w-full rounded-xl px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
+              onClick={() => { void handleSubmitOrder() }}
+              style={{ backgroundColor: selectedOutcomeIndex === 0 ? '#7ef0a5' : '#ff6f7c' }}
+              type="button"
+            >
+              {trading.isSubmittingOrder ? 'Submitting...' : `${side === 'BUY' ? 'Buy' : 'Sell'} ${selectedOutcome}`}
+            </button>
+          )}
         </div>
 
-        <button
-          className="w-full rounded-md border border-brand-50 bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
-          onClick={() => {
-            void handleSubmitOrder()
-          }}
-        >
-          {trading.isSubmittingOrder ? 'Submitting Order...' : `Place ${side} ${orderMode} Order`}
-        </button>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-white/10 bg-bg-l3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
-            <p className="mt-2 text-caption-13 leading-6 text-grey-70">
-              Your live orders for this market.
-            </p>
+        {/* Open orders */}
+        {(openOrdersQuery.data?.length || openOrdersQuery.isLoading) ? (
+          <div className="mt-5 border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between text-caption-12 text-grey-60">
+              <span className="uppercase tracking-[0.14em]">Open orders</span>
+              <button
+                className="text-grey-50 hover:text-grey-90 disabled:opacity-50"
+                disabled={openOrdersQuery.isFetching || !trading.hasCredentials}
+                onClick={() => { void openOrdersQuery.refetch() }}
+                type="button"
+              >
+                {openOrdersQuery.isFetching ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {openOrdersQuery.isLoading ? (
+                <div className="text-caption-12 text-grey-60">Loading...</div>
+              ) : openOrdersQuery.data?.map((order) => {
+                const remainingSize = Math.max(Number(order.original_size) - Number(order.size_matched), 0)
+                return (
+                  <div key={order.id} className="rounded-lg border border-white/10 bg-bg-l3 p-3">
+                    <div className="flex items-center justify-between text-caption-12">
+                      <span className="font-semibold text-grey-90">{order.side} {order.outcome} @ {order.price}</span>
+                      <span className="text-grey-60">{remainingSize.toFixed(2)} left</span>
+                    </div>
+                    <button
+                      className="mt-2 text-caption-12 font-semibold text-risk-red disabled:opacity-50"
+                      disabled={trading.isCancellingOrderId === order.id}
+                      onClick={() => { void trading.cancelOrder(order.id) }}
+                      type="button"
+                    >
+                      {trading.isCancellingOrderId === order.id ? 'Cancelling...' : 'Cancel'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <button
-            className="rounded-md border border-white/10 px-3 py-2 text-caption-12 font-semibold text-grey-60 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={openOrdersQuery.isFetching || !trading.hasCredentials}
-            onClick={() => {
-              void openOrdersQuery.refetch()
-            }}
-          >
-            {openOrdersQuery.isFetching || trading.isRefreshingOrders ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-3">
-          {
-            openOrdersQuery.isLoading ? (
-              <div className="text-caption-13 text-grey-60">Loading open orders...</div>
-            ) : openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => {
-              const remainingSize = Math.max(Number(order.original_size) - Number(order.size_matched), 0)
-
-              return (
-                <div key={order.id} className="rounded-lg border border-white/10 bg-bg-l2 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-caption-13 font-semibold text-grey-90">{order.side} {order.outcome}</div>
-                    <div className="text-caption-12 text-grey-60">{order.status}</div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-caption-12 text-grey-60">
-                    <div>Price: <span className="text-grey-90">{order.price}</span></div>
-                    <div>Remaining: <span className="text-grey-90">{remainingSize.toFixed(2)}</span></div>
-                    <div>Created: <span className="text-grey-90">{formatDateTime(order.created_at)}</span></div>
-                    <div>Type: <span className="text-grey-90">{order.order_type}</span></div>
-                  </div>
-                  <button
-                    className="mt-3 rounded-md border border-risk-red/30 px-3 py-2 text-caption-12 font-semibold text-risk-red disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={trading.isCancellingOrderId === order.id}
-                    onClick={() => {
-                      void trading.cancelOrder(order.id)
-                    }}
-                  >
-                    {trading.isCancellingOrderId === order.id ? 'Cancelling...' : 'Cancel order'}
-                  </button>
-                </div>
-              )
-            }) : (
-              <div className="text-caption-13 text-grey-60">
-                {trading.hasCredentials
-                  ? 'No open authenticated orders are loaded for this market yet.'
-                  : 'Enable trading to load and manage open orders.'}
-              </div>
-            )
-          }
-        </div>
+        ) : null}
       </div>
     </div>
   )

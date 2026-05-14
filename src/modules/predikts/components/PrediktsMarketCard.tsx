@@ -95,13 +95,11 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
         {
           displayRows.map((row) => (
             <div key={row.market.id} className="rounded-[1rem] bg-[#1b1b1c] px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0 truncate text-[1.05rem] font-medium text-grey-80">{row.outcomeLabel}</div>
-                <div className="text-[1.1rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1 truncate text-[1.05rem] font-medium text-grey-80">{row.outcomeLabel}</div>
+                <div className="shrink-0 text-[1.1rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
                 <button
-                  className="rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
+                  className="shrink-0 rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
                   onClick={(clickEvent) => {
                     clickEvent.stopPropagation()
                     openTrade(row.market.slug, 0)
@@ -112,7 +110,7 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
                   Yes {formatCents(row.yesPrice)}
                 </button>
                 <button
-                  className="rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
+                  className="shrink-0 rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
                   onClick={(clickEvent) => {
                     clickEvent.stopPropagation()
                     openTrade(row.market.slug, 1)

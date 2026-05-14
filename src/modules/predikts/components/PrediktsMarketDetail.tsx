@@ -303,7 +303,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
   return (
     <div className="px-2 py-6 ds:px-4">
-      <section className="flex flex-col gap-5 xl:flex-row">
+      <section className="flex flex-col gap-5 lg:flex-row">
         <div className="min-w-0 flex-1 space-y-5">
           <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
             <Href to="/predikts" className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Back to Predikt</Href>
@@ -449,7 +449,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           </div>
         </div>
 
-        <aside id="trade" className="w-full shrink-0 space-y-4 xl:sticky xl:top-6 xl:w-[24rem] xl:self-start">
+        <aside id="trade" className="w-full shrink-0 space-y-4 lg:sticky lg:top-6 lg:w-[22rem] lg:self-start">
           <PrediktsTradingPanel
             initialOutcomeIndex={selectedOutcomeIndex}
             market={selectedMarket}
