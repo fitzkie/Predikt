@@ -10,6 +10,77 @@ import { Logo } from 'components/ui'
 import { Href } from 'components/navigation'
 
 
+const HERO_BANNERS = [
+  '/images/hero/banner-1.jpg',
+  '/images/hero/banner-2.jpg',
+  '/images/hero/banner-3.jpg',
+  '/images/hero/banner-4.jpg',
+  '/images/hero/banner-5.jpg',
+  '/images/hero/banner-6.jpg',
+  '/images/hero/banner-8.jpg',
+  '/images/hero/banner-10.jpg',
+]
+
+const HeroBannerCarousel: React.FC = () => {
+  const [ current, setCurrent ] = useState(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % HERO_BANNERS.length)
+    }, 5000)
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
+
+  const goTo = (i: number) => {
+    setCurrent(i)
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+
+    intervalRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % HERO_BANNERS.length)
+    }, 5000)
+  }
+
+  return (
+    <div className="relative w-full rounded-[1rem] overflow-hidden" style={{ aspectRatio: '3/1' }}>
+      {HERO_BANNERS.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          loading={i === 0 ? 'eager' : 'lazy'}
+          className={cx(
+            'absolute inset-0 w-full h-full object-cover transition-opacity duration-700',
+            i === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
+          )}
+        />
+      ))}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+        {HERO_BANNERS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            type="button"
+            className={cx('w-2 h-2 rounded-full transition-all', {
+              'bg-white scale-125': i === current,
+              'bg-white/40 hover:bg-white/70': i !== current,
+            })}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
 const sectionDescriptions: Record<string, string> = {
   all: 'Search across every live market on the board.',
   trending: 'Highest-velocity markets across the full board.',
@@ -99,7 +170,6 @@ const PrediktsHub: React.FC = () => {
     : activeSubcategoryMeta
       ? activeSubcategoryMeta.events.reduce((acc, event) => acc + event.volume, 0)
       : browser.totals[activeSection]
-  const visibleCount = filteredEvents.length
   const supportingTags = activeSection === 'all'
     ? browser.tags.slice(0, 12)
     : (browser.lanes.find((lane) => lane.slug === activeSection)?.items || browser.tags.slice(0, 12))
@@ -138,20 +208,7 @@ const PrediktsHub: React.FC = () => {
               </Href>
             </div>
 
-            <div className="flex flex-col gap-2 ds:flex-row ds:items-end ds:justify-between">
-              <div>
-                <h1 className="mt-2 text-[1.9rem] font-semibold leading-tight tracking-[-0.04em] text-grey-90 ds:text-[2.5rem]">
-                  Browse live event-driven markets
-                </h1>
-                <p className="mt-2 max-w-3xl text-caption-14 leading-7 text-grey-70">
-                  Use the Sports button to move into the sportsbook. Use search and categories here to scan live prediction markets, trending topics, and deeper event contracts from one board.
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-right">
-                <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Events</div>
-                <div className="mt-1 text-heading-h4 font-semibold text-grey-90">{visibleCount}</div>
-              </div>
-            </div>
+            <HeroBannerCarousel />
 
             <div className="rounded-2xl border border-white/10 bg-[#101010] p-2">
               <div className="mb-2 flex items-center justify-between">
