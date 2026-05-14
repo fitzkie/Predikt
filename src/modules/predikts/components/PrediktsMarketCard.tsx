@@ -45,7 +45,7 @@ const formatCents = (value?: number) => {
 
 const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
   const router = useRouter()
-  const displayRows = event.rows.slice(0, 2)
+  const displayRows = event.rows.slice(0, 1)
   const hasMoreRows = event.rows.length > displayRows.length
 
   const openDetail = () => {
@@ -94,12 +94,12 @@ const PrediktsMarketCard: React.FC<Props> = ({ event }) => {
       <div className="mt-4 space-y-2">
         {
           displayRows.map((row) => (
-            <div key={row.market.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-[1rem] bg-[#1b1b1c] px-3 py-3">
-              <div className="min-w-0">
-                <div className="truncate text-[1.05rem] font-medium text-grey-80">{row.outcomeLabel}</div>
+            <div key={row.market.id} className="rounded-[1rem] bg-[#1b1b1c] px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 truncate text-[1.05rem] font-medium text-grey-80">{row.outcomeLabel}</div>
+                <div className="text-[1.1rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
               </div>
-              <div className="text-[1.1rem] font-semibold text-grey-90">{formatPercent(row.probability)}</div>
-              <div className="flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2">
                 <button
                   className="rounded-full px-3 py-2 text-[0.95rem] font-semibold transition hover:brightness-110"
                   onClick={(clickEvent) => {

@@ -104,7 +104,7 @@ const Sport: React.FC<SportProps> = (props) => {
   return (
     <div className={rootClassName}>
       <div className={wrapperClassName}>
-        <Href to={`/${slug}`} className={buttonClassName}>
+        <Href to={isTop ? constants.links.sportsApp : `/${slug}`} className={buttonClassName}>
           <div className="flex items-center">
             <Icon className="size-4 mr-2" name={icon} />
             <Message className="text-caption-13" value={name} />

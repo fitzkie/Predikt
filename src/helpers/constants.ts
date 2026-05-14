@@ -163,12 +163,22 @@ const prediktsTaxonomy = [
   {
     title: 'Politics',
     slug: 'politics',
-    items: [ 'Elections', 'Policy', 'Geopolitics' ],
+    items: [ 'Elections', 'Policy', 'Government' ],
   },
   {
     title: 'Finance',
     slug: 'finance',
-    items: [ 'Fed', 'Rates', 'Stocks', 'Crypto' ],
+    items: [ 'Fed', 'Rates', 'Stocks', 'Economy' ],
+  },
+  {
+    title: 'Crypto',
+    slug: 'crypto',
+    items: [ 'Bitcoin', 'Ethereum', 'Solana', 'Memecoins' ],
+  },
+  {
+    title: 'Geopolitics',
+    slug: 'geopolitics',
+    items: [ 'China', 'War', 'Sanctions', 'World Leaders' ],
   },
   {
     title: 'Sports',
@@ -186,9 +196,9 @@ const prediktsTaxonomy = [
     items: [ 'Movies', 'Music', 'Celebrity' ],
   },
   {
-    title: 'Black Swan',
-    slug: 'black-swan',
-    items: [ 'Pandemics', 'War', 'Space', 'Weather' ],
+    title: 'Climate',
+    slug: 'climate',
+    items: [ 'Weather', 'Hurricanes', 'Pandemics', 'Space' ],
   },
 ] as const
 

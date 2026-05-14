@@ -56,6 +56,18 @@ const formatTimestamp = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString()
 }
 
+const truncateBody = (value?: string, maxLength = 340) => {
+  if (!value) {
+    return ''
+  }
+
+  if (value.length <= maxLength) {
+    return value
+  }
+
+  return `${value.slice(0, maxLength).trim()}...`
+}
+
 const marketVolume = (market: PolymarketMarket) => {
   return Number(market.volume24hr || market.volume || 0)
 }
@@ -274,6 +286,8 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
 
   const image = eventImage(event, selectedMarket)
   const totalVolume = eventMarkets.reduce((acc, market) => acc + marketVolume(market), 0)
+  const marketContext = event?.description || selectedMarket.description || 'Live market context and contract details for this event will appear here.'
+  const rulesBody = String((event as Record<string, unknown> | null)?.resolutionSource || selectedMarket.description || event?.description || '')
 
   return (
     <div className="px-2 py-6 ds:px-4">
@@ -368,9 +382,25 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             </div>
           </div>
 
-          <div className="grid gap-4 ds:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <OrderBookPanel market={selectedMarket} />
-            <MarketExecutionPanel market={selectedMarket} />
+          <div className="grid gap-4">
+            <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
+              <div className="text-[1.7rem] font-semibold tracking-[-0.03em] text-grey-90">Market Context</div>
+              <p className="mt-5 max-w-4xl text-[1.1rem] leading-8 text-grey-70">
+                {truncateBody(marketContext, 520)}
+              </p>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
+              <div className="text-[1.7rem] font-semibold tracking-[-0.03em] text-grey-90">Rules</div>
+              <p className="mt-5 max-w-4xl text-[1.1rem] leading-8 text-grey-70">
+                {truncateBody(rulesBody || marketContext, 620)}
+              </p>
+            </div>
+
+            <div className="grid gap-4 ds:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <OrderBookPanel market={selectedMarket} />
+              <MarketExecutionPanel market={selectedMarket} />
+            </div>
           </div>
         </div>
 

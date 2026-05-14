@@ -16,10 +16,12 @@ const sectionDescriptions: Record<string, string> = {
   new: 'Fresh contracts and newly opened markets.',
   politics: 'Elections, policy, geopolitics, and state power.',
   finance: 'Macro, crypto, rates, stocks, and money flows.',
+  crypto: 'Bitcoin, Ethereum, altcoins, and token narratives.',
+  geopolitics: 'China, war, world leaders, and state conflict.',
   sports: 'Live and event-driven sports contracts.',
   tech: 'AI, launches, M&A, and product milestones.',
   culture: 'Movies, music, celebrities, and internet moments.',
-  'black-swan': 'War, weather, pandemics, and low-probability shocks.',
+  climate: 'Weather, science, pandemics, and climate shocks.',
 }
 
 const volumeLabel = (value?: number) => {
@@ -146,7 +148,7 @@ const PrediktsHub: React.FC = () => {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-right">
-                <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Events showing</div>
+                <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Events</div>
                 <div className="mt-1 text-heading-h4 font-semibold text-grey-90">{visibleCount}</div>
               </div>
             </div>
@@ -158,14 +160,14 @@ const PrediktsHub: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    className="rounded-full border border-white/10 bg-[#181818] px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
+                    className="rounded-full border border-white/10 bg-[#181818] px-4 py-2 text-caption-13 text-grey-60 transition hover:text-grey-90"
                     onClick={() => scrollTabs('left')}
                     type="button"
                   >
                     ←
                   </button>
                   <button
-                    className="rounded-full border border-white/10 bg-[#181818] px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
+                    className="rounded-full border border-white/10 bg-[#181818] px-4 py-2 text-caption-13 text-grey-60 transition hover:text-grey-90"
                     onClick={() => scrollTabs('right')}
                     type="button"
                   >
@@ -183,7 +185,7 @@ const PrediktsHub: React.FC = () => {
                       <button
                         key={section.key}
                         className={cx(
-                          'rounded-2xl border px-4 py-3 text-left transition min-w-[12rem] snap-start',
+                          'rounded-full border px-4 py-2 text-left transition min-w-fit snap-start whitespace-nowrap',
                           isActive
                             ? 'border-brand-50 bg-brand-50/12'
                             : 'border-white/10 bg-[#181818] hover:border-white/20'
@@ -193,9 +195,6 @@ const PrediktsHub: React.FC = () => {
                       >
                         <div className={cx('text-caption-13 font-semibold', isActive ? 'text-brand-50' : 'text-grey-90')}>
                           {section.label}
-                        </div>
-                        <div className="mt-1 text-caption-12 leading-5 text-grey-60">
-                          {sectionDescriptions[section.key] || sectionDescriptions.trending}
                         </div>
                       </button>
                     )
@@ -271,7 +270,7 @@ const PrediktsHub: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-right">
-              <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Sampled volume</div>
+              <div className="text-caption-12 uppercase tracking-[0.16em] text-grey-60">Volume</div>
               <div className="mt-1 text-heading-h4 font-semibold text-grey-90">{volumeLabel(activeSectionVolume)}</div>
             </div>
           </div>

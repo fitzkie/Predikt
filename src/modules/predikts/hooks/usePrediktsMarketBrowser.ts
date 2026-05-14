@@ -202,18 +202,22 @@ const usePrediktsMarketBrowser = () => {
   })
   const politicsQuery = usePolymarketSearchMarkets('politics', 300)
   const financeQuery = usePolymarketSearchMarkets('finance', 300)
+  const cryptoQuery = usePolymarketSearchMarkets('crypto bitcoin ethereum solana meme', 300)
+  const geopoliticsQuery = usePolymarketSearchMarkets('geopolitics china war sanctions taiwan world leader', 300)
   const sportsQuery = usePolymarketSearchMarkets('sports', 300)
   const techQuery = usePolymarketSearchMarkets('tech', 300)
   const cultureQuery = usePolymarketSearchMarkets('culture', 300)
-  const blackSwanQuery = usePolymarketSearchMarkets('geopolitics war weather pandemic space', 300)
+  const climateQuery = usePolymarketSearchMarkets('climate weather hurricane pandemic science space', 300)
 
   const laneResults = {
     politics: politicsQuery.data || [],
     finance: financeQuery.data || [],
+    crypto: cryptoQuery.data || [],
+    geopolitics: geopoliticsQuery.data || [],
     sports: sportsQuery.data || [],
     tech: techQuery.data || [],
     culture: cultureQuery.data || [],
-    'black-swan': blackSwanQuery.data || [],
+    climate: climateQuery.data || [],
   } as const
 
   const data = useMemo(() => {
@@ -287,17 +291,19 @@ const usePrediktsMarketBrowser = () => {
       trendingMarkets,
       trendingEvents,
     }
-  }, [ trendingQuery.data, newestQuery.data, politicsQuery.data, financeQuery.data, sportsQuery.data, techQuery.data, cultureQuery.data, blackSwanQuery.data ])
+  }, [ trendingQuery.data, newestQuery.data, politicsQuery.data, financeQuery.data, cryptoQuery.data, geopoliticsQuery.data, sportsQuery.data, techQuery.data, cultureQuery.data, climateQuery.data ])
 
   const isLoading = [
     trendingQuery.isLoading,
     newestQuery.isLoading,
     politicsQuery.isLoading,
     financeQuery.isLoading,
+    cryptoQuery.isLoading,
+    geopoliticsQuery.isLoading,
     sportsQuery.isLoading,
     techQuery.isLoading,
     cultureQuery.isLoading,
-    blackSwanQuery.isLoading,
+    climateQuery.isLoading,
   ].some(Boolean)
 
   const isFetching = [
@@ -305,10 +311,12 @@ const usePrediktsMarketBrowser = () => {
     newestQuery.isFetching,
     politicsQuery.isFetching,
     financeQuery.isFetching,
+    cryptoQuery.isFetching,
+    geopoliticsQuery.isFetching,
     sportsQuery.isFetching,
     techQuery.isFetching,
     cultureQuery.isFetching,
-    blackSwanQuery.isFetching,
+    climateQuery.isFetching,
   ].some(Boolean)
 
   const totals = useMemo(() => {
