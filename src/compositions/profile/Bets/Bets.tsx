@@ -10,7 +10,6 @@ import cx from 'classnames'
 import { openModal } from '@locmod/modal'
 import { useEntry } from '@locmod/intersection-observer'
 import { type InfiniteData, type UseInfiniteQueryResult } from '@tanstack/react-query'
-import { type Address } from 'viem'
 import { useWallet } from 'wallet'
 import { toLocaleString } from 'helpers'
 import { getGameDateTime } from 'helpers/getters'
@@ -522,7 +521,6 @@ const Content: React.FC<ContentProps> = ({ tab }) => {
     filter: {
       bettor: address!,
       type: tab,
-      affiliate: process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS as Address,
     },
   }
 
