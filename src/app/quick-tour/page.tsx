@@ -47,6 +47,13 @@ export default function QuickTourPage() {
           <Button className="flex-1" size={40} title="Open Predikt" to="/predikts" />
           <Button className="flex-1" size={40} style="secondary" title="Open Sports" to="/bet" />
         </div>
+        <div className="mt-8">
+          <img
+            src="/images/How Sports Works.png"
+            alt="How Predikt Sports Works"
+            className="w-full rounded-xl"
+          />
+        </div>
       </div>
     </div>
   )
