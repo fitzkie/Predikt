@@ -2,7 +2,6 @@
 
 import { BetType, useBets, type UseBetsProps } from '@azuro-org/sdk'
 import { OrderDirection } from '@azuro-org/toolkit'
-import { type Address } from 'viem'
 import { Message } from '@locmod/intl'
 import React from 'react'
 import dynamic from 'next/dynamic'
@@ -37,7 +36,6 @@ const AcceptedBets: React.FC = () => {
     filter: {
       bettor: address!,
       type: BetType.Accepted,
-      affiliate: process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS as Address,
     },
     itemsPerPage: 500,
   }
