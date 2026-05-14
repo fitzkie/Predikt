@@ -16,17 +16,6 @@ const sanitizeOpponentImage = (image?: string | null) => {
     return undefined
   }
 
-  try {
-    const url = new URL(image)
-
-    if (url.hostname.endsWith('.azuro.org')) {
-      return undefined
-    }
-  }
-  catch {
-    return image
-  }
-
   return image
 }
 

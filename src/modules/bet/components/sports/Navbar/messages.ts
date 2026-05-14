@@ -1,6 +1,6 @@
 export default {
   top: {
-    en: 'Sports Markets',
+    en: 'Instant Withdrawals, No Limits, Best Odds',
   },
   // Sports
   politics: {

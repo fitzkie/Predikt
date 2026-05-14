@@ -2,7 +2,7 @@
 
 import '@glidejs/glide/dist/css/glide.core.min.css'
 import Glide from '@glidejs/glide'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Message } from '@locmod/intl'
 import { useParams } from 'next/navigation'
 import { ConditionState, type GameMarkets, type GameData } from '@azuro-org/toolkit'
@@ -17,6 +17,69 @@ import OutcomeButton from 'compositions/OutcomeButton/OutcomeButton'
 
 import messages from './messages'
 
+
+// Drop banner images into public/images/hero/ and add their paths here.
+// Auto-advances every 5 seconds.
+const HERO_BANNERS: string[] = [
+  '/images/hero/banner-1.png',
+  '/images/hero/banner-2.png',
+  '/images/hero/banner-3.png',
+  '/images/hero/banner-4.png',
+  '/images/hero/banner-5.png',
+  '/images/hero/banner-6.png',
+  '/images/hero/banner-7.png',
+  '/images/hero/banner-8.png',
+]
+
+const HeroBannerCarousel: React.FC = () => {
+  const [ current, setCurrent ] = useState(0)
+
+  useEffect(() => {
+    if (HERO_BANNERS.length <= 1) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      setCurrent(prev => (prev + 1) % HERO_BANNERS.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  if (!HERO_BANNERS.length) {
+    return null
+  }
+
+  return (
+    <div className="relative mt-4 w-full rounded-md overflow-hidden" style={{ aspectRatio: '16/5' }}>
+      {HERO_BANNERS.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className={cx('absolute inset-0 w-full h-full object-cover transition-opacity duration-700', {
+            'opacity-100': i === current,
+            'opacity-0': i !== current,
+          })}
+        />
+      ))}
+      {HERO_BANNERS.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2">
+          {HERO_BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={cx('size-2 rounded-full transition-all', {
+                'bg-white scale-110': i === current,
+                'bg-white/40 hover:bg-white/70': i !== current,
+              })}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const CardSkeleton: React.FC<{ className?: string }> = ({ className }) => {
   return (
@@ -200,15 +263,7 @@ const TopEvents: React.FC = () => {
           <span className="text-grey-90">Predik</span>
           <span className="text-brand-50">t</span>
         </div>
-        <h1 className="mt-2 max-w-3xl text-[2.5rem] font-bold leading-[1.05] tracking-[-0.04em] text-grey-90 ds:text-[4.5rem]">
-          <Message value={messages.top} />
-        </h1>
-        {
-          Boolean(sport) && (
-            <Message className="mt-3 block text-caption-13 font-medium uppercase tracking-[0.18em] text-brand-50" value={sport} />
-          )
-        }
-        <Message className="mt-4 block max-w-2xl text-base leading-7 text-grey-70 ds:text-lg" value={messages.subtitle} />
+        <HeroBannerCarousel />
       </div>
       <Events />
     </div>
