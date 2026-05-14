@@ -18,6 +18,7 @@ const Content: React.CFC = ({ children }) => {
   const pathname = usePathname()
   const isMarketingPage = pathname === '/'
   const isPredikts = pathname.startsWith('/predikts')
+  const isPrediktsDetail = pathname.startsWith('/predikts/')
 
   const rootClassName = cx('h-full flex flex-col wd:flex-row min-h-screen mx-auto wd:px-2 wd:pb-2', ws.root)
   const mainClassName = cx(ns.main, ws.main,
@@ -56,9 +57,13 @@ const Content: React.CFC = ({ children }) => {
           {children}
         </div>
       </main>
-      <Media className={cx('h-[calc(100vh_-_0.5rem)]', ws.rightSidebar, sidebarClassName)} wide>
-        <RightSidebar />
-      </Media>
+      {
+        !isPrediktsDetail && (
+          <Media className={cx('h-[calc(100vh_-_0.5rem)]', ws.rightSidebar, sidebarClassName)} wide>
+            <RightSidebar />
+          </Media>
+        )
+      }
       <Media narrow mobile>
         <div className="fixed left-1/2 -translate-x-1/2 bottom-2 z-[40] flex items-center justify-center space-x-2">
           <MobileStatisticsButton />

@@ -150,6 +150,17 @@ const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }
     .filter((item) => item.slug === market.slug || (item.asset && tokenIds.includes(item.asset)))
     .slice(0, 6)
 
+  if (!account) {
+    return null
+  }
+
+  const hasOpenOrders = Boolean(openOrdersQuery.data?.length)
+  const hasFills = fills.length > 0
+
+  if (!openOrdersQuery.isLoading && !activityQuery.isLoading && !hasOpenOrders && !hasFills) {
+    return null
+  }
+
   return (
     <div className="rounded-[1.35rem] border border-white/10 bg-[#161616] p-5">
       <div className="flex items-center justify-between gap-3">
@@ -226,6 +237,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
   const relatedEventQuery = usePolymarketEventBySlug(relatedEventSlug)
   const [ selectedMarketSlug, setSelectedMarketSlug ] = useState(searchParams.get('market') || slug)
   const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(Number(searchParams.get('outcome') || '0'))
+  const [ detailTab, setDetailTab ] = useState<'order-book' | 'rules'>('order-book')
 
   const event = directEventQuery.data || relatedEventQuery.data || null
   const directMarket = directMarketQuery.data || null
@@ -333,48 +345,91 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
                   const probability = yesPrice(market)
 
                   return (
-                    <div
-                      key={market.id}
-                      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 border-b border-white/10 px-5 py-5 transition last:border-b-0 ${active ? 'bg-white/5' : 'bg-[#151515] hover:bg-white/2'}`}
-                    >
-                      <button
-                        className="min-w-0 text-left"
-                        onClick={() => {
-                          setSelectedMarketSlug(market.slug)
-                          setSelectedOutcomeIndex(0)
-                        }}
-                        type="button"
+                    <div key={market.id} className={`border-b border-white/10 last:border-b-0 ${active ? 'bg-white/5' : 'bg-[#151515]'}`}>
+                      <div
+                        className={`grid grid-cols-[minmax(0,1fr)_7rem_24rem] gap-4 px-5 py-5 transition ${active ? '' : 'hover:bg-white/2'}`}
                       >
-                        <div className="text-[1.15rem] leading-8 text-grey-90">{market.question}</div>
-                        <div className="mt-1 text-caption-13 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
-                      </button>
-                      <div className="flex items-center text-[1.45rem] font-semibold text-grey-90">
-                        {formatPercent(probability)}
-                      </div>
-                      <div className="flex items-center gap-3">
                         <button
-                          className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
+                          className="min-w-0 text-left"
                           onClick={() => {
                             setSelectedMarketSlug(market.slug)
                             setSelectedOutcomeIndex(0)
                           }}
-                          style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
                           type="button"
                         >
-                          Buy Yes {Math.round(probability * 1000) / 10}¢
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-[1.15rem] leading-8 text-grey-90">{market.question}</div>
+                              <div className="mt-1 text-caption-13 text-grey-60">{formatVolume(marketVolume(market))} Vol.</div>
+                            </div>
+                            <span className="mt-1 text-grey-50">{active ? '▴' : '▾'}</span>
+                          </div>
                         </button>
-                        <button
-                          className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
-                          onClick={() => {
-                            setSelectedMarketSlug(market.slug)
-                            setSelectedOutcomeIndex(1)
-                          }}
-                          style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
-                          type="button"
-                        >
-                          Buy No {Math.round((1 - probability) * 1000) / 10}¢
-                        </button>
+                        <div className="flex items-center justify-center text-[1.45rem] font-semibold text-grey-90">
+                          {formatPercent(probability)}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
+                            onClick={() => {
+                              setSelectedMarketSlug(market.slug)
+                              setSelectedOutcomeIndex(0)
+                            }}
+                            style={{ backgroundColor: '#234f31', color: '#7ef0a5' }}
+                            type="button"
+                          >
+                            Buy Yes {Math.round(probability * 1000) / 10}¢
+                          </button>
+                          <button
+                            className="min-w-[11rem] rounded-[1rem] px-5 py-3 text-[1rem] font-semibold transition hover:brightness-110"
+                            onClick={() => {
+                              setSelectedMarketSlug(market.slug)
+                              setSelectedOutcomeIndex(1)
+                            }}
+                            style={{ backgroundColor: '#4c2229', color: '#ff6f7c' }}
+                            type="button"
+                          >
+                            Buy No {Math.round((1 - probability) * 1000) / 10}¢
+                          </button>
+                        </div>
                       </div>
+
+                      {
+                        active ? (
+                          <div className="border-t border-white/10 bg-[#121212] px-5 py-4">
+                            <div className="flex items-center gap-6 border-b border-white/10 pb-3">
+                              <button
+                                className={`pb-2 text-[1rem] font-semibold ${detailTab === 'order-book' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+                                onClick={() => setDetailTab('order-book')}
+                                type="button"
+                              >
+                                Order Book
+                              </button>
+                              <button
+                                className={`pb-2 text-[1rem] font-semibold ${detailTab === 'rules' ? 'border-b-2 border-brand-50 text-grey-90' : 'text-grey-50'}`}
+                                onClick={() => setDetailTab('rules')}
+                                type="button"
+                              >
+                                Rules
+                              </button>
+                            </div>
+                            <div className="pt-4">
+                              {
+                                detailTab === 'order-book' ? (
+                                  <OrderBookPanel market={market} />
+                                ) : (
+                                  <div className="rounded-[1.25rem] border border-white/10 bg-[#151515] p-5">
+                                    <div className="text-[1.4rem] font-semibold tracking-[-0.02em] text-grey-90">Rules</div>
+                                    <p className="mt-4 text-[1rem] leading-7 text-grey-70">
+                                      {truncateBody(String((event as Record<string, unknown> | null)?.resolutionSource || market.description || event?.description || ''), 560)}
+                                    </p>
+                                  </div>
+                                )
+                              }
+                            </div>
+                          </div>
+                        ) : null
+                      }
                     </div>
                   )
                 })
@@ -390,17 +445,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
-              <div className="text-[1.7rem] font-semibold tracking-[-0.03em] text-grey-90">Rules</div>
-              <p className="mt-5 max-w-4xl text-[1.1rem] leading-8 text-grey-70">
-                {truncateBody(rulesBody || marketContext, 620)}
-              </p>
-            </div>
-
-            <div className="grid gap-4 ds:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <OrderBookPanel market={selectedMarket} />
-              <MarketExecutionPanel market={selectedMarket} />
-            </div>
+            <MarketExecutionPanel market={selectedMarket} />
           </div>
         </div>
 

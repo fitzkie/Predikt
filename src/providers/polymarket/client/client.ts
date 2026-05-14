@@ -33,14 +33,34 @@ const readJson = async <T>(response: Response): Promise<T> => {
 export const createPolymarketClient = (config: PolymarketClientConfig): PolymarketClient => {
   return {
     async getMarkets(params) {
-      const url = buildUrlWithQuery(config.gammaApiUrl, '/markets', params)
+      const requestedLimit = Number(params?.limit || 100)
+      const requestedOffset = Number(params?.offset || 0)
+      const pageSize = Math.min(Math.max(requestedLimit, 1), 100)
+      const pageCount = Math.max(1, Math.ceil(requestedLimit / 100))
+      const collected: PolymarketMarket[] = []
 
-      return readJson<PolymarketMarket[]>(await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-        },
-        cache: 'no-store',
-      }))
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        const url = buildUrlWithQuery(config.gammaApiUrl, '/markets', {
+          ...params,
+          limit: pageSize,
+          offset: requestedOffset + (pageIndex * 100),
+        })
+
+        const page = await readJson<PolymarketMarket[]>(await fetch(url, {
+          headers: {
+            Accept: 'application/json',
+          },
+          cache: 'no-store',
+        }))
+
+        collected.push(...page)
+
+        if (page.length < pageSize) {
+          break
+        }
+      }
+
+      return collected.slice(0, requestedLimit)
     },
 
     async getEvents(params) {

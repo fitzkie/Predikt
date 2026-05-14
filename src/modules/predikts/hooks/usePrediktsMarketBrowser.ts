@@ -189,14 +189,14 @@ const usePrediktsMarketBrowser = () => {
   const trendingQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 1000,
+    limit: 500,
     order: 'volume24hr',
     ascending: false,
   })
   const newestQuery = usePolymarketMarkets({
     active: true,
     closed: false,
-    limit: 500,
+    limit: 300,
     order: 'createdAt',
     ascending: false,
   })
