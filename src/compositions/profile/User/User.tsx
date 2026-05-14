@@ -26,8 +26,8 @@ const statsCardClassName = 'rounded-md border border-white/10 bg-bg-l1 px-4 py-4
 const User: React.FC = () => {
   const { account: address } = useWallet()
   const { appChain } = useChain()
-  const { profile, referralLink, updateProfile, setLinkedEmail } = usePrediktUser()
-  const { linkGoogle, linkTwitter, isGoogleLinked, isXLinked } = useOptionalPrivy()
+  const { profile, referralLink, updateProfile } = usePrediktUser()
+  const { linkGoogle, linkTwitter, linkEmail, isGoogleLinked, isXLinked, isEmailLinked, linkedEmailAddress } = useOptionalPrivy()
   const { betsCount, betAmount, payout, tokenSymbol } = useProfileStats()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -216,16 +216,22 @@ const User: React.FC = () => {
               <div className="rounded-lg border border-white/10 bg-bg-l1 p-4">
                 <div className="text-caption-12 uppercase tracking-[0.16em] text-brand-50">Linked Accounts</div>
                 <div className="mt-4 space-y-4">
-                  <div>
-                    <div className="mb-2 text-caption-12 text-grey-60">Email</div>
-                    <Input
-                      className="bg-bg-l0"
-                      onChange={setLinkedEmail}
-                      placeholder="you@example.com"
-                      regExp="^.*$"
-                      type="text"
-                      value={profile.linkedAccounts.email}
-                    />
+                  <div className="rounded-md border border-white/8 bg-bg-l0 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-caption-13 font-semibold text-grey-90">Email</div>
+                        <div className="mt-1 text-caption-12 text-grey-60">
+                          {isEmailLinked ? linkedEmailAddress : 'Add email for account recovery and updates.'}
+                        </div>
+                      </div>
+                      <Button
+                        size={32}
+                        style={isEmailLinked ? 'secondary' : 'primary'}
+                        title={isEmailLinked ? 'Linked' : 'Link Email'}
+                        disabled={isEmailLinked}
+                        onClick={linkEmail}
+                      />
+                    </div>
                   </div>
                   <div className="rounded-md border border-white/8 bg-bg-l0 p-3">
                     <div className="flex items-center justify-between">

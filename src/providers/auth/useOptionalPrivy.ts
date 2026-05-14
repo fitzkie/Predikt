@@ -12,8 +12,11 @@ type OptionalPrivyState = {
   canLogin: boolean
   linkGoogle: () => void
   linkTwitter: () => void
+  linkEmail: () => void
   isGoogleLinked: boolean
   isXLinked: boolean
+  isEmailLinked: boolean
+  linkedEmailAddress: string | null
 }
 
 const fallbackState: OptionalPrivyState = {
@@ -24,8 +27,11 @@ const fallbackState: OptionalPrivyState = {
   canLogin: false,
   linkGoogle: () => undefined,
   linkTwitter: () => undefined,
+  linkEmail: () => undefined,
   isGoogleLinked: false,
   isXLinked: false,
+  isEmailLinked: false,
+  linkedEmailAddress: null,
 }
 
 export const useOptionalPrivy = (): OptionalPrivyState => {
@@ -35,11 +41,14 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
 
   try {
     const { authenticated, ready, connectOrCreateWallet, login, logout, user } = usePrivy()
-    const { linkGoogle, linkTwitter } = useLinkAccount()
+    const { linkGoogle, linkTwitter, linkEmail } = useLinkAccount()
     const connectWallet = typeof connectOrCreateWallet === 'function' ? connectOrCreateWallet : login
 
     const isGoogleLinked = user?.linkedAccounts.some(a => a.type === 'google_oauth') ?? false
     const isXLinked = user?.linkedAccounts.some(a => a.type === 'twitter_oauth') ?? false
+    const emailAccount = user?.linkedAccounts.find(a => a.type === 'email') as { type: 'email'; address: string } | undefined
+    const isEmailLinked = Boolean(emailAccount)
+    const linkedEmailAddress = emailAccount?.address ?? null
 
     return {
       authenticated,
@@ -49,8 +58,11 @@ export const useOptionalPrivy = (): OptionalPrivyState => {
       canLogin: typeof connectWallet === 'function',
       linkGoogle: typeof linkGoogle === 'function' ? linkGoogle : () => undefined,
       linkTwitter: typeof linkTwitter === 'function' ? linkTwitter : () => undefined,
+      linkEmail: typeof linkEmail === 'function' ? linkEmail : () => undefined,
       isGoogleLinked,
       isXLinked,
+      isEmailLinked,
+      linkedEmailAddress,
     }
   }
   catch {
