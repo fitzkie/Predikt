@@ -9,6 +9,7 @@ import cx from 'classnames'
 import { useChain } from '@azuro-org/sdk'
 import { useWallet } from 'wallet'
 import { usePrediktUser } from 'providers/user'
+import { useOptionalPrivy } from 'providers/auth'
 import { useIsMounted } from 'hooks'
 import { shortenAddress, toLocaleString } from 'helpers'
 
@@ -25,7 +26,8 @@ const statsCardClassName = 'rounded-md border border-white/10 bg-bg-l1 px-4 py-4
 const User: React.FC = () => {
   const { account: address } = useWallet()
   const { appChain } = useChain()
-  const { profile, referralLink, updateProfile, setLinkedEmail, toggleLinkedAccount } = usePrediktUser()
+  const { profile, referralLink, updateProfile, setLinkedEmail } = usePrediktUser()
+  const { linkGoogle, linkTwitter, isGoogleLinked, isXLinked } = useOptionalPrivy()
   const { betsCount, betAmount, payout, tokenSymbol } = useProfileStats()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -230,14 +232,15 @@ const User: React.FC = () => {
                       <div>
                         <div className="text-caption-13 font-semibold text-grey-90">Google</div>
                         <div className="mt-1 text-caption-12 text-grey-60">
-                          {profile.linkedAccounts.google ? 'Linked for easier sign-in.' : 'Add Google for one-click sign-in later.'}
+                          {isGoogleLinked ? 'Linked for easier sign-in.' : 'Add Google for one-click sign-in later.'}
                         </div>
                       </div>
                       <Button
                         size={32}
-                        style={profile.linkedAccounts.google ? 'secondary' : 'primary'}
-                        title={profile.linkedAccounts.google ? 'Linked' : 'Link Google'}
-                        onClick={() => toggleLinkedAccount('google')}
+                        style={isGoogleLinked ? 'secondary' : 'primary'}
+                        title={isGoogleLinked ? 'Linked' : 'Link Google'}
+                        disabled={isGoogleLinked}
+                        onClick={linkGoogle}
                       />
                     </div>
                   </div>
@@ -246,14 +249,15 @@ const User: React.FC = () => {
                       <div>
                         <div className="text-caption-13 font-semibold text-grey-90">X</div>
                         <div className="mt-1 text-caption-12 text-grey-60">
-                          {profile.linkedAccounts.x ? 'Linked for payout and trade-sharing flows.' : 'Link X so trade exits and payouts can be shared later.'}
+                          {isXLinked ? 'Linked for payout and trade-sharing flows.' : 'Link X so trade exits and payouts can be shared later.'}
                         </div>
                       </div>
                       <Button
                         size={32}
-                        style={profile.linkedAccounts.x ? 'secondary' : 'primary'}
-                        title={profile.linkedAccounts.x ? 'Linked' : 'Link X'}
-                        onClick={() => toggleLinkedAccount('x')}
+                        style={isXLinked ? 'secondary' : 'primary'}
+                        title={isXLinked ? 'Linked' : 'Link X'}
+                        disabled={isXLinked}
+                        onClick={linkTwitter}
                       />
                     </div>
                   </div>
