@@ -1,44 +1,34 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useChain } from '@azuro-org/sdk'
+import { useChain, useBets } from '@azuro-org/sdk'
+import { useWallet } from 'wallet'
 
-import { useBetHistorySource } from 'modules/bet/hooks'
-
-
-const toNumber = (value: unknown) => {
-  if (typeof value === 'number') {
-    return value
-  }
-
-  if (typeof value === 'string') {
-    const parsedValue = Number(value)
-
-    return Number.isFinite(parsedValue) ? parsedValue : 0
-  }
-
-  return 0
-}
 
 const useProfileStats = () => {
   const { betToken } = useChain()
-  const { historyBets } = useBetHistorySource()
+  const { account: address } = useWallet()
+
+  const { data } = useBets({
+    filter: {
+      bettor: address!,
+    },
+    itemsPerPage: 1000,
+  })
+
+  const allBets = useMemo(() => data?.pages.flatMap((page) => page.bets) ?? [], [ data ])
 
   return useMemo(() => {
-    const totals = (historyBets as any[]).reduce((acc, bet) => {
-      const amount = toNumber(bet?.amount)
-      const payout = toNumber(bet?.payout) || toNumber(bet?.cashout?.payout)
-      const result = bet?.result
-
+    const totals = allBets.reduce((acc, bet) => {
       acc.betsCount += 1
-      acc.betAmount += amount
-      acc.payout += payout
+      acc.betAmount += Number(bet.amount ?? 0)
+      acc.payout += Number(bet.payout ?? 0) + Number(bet.cashout ?? 0)
 
-      if (result === 'Win') {
+      if (bet.isWin) {
         acc.winsCount += 1
       }
 
-      if (result === 'Win' || result === 'Lose') {
+      if (bet.isWin || bet.isLose) {
         acc.settledCount += 1
       }
 
@@ -60,7 +50,7 @@ const useProfileStats = () => {
       winRate,
       tokenSymbol: betToken.symbol,
     }
-  }, [ betToken.symbol, historyBets ])
+  }, [ allBets, betToken.symbol ])
 }
 
 export default useProfileStats
