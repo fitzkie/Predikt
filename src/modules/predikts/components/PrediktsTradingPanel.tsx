@@ -382,7 +382,11 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               onClick={() => { void handleSubmitOrder() }}
               type="button"
             >
-              {trading.isSubmittingOrder ? 'Submitting...' : `${side === 'BUY' ? 'Buy' : 'Sell'} ${selectedOutcome}`}
+              {trading.isSubmittingOrder
+                ? 'Submitting...'
+                : orderMode === 'LIMIT'
+                  ? `Place ${side === 'BUY' ? 'Buy' : 'Sell'} ${selectedOutcome} Order`
+                  : `${side === 'BUY' ? 'Buy' : 'Sell'} ${selectedOutcome}`}
             </button>
           )}
         </div>
