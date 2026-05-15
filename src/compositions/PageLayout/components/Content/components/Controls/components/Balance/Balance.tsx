@@ -8,6 +8,8 @@ import { Message } from '@locmod/intl'
 import cx from 'classnames'
 import { openModal } from '@locmod/modal'
 import { usePathname } from 'next/navigation'
+import { useBalance } from 'wagmi'
+import { polygon } from 'viem/chains'
 import { config } from 'wallet'
 import { useWallet } from 'wallet'
 import { constants, toLocaleString } from 'helpers'
@@ -17,6 +19,8 @@ import { Dropdown } from 'components/inputs'
 
 import messages from './messages'
 
+
+const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as `0x${string}`
 
 type ChainCurrencyProps = {
   className?: string
@@ -111,15 +115,23 @@ const ChainSelect: React.FC = () => {
 const BalanceInfo: React.FC = () => {
   const { account: address } = useWallet()
   const { appChain, betToken } = useChain()
+  const pathname = usePathname()
+  const isPredikts = pathname?.startsWith('/predikts')
   const { data: balanceData, isLoading: isBalanceFetching } = useBetTokenBalance()
   const { data: nativeBalanceData, isLoading: isNativeBalanceFetching } = useNativeBalance()
   const { data: betsSummaryData, isLoading: isBetsSummaryFetching } = useBetsSummary({
     account: address!,
   })
+  const { data: usdceBalanceData, isLoading: isUsdceFetching } = useBalance({
+    address: address as `0x${string}` | undefined,
+    token: USDC_E_ADDRESS,
+    chainId: polygon.id,
+  })
 
   const { inBets, toPayout } = betsSummaryData || {}
   const { balance } = balanceData || {}
   const { balance: nativeBalance } = nativeBalanceData || {}
+  const usdceBalance = usdceBalanceData ? Number(usdceBalanceData.formatted) : 0
 
   return (
     <div className="rounded-md bg-bg-l1 overflow-hidden">
@@ -127,13 +139,19 @@ const BalanceInfo: React.FC = () => {
         <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.balance} />
         <div className="space-x-1">
           {
-            Boolean(isBalanceFetching || isNativeBalanceFetching) ? (
+            Boolean(isBalanceFetching || isNativeBalanceFetching || isUsdceFetching) ? (
               <div className="bone h-4 w-10 rounded-full" />
             ) : (
               <>
-                <span className="text-caption-13 font-semibold">
-                  {toLocaleString(balance || 0, { digits: 2 } )} {betToken.symbol}
-                </span>
+                {isPredikts ? (
+                  <span className="text-caption-13 font-semibold">
+                    {toLocaleString(usdceBalance, { digits: 2 })} USDC.e
+                  </span>
+                ) : (
+                  <span className="text-caption-13 font-semibold">
+                    {toLocaleString(balance || 0, { digits: 2 })} {betToken.symbol}
+                  </span>
+                )}
                 <span className="text-caption-12 text-grey-60">
                   + {toLocaleString(nativeBalance || 0, { digits: 2 })} {appChain.nativeCurrency.symbol}
                 </span>
@@ -173,25 +191,78 @@ const BalanceInfo: React.FC = () => {
 }
 
 const Content: React.FC = () => {
+  const pathname = usePathname()
+  const isPredikts = pathname?.startsWith('/predikts')
+
+  const handleDepositClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+
+    if (isPredikts) {
+      openModal('PrediktsDepositModal')
+    }
+    else {
+      openModal('FundingModal')
+    }
+  }
+
+  const handleExchangeClick = (event: React.MouseEvent) => {
+    event.stopPropagation()
+
+    if (isPredikts) {
+      openModal('PrediktsExchangeModal')
+    }
+    else {
+      openModal('FundingExchangeModal')
+    }
+  }
+
   return (
     <div className="border border-grey-20 p-2 ds:w-[18.75rem] bg-bg-l2 rounded-md overflow-hidden space-y-2">
       <ChainSelect />
       <BalanceInfo />
+      <div className="flex gap-2">
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md bg-brand-50 text-caption-13 font-semibold text-black hover:bg-brand-50/90 transition-colors"
+          onClick={handleDepositClick}
+          type="button"
+        >
+          <Icon className="size-4" name="interface/deposit" />
+          Deposit
+        </button>
+        <button
+          className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md border border-grey-20 text-caption-13 font-semibold text-grey-90 hover:border-grey-40 transition-colors"
+          onClick={handleExchangeClick}
+          type="button"
+        >
+          <Icon className="size-4" name="interface/withdraw" />
+          Exchange
+        </button>
+      </div>
     </div>
   )
 }
 
 const Balance: React.FC = () => {
   const { appChain } = useChain()
-  const { data: balanceData, isLoading } = useBetTokenBalance()
+  const { account: address } = useWallet()
+  const { data: balanceData, isLoading: isBetTokenLoading } = useBetTokenBalance()
+  const { data: usdceBalanceData, isLoading: isUsdceLoading } = useBalance({
+    address: address as `0x${string}` | undefined,
+    token: USDC_E_ADDRESS,
+    chainId: polygon.id,
+  })
   const pathname = usePathname()
+  const isPredikts = pathname?.startsWith('/predikts')
 
   const { balance } = balanceData || {}
+  const usdceBalance = usdceBalanceData ? Number(usdceBalanceData.formatted) : 0
+  const isLoading = isPredikts ? isUsdceLoading : isBetTokenLoading
+  const displayBalance = isPredikts ? usdceBalance : (balance || 0)
 
-  const handleGetTokensClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleDepositClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
 
-    if (pathname.startsWith('/predikts')) {
+    if (isPredikts) {
       openModal('PrediktsDepositModal')
     }
     else {
@@ -222,17 +293,17 @@ const Balance: React.FC = () => {
             isLoading ? (
               <div className="bone h-4 w-10 rounded-full" />
             ) : (
-              <div className="text-caption-13">{toLocaleString(balance || 0, { digits: 2 })}</div>
+              <div className="text-caption-13">{toLocaleString(displayBalance, { digits: 2 })}</div>
             )
           }
           <Icon className="size-4 ui-open:rotate-180" name="interface/caret_down" />
         </div>
         <div
-          className="flex items-center justify-center size-6 rounded-min bg-brand-50 ml-2 cursor-pointer text-grey-90 flex-none"
-          onClick={handleGetTokensClick}
+          className="flex items-center justify-center h-6 px-2 rounded-min bg-brand-50 ml-2 cursor-pointer text-grey-90 text-caption-12 font-semibold flex-none"
+          onClick={handleDepositClick}
           onMouseEnter={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
         >
-          <Icon className="size-4" name="interface/plus" />
+          Deposit
         </div>
       </div>
     </Dropdown>

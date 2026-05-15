@@ -109,7 +109,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     : walletClient.data?.account?.address?.toLowerCase()
 
   const isOnSupportedChain = chainId === polygon.id
-  const isExecutionEnabled = Boolean(process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED === 'true')
+  const isExecutionEnabled = process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED !== 'false'
   const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
   // Clear stale credentials when the wallet address changes

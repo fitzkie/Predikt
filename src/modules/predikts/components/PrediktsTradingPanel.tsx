@@ -160,7 +160,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
 
   const handleFundWallet = () => {
     const requiredAmount = readinessQuery.data?.requiredAmount
-    const fundingAsset = side === 'BUY' ? 'USDC' : `${selectedOutcome} shares`
+    const fundingAsset = side === 'BUY' ? 'USDC.e' : `${selectedOutcome} shares`
 
     analytics.trackEvent('predikt_polymarket_funding_opened', {
       asset: fundingAsset,
@@ -170,15 +170,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
       token_id: selectedTokenId,
     })
 
-    openModal('FundingModal', {
-      initialTab: 'deposit',
-      depositProps: {
-        type: 'bet',
-        toAmount: typeof requiredAmount === 'number' && !Number.isNaN(requiredAmount)
-          ? requiredAmount.toFixed(2)
-          : undefined,
-      },
-    })
+    openModal('PrediktsDepositModal')
   }
 
   const handleConnect = () => {
@@ -343,6 +335,11 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
         {readinessQuery.data?.reason ? (
           <div className="mt-3 rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
             <div>{readinessQuery.data.reason}</div>
+            {!readinessQuery.data.isBalanceSufficient ? (
+              <div className="mt-1 text-caption-12 text-risk-red/80">
+                {`You have ${formatCurrency(readinessQuery.data.balance)} but need ${formatCurrency(readinessQuery.data.requiredAmount)}.`}
+              </div>
+            ) : null}
             <div className="mt-2 flex flex-wrap gap-2">
               {!readinessQuery.data.isAllowanceSufficient ? (
                 <button
@@ -351,16 +348,16 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
                   onClick={() => { void handleFixAllowance() }}
                   type="button"
                 >
-                  {trading.isFixingAllowance ? 'Updating...' : `Fix allowance`}
+                  {trading.isFixingAllowance ? 'Updating...' : 'Fix allowance'}
                 </button>
               ) : null}
               {!readinessQuery.data.isBalanceSufficient ? (
                 <button
-                  className="rounded-md border border-white/10 px-3 py-1.5 text-caption-12 font-semibold text-grey-90"
+                  className="rounded-md border border-brand-50/30 bg-brand-50/10 px-3 py-1.5 text-caption-12 font-semibold text-brand-50"
                   onClick={handleFundWallet}
                   type="button"
                 >
-                  Fund wallet
+                  Deposit USDC.e
                 </button>
               ) : null}
             </div>

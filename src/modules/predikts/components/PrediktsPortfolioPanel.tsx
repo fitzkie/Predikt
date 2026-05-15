@@ -17,6 +17,10 @@ const PrediktsPortfolioPanel: React.FC = () => {
   const positionsQuery = usePolymarketPositions(account)
   const activityQuery = usePolymarketActivity(account)
 
+  if (positionsQuery.isLoading || activityQuery.isLoading) {
+    return null
+  }
+
   const positions = (positionsQuery.data || []).slice(0, 3)
   const activity = (activityQuery.data || []).slice(0, 4)
 
