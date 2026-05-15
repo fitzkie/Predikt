@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AssetType, OrderType, Side } from '@polymarket/clob-client-v2'
 import { useWalletClient } from 'wagmi'
@@ -101,35 +101,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   const isOnSupportedChain = chainId === polygon.id
   const isExecutionEnabled = Boolean(process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED === 'true')
 
-  // Track which account we last attempted auto-auth for so we don't loop on failure
-  const autoAuthAccountRef = useRef<string | null>(null)
-
   // Clear stale credentials when the connected wallet address changes
   useEffect(() => {
     if (account && credentials?.walletAddress && credentials.walletAddress.toLowerCase() !== account.toLowerCase()) {
       clearCredentials()
     }
   }, [ account, credentials?.walletAddress, clearCredentials ])
-
-  // Auto-derive Polymarket API credentials as soon as the wallet is ready —
-  // this eliminates the manual "Enable Trading" step after connecting.
-  useEffect(() => {
-    if (
-      account &&
-      isReady &&
-      isOnSupportedChain &&
-      isExecutionEnabled &&
-      !hasCredentials &&
-      !isAuthenticating &&
-      autoAuthAccountRef.current !== account
-    ) {
-      autoAuthAccountRef.current = account
-      void createOrDeriveApiKey()
-    }
-  // createOrDeriveApiKey is stable (useCallback) but adding it would cause a loop;
-  // the ref guard prevents repeated attempts on the same account.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ account, isReady, isOnSupportedChain, isExecutionEnabled, hasCredentials, isAuthenticating ])
 
   const getActiveSigner = useCallback(() => {
     const signer = (isAAWallet ? aaWalletClient : walletClient.data) as WalletClient | undefined
