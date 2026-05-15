@@ -4,7 +4,10 @@ import { NextResponse } from 'next/server'
 const PROVIDER_BASES = {
   gamma: 'https://gamma-api.polymarket.com',
   data: 'https://data-api.polymarket.com',
-  clob: 'https://clob.polymarket.com',
+  // CLOB routed through Amsterdam DO server (188.166.103.169:3001) — non-geo-blocked.
+  // Railway's US IP is blocked by Polymarket; this proxy is not.
+  // TODO: restrict port 3001 on DO server to Railway's IP range before production launch.
+  clob: 'http://188.166.103.169:3001',
 } as const
 
 type ProviderKey = keyof typeof PROVIDER_BASES
