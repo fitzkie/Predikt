@@ -113,6 +113,8 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     if (orderMode === 'LIMIT') {
       if (numericLimitPrice <= 0 || numericLimitPrice >= 1) { setTicketError('Price must be between 0 and 1 for a limit order.'); return }
       if (limitShares <= 0) { setTicketError('Amount and price must both be greater than zero.'); return }
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM Panel] placing LIMIT order:', { tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
       await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
     }
     else {
@@ -124,6 +126,8 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
       const worstAcceptablePrice = side === 'BUY'
         ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
         : Math.max(0.001, (currentPrice || 0.5) * 0.90)
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM Panel] placing MARKET order:', { tokenId: selectedTokenId, amount: numericAmount, side, price: worstAcceptablePrice, orderType: 'FAK', currentPrice, isAllowanceApprovedLocally })
       await trading.placeMarketOrder({
         tokenId: selectedTokenId,
         amount: numericAmount,
@@ -132,6 +136,9 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
         orderType: 'FAK', // Fill and Kill: fill what's available, cancel the rest (tolerates partial fills)
       })
     }
+
+    // DEBUG LOGGING — remove once orders are confirmed working
+    console.log('[PM Panel] post-submit state: executionError=', trading.executionError, 'lastMsg=', trading.lastExecutionMessage)
 
     await openOrdersQuery.refetch()
   }

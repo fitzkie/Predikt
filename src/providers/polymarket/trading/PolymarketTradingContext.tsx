@@ -375,12 +375,18 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
         token_id: isBuy ? undefined : input.tokenId,
       })
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM checkReadiness] API payload:', JSON.stringify(payload), '| onChainUsdcBalance:', onChainUsdcBalanceRef.current, '| approvedRef:', approvedUsdcAllowanceRef.current === Number.MAX_SAFE_INTEGER ? 'MAX' : approvedUsdcAllowanceRef.current)
+
       const result = buildReadinessResult({
         assetType: isBuy ? 'COLLATERAL' : 'CONDITIONAL',
         tokenId: isBuy ? undefined : input.tokenId,
         requiredAmount,
         payload: payload as PolymarketBalanceAllowance,
       })
+
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM checkReadiness] result:', JSON.stringify(result))
 
       setCheckingReadiness(false)
 
@@ -432,21 +438,27 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
           args: [ spenders[0] as `0x${string}`, maxUint256 ],
         })
 
+        // DEBUG LOGGING — remove once orders are confirmed working
+        console.log('[PM fixAllowance] approving spender:', spenders[0], '| isAAWallet:', isAAWallet)
+
         if (isAAWallet && aaWalletClient) {
-          await aaWalletClient.sendTransaction({
+          const txHash = await aaWalletClient.sendTransaction({
             to: NATIVE_USDC_ADDRESS,
             value: 0n,
             data: approveData,
           })
+          console.log('[PM fixAllowance] AA approve tx hash:', txHash)
         }
         else {
           const signer = getActiveSigner()
-          await signer.sendTransaction({
+          console.log('[PM fixAllowance] EOA signer account:', signer.account?.address)
+          const txHash = await signer.sendTransaction({
             account: signer.account!,
             to: NATIVE_USDC_ADDRESS,
             data: approveData,
             chain: polygon,
           })
+          console.log('[PM fixAllowance] EOA approve tx hash:', txHash)
         }
 
         // Set ref BEFORE invalidate so the immediate refetch returns isAllowanceSufficient=true.
@@ -564,12 +576,24 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         amount: input.amount,
       })
 
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM placeMarketOrder] readiness check result:', JSON.stringify(readiness))
+
       if (readiness?.reason) {
         throw new Error(readiness.reason)
       }
 
       const client = getExecutionClient()
-      const response = await client.createAndPostMarketOrder({
+
+      console.log('[PM placeMarketOrder] submitting order:', {
+        tokenId: input.tokenId,
+        amount: input.amount,
+        price: input.price,
+        side: input.side,
+        orderType: input.orderType,
+      })
+
+      const rawResponse = await client.createAndPostMarketOrder({
         tokenID: input.tokenId,
         amount: input.amount,
         price: input.price,
@@ -577,12 +601,27 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         orderType: input.orderType === 'FAK' ? OrderType.FAK : OrderType.FOK,
       }, undefined, input.orderType === 'FAK' ? OrderType.FAK : OrderType.FOK)
 
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.log('[PM placeMarketOrder] raw API response:', JSON.stringify(rawResponse))
+
+      // Handle Polymarket returning success:false with errorMsg (HTTP 200 logical rejection).
+      // The CLOB client's throwIfError only catches "error" key, not "errorMsg".
+      const response = rawResponse as PolymarketOrderResponse
+      if (!response) {
+        throw new Error('No response received from order API.')
+      }
+      if (response.success === false) {
+        throw new Error(response.errorMsg || 'Polymarket rejected the order. Check your USDC allowance and balance.')
+      }
+
       await invalidateTradingQueries()
       const statusMsg = response.status === 'matched'
         ? 'Order filled!'
         : response.status === 'delayed'
           ? 'Order queued — will fill when matched.'
-          : `Order not filled (${response.status}). The market may have moved — try again or switch to Limit order.`
+          : response.status
+            ? `Order received (status: ${response.status}).`
+            : 'Order submitted. Check open orders below.'
       setLastExecutionMessage(statusMsg)
       setSubmittingOrder(false)
       analytics.trackEvent('predikt_polymarket_market_order_submitted', {
@@ -595,9 +634,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         order_id: response.orderID,
       })
 
-      return response as PolymarketOrderResponse
+      return response
     }
     catch (error) {
+      // DEBUG LOGGING — remove once orders are confirmed working
+      console.error('[PM placeMarketOrder] caught error:', error)
+
       const message = error instanceof Error ? error.message : 'Could not place the market order.'
 
       setExecutionError(message)
