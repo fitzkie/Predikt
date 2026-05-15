@@ -195,12 +195,23 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         isAAWallet,
         funderAddress: isAAWallet ? account : undefined,
       })
-      const nextCredentials = await client.createOrDeriveApiKey(nonce)
+
+      // With throwOnError:true, createApiKey throws immediately on error rather
+      // than falling through to deriveApiKey. If the address already has a key
+      // on Polymarket's side from a previous attempt, createApiKey returns an
+      // error but deriveApiKey would succeed — so we try that explicitly.
+      let rawCredentials
+      try {
+        rawCredentials = await client.createOrDeriveApiKey(nonce)
+      }
+      catch {
+        rawCredentials = await client.deriveApiKey(nonce)
+      }
 
       const normalizedCredentials = {
-        apiKey: nextCredentials.key,
-        passphrase: nextCredentials.passphrase,
-        secret: nextCredentials.secret,
+        apiKey: rawCredentials.key,
+        passphrase: rawCredentials.passphrase,
+        secret: rawCredentials.secret,
         walletAddress: polymarketAddress,
         createdAt: new Date().toISOString(),
       }

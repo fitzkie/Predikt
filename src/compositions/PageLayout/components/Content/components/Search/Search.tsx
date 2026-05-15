@@ -6,10 +6,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { openModal } from '@locmod/modal'
 import { Icon } from 'components/ui'
 
+import Controls from '../Controls/Controls'
 import messages from './messages'
 
 
-const PrediktsSearch: React.FC = () => {
+const PrediktsSearch: React.FC<{ showControls?: boolean }> = ({ showControls }) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [ value, setValue ] = useState(searchParams.get('q') || '')
@@ -51,9 +52,13 @@ const PrediktsSearch: React.FC = () => {
           <Icon className="size-4" name="interface/clear" />
         </button>
       ) : null}
-      <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60 shrink-0">
-        Predikt Markets
-      </div>
+      {showControls ? (
+        <Controls className="ml-auto shrink-0" />
+      ) : (
+        <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60 shrink-0">
+          Predikt Markets
+        </div>
+      )}
     </div>
   )
 }
@@ -61,9 +66,12 @@ const PrediktsSearch: React.FC = () => {
 const Search: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
+  const isPrediktsDetail = pathname.startsWith('/predikts/')
 
   if (isPredikts) {
-    return <PrediktsSearch />
+    // On detail pages the right sidebar (which normally holds Controls) is hidden,
+    // so surface the wallet controls here in the top bar instead.
+    return <PrediktsSearch showControls={isPrediktsDetail} />
   }
 
   return (
