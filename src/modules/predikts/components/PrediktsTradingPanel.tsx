@@ -36,6 +36,9 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const [ amount, setAmount ] = useState('10')
   const [ limitPrice, setLimitPrice ] = useState(String(prices[0] || 0.5))
   const [ ticketError, setTicketError ] = useState<string | null>(null)
+  // Set true after a successful on-chain approve so the button unlocks immediately
+  // while the react-query refetch is still in flight (API lags a few blocks).
+  const [ isAllowanceApprovedLocally, setIsAllowanceApprovedLocally ] = useState(false)
   const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
 
   useEffect(() => {
@@ -73,6 +76,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const handleSelectOutcome = (index: number) => {
     setSelectedOutcomeIndex(index)
     setLimitPrice(String(prices[index] ?? limitPrice))
+    setIsAllowanceApprovedLocally(false)
     onOutcomeChange?.(index)
   }
 
@@ -99,7 +103,12 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
 
     if (!selectedTokenId) { setTicketError('This market outcome is missing a tradable token ID.'); return }
     if (numericAmount <= 0) { setTicketError('Enter an amount greater than zero.'); return }
-    if (readinessQuery.data?.reason) { setTicketError(readinessQuery.data.reason); return }
+    // Skip stale readiness error if we've locally confirmed the approval — the context's
+    // approvedUsdcAllowanceRef ensures the internal readiness check inside placeLimitOrder/
+    // placeMarketOrder will also pass.
+    if (readinessQuery.data?.reason && !isAllowanceApprovedLocally) {
+      setTicketError(readinessQuery.data.reason); return
+    }
 
     if (orderMode === 'LIMIT') {
       if (numericLimitPrice <= 0 || numericLimitPrice >= 1) { setTicketError('Price must be between 0 and 1 for a limit order.'); return }
@@ -128,7 +137,11 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
       size: orderMode === 'LIMIT' && limitShares > 0 ? limitShares : undefined,
       amount: orderMode === 'MARKET' ? numericAmount : undefined,
     })
-    if (success) await readinessQuery.refetch()
+    if (success) {
+      setIsAllowanceApprovedLocally(true)
+      // Refetch in background — the ref in the context already unblocks the order
+      void readinessQuery.refetch()
+    }
   }
 
   const handleFundWallet = () => {
@@ -296,8 +309,8 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           </div>
         )}
 
-        {/* Readiness CTAs */}
-        {readinessQuery.data?.reason && (
+        {/* Readiness CTAs — hide allowance error once locally approved */}
+        {readinessQuery.data?.reason && !isAllowanceApprovedLocally && (
           <div className="rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
             <div>{readinessQuery.data.reason}</div>
             {!readinessQuery.data.isBalanceSufficient && (
@@ -357,7 +370,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           ) : (
             <button
               className="w-full rounded-xl bg-brand-50 px-4 py-3.5 text-caption-14 font-bold text-black disabled:opacity-50 hover:bg-brand-50/90 transition-colors"
-              disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
+              disabled={!isTradeReady || trading.isSubmittingOrder || (Boolean(readinessQuery.data?.reason) && !isAllowanceApprovedLocally) || (readinessQuery.isFetching && !isAllowanceApprovedLocally) || trading.isCheckingReadiness}
               onClick={() => { void handleSubmitOrder() }}
               type="button"
             >

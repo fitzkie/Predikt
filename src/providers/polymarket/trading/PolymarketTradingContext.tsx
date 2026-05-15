@@ -131,10 +131,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     chainId: polygon.id,
   })
   const onChainUsdcBalance = onChainUsdcData ? Number(onChainUsdcData.formatted) : 0
-  // Ref so the value is always current inside memoized callbacks without needing to add
-  // it to their dependency arrays (stale closure guard).
+  // Refs so values are always current inside memoized callbacks (stale closure guard).
   const onChainUsdcBalanceRef = useRef(0)
   onChainUsdcBalanceRef.current = onChainUsdcBalance
+  // After a successful on-chain approve() this is set to MAX so the allowance check passes
+  // immediately — Polymarket's API may lag several blocks before reflecting the new approval.
+  const approvedUsdcAllowanceRef = useRef(0)
 
   const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
@@ -304,11 +306,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     payload: PolymarketBalanceAllowance
   }): PolymarketOrderReadiness => {
     const apiBalance = toNumeric(payload.balance)
-    // Use whichever is higher: Polymarket API balance or on-chain wallet balance.
-    // Read from ref (not closure) so we always get the latest wagmi-fetched value even
-    // when this function is called from a stale useCallback closure.
+    // Read from refs (not closures) so we always get the latest values even from stale callbacks.
     const balance = assetType === 'COLLATERAL' ? Math.max(apiBalance, onChainUsdcBalanceRef.current) : apiBalance
-    const maxAllowance = getMaxAllowance(payload.allowances)
+    const apiMaxAllowance = getMaxAllowance(payload.allowances)
+    // After a successful approve() we set approvedUsdcAllowanceRef to MAX so this check
+    // passes even before Polymarket's API indexes the on-chain event.
+    const maxAllowance = assetType === 'COLLATERAL' ? Math.max(apiMaxAllowance, approvedUsdcAllowanceRef.current) : apiMaxAllowance
     const isBalanceSufficient = balance >= requiredAmount
     const isAllowanceSufficient = maxAllowance >= requiredAmount
 
@@ -421,16 +424,25 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
             }),
           })
         }
+
+        // Set BEFORE invalidate so the refetch triggered below sees the updated ref
+        // and returns isAllowanceSufficient=true without waiting for API indexing.
+        if (isBuy) {
+          approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
+        }
       }
       else {
         await client.updateBalanceAllowance({
           asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
           token_id: isBuy ? undefined : input.tokenId,
         })
+        if (isBuy) {
+          approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
+        }
       }
 
       await invalidateTradingQueries()
-      setLastExecutionMessage('USDC spending approved. You can now place your order.')
+      setLastExecutionMessage('USDC approved. Placing your order should work now.')
       setFixingAllowance(false)
       analytics.trackEvent('predikt_polymarket_allowance_update_submitted', {
         asset_type: isBuy ? 'COLLATERAL' : 'CONDITIONAL',
