@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { openModal } from '@locmod/modal'
 import { Icon } from 'components/ui'
 
+import Controls from '../Controls/Controls'
 import messages from './messages'
 
 
@@ -38,10 +39,10 @@ const PrediktsSearch: React.FC = () => {
   }
 
   return (
-    <div className="h-16 w-full flex items-center gap-3 py-3 px-6 bg-bg-l0 border-b border-white/5">
+    <div className="h-16 w-full flex items-center gap-4 py-3 px-6 bg-bg-l0 border-b border-white/5">
       <Icon className="size-5 shrink-0 text-grey-40" name="interface/search" />
       <input
-        className="flex-1 bg-transparent text-caption-13 text-grey-90 placeholder-grey-40 outline-none"
+        className="flex-1 bg-transparent text-caption-13 text-grey-90 placeholder-grey-40 outline-none min-w-0"
         placeholder="Search Predikt markets..."
         value={value}
         onChange={handleChange}
@@ -54,6 +55,7 @@ const PrediktsSearch: React.FC = () => {
       <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60 shrink-0">
         Predikt Markets
       </div>
+      <Controls />
     </div>
   )
 }

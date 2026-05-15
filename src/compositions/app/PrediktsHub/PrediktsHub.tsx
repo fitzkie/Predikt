@@ -9,7 +9,6 @@ import { PrediktsMarketCard, usePrediktsMarketBrowser } from 'modules/predikts'
 import { Button } from 'components/inputs'
 import { Logo } from 'components/ui'
 import { Href } from 'components/navigation'
-import Controls from 'compositions/PageLayout/components/Content/components/Controls/Controls'
 
 
 const HERO_BANNERS = [
@@ -191,12 +190,9 @@ const PrediktsHub: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <Logo className="h-5" />
-              <div className="flex items-center gap-3">
-                <Controls />
-                <Href href={constants.links.sportsApp}>
-                  <Button size={32} style="primary" title="Switch to Sports" />
-                </Href>
-              </div>
+              <Href href={constants.links.sportsApp}>
+                <Button size={32} style="primary" title="Switch to Sports" />
+              </Href>
             </div>
 
             <HeroBannerCarousel />
