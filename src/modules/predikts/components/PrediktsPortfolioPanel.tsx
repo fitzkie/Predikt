@@ -1,7 +1,7 @@
 'use client'
 
-import { useWallet } from 'wallet'
 import { usePolymarketActivity, usePolymarketPositions } from 'providers/polymarket'
+import { useWallet } from 'wallet'
 
 
 const formatCurrency = (value?: number) => {
@@ -16,18 +16,6 @@ const PrediktsPortfolioPanel: React.FC = () => {
   const { account } = useWallet()
   const positionsQuery = usePolymarketPositions(account)
   const activityQuery = usePolymarketActivity(account)
-
-  if (!account) {
-    return (
-      <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
-        <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Portfolio</div>
-        <div className="mt-3 text-heading-h4 font-semibold text-grey-90">Connect to load positions</div>
-        <p className="mt-3 text-caption-14 leading-6 text-grey-70">
-          Wallet-connected views will populate your current positions and recent activity here.
-        </p>
-      </div>
-    )
-  }
 
   const positions = (positionsQuery.data || []).slice(0, 3)
   const activity = (activityQuery.data || []).slice(0, 4)

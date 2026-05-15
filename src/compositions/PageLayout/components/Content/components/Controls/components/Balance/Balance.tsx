@@ -7,6 +7,7 @@ import { Listbox, ListboxButton, ListboxOptions } from '@headlessui/react'
 import { Message } from '@locmod/intl'
 import cx from 'classnames'
 import { openModal } from '@locmod/modal'
+import { usePathname } from 'next/navigation'
 import { config } from 'wallet'
 import { useWallet } from 'wallet'
 import { constants, toLocaleString } from 'helpers'
@@ -183,13 +184,19 @@ const Content: React.FC = () => {
 const Balance: React.FC = () => {
   const { appChain } = useChain()
   const { data: balanceData, isLoading } = useBetTokenBalance()
+  const pathname = usePathname()
 
   const { balance } = balanceData || {}
 
   const handleGetTokensClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
 
-    openModal('FundingModal')
+    if (pathname.startsWith('/predikts')) {
+      openModal('PrediktsDepositModal')
+    }
+    else {
+      openModal('FundingModal')
+    }
   }
 
   const rootClassName = cx('wd:h-10 -wd:h-8 bg-grey-10 flex items-center justify-between border border-transparent pl-1.5 pr-1 w-fit text-grey-60 ui-open:text-grey-90 hover:text-grey-90 ui-open:border-grey-20 hover:border-grey-20 transition-all mb:w-full rounded-md')
