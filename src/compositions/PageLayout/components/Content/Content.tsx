@@ -17,7 +17,6 @@ import ws from './Wide.module.scss'
 const Content: React.CFC = ({ children }) => {
   const pathname = usePathname()
   const isMarketingPage = pathname === '/'
-  const isPredikts = pathname.startsWith('/predikts')
   const isPrediktsDetail = pathname.startsWith('/predikts/')
 
   const rootClassName = cx('h-full flex flex-col wd:flex-row min-h-screen mx-auto wd:px-2 wd:pb-2', ws.root)
@@ -39,13 +38,9 @@ const Content: React.CFC = ({ children }) => {
 
   return (
     <div className={rootClassName}>
-      {
-        !isPrediktsDetail && (
-          <Media className={cx('h-screen', ws.leftSidebar, sidebarClassName, 'pr-2 overflow-auto')} wide>
-            <LeftSidebar />
-          </Media>
-        )
-      }
+      <Media className={cx('h-screen', ws.leftSidebar, sidebarClassName, 'pr-2 overflow-auto')} wide>
+        <LeftSidebar />
+      </Media>
       <Media className="sticky top-0 z-[100]" narrow mobile>
         <Header />
       </Media>

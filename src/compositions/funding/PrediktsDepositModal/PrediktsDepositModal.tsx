@@ -13,7 +13,8 @@ import { Button, ButtonBase } from 'components/inputs'
 import { Icon } from 'components/ui'
 
 
-const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as const
+// Native USDC on Polygon (Circle-issued) — required by Polymarket/Predikts
+const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as const
 
 const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
   const { account } = useWallet()
@@ -22,7 +23,7 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
   const [ showQR, setShowQR ] = useState(false)
   const { data: usdceBalance, isLoading: isBalanceLoading } = useBalance({
     address: account as `0x${string}` | undefined,
-    token: USDC_E_ADDRESS,
+    token: NATIVE_USDC_ADDRESS,
     chainId: polygon.id,
   })
 
@@ -69,11 +70,11 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         <div className="pt-6 px-4 pb-4 text-center">
           <h3 className="text-heading-h3 font-bold text-grey-90">Scan to Deposit</h3>
           <p className="mt-2 text-caption-14 text-grey-60">
-            Scan this QR code to send <strong className="text-grey-90">USDC.e</strong> to your wallet on <strong className="text-grey-90">Polygon</strong>.
+            Scan this QR code to send <strong className="text-grey-90">native USDC</strong> to your wallet on <strong className="text-grey-90">Polygon</strong>.
           </p>
           <Warning
             className="mt-4"
-            text={{ en: 'Only deposit USDC.e on the Polygon network. Do not use other coins or networks.' }}
+            text={{ en: 'Send native USDC on Polygon only. Not USDC.e (bridged), not USDC on other networks.' }}
           />
           <Button
             className="w-full mt-4"
@@ -93,18 +94,18 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         <div className="inline-flex items-center justify-center size-12 mx-auto rounded-full bg-brand-50/15 mb-3">
           <span className="text-caption-12 font-bold text-brand-50">pUSD</span>
         </div>
-        <h3 className="text-heading-h2 font-bold">Deposit USDC.e (pUSD)</h3>
+        <h3 className="text-heading-h2 font-bold">Deposit USDC (pUSD)</h3>
         <p className="mt-2 text-caption-14 text-grey-60">
           {'Your balance '}
           <span className="font-semibold text-grey-90">
-            {isBalanceLoading ? '...' : `${balance} USDC.e`}
+            {isBalanceLoading ? '...' : `${balance} USDC`}
           </span>
         </p>
       </div>
 
       <Warning
         className="mb-4"
-        text={{ en: 'Only deposit USDC.e on the Polygon network. Do not use other coins or networks when depositing to this address.' }}
+        text={{ en: 'Deposit native USDC on Polygon only. Do not send USDC.e (bridged), USDT, or USDC on other networks — use Exchange to convert first.' }}
       />
 
       <ol className="bg-bg-l3 rounded-md text-caption-13 divide-y divide-grey-20 mb-4">
@@ -114,10 +115,10 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
           </span>
           <p className="text-grey-60 leading-5">
             {'Buy '}
-            <strong className="text-grey-90">USDC.e</strong>
-            {' (also listed as '}
-            <strong className="text-grey-90">pUSD</strong>
-            {') on Coinbase, Binance, or another exchange.'}
+            <strong className="text-grey-90">USDC</strong>
+            {' (native, also shown as pUSD) on Coinbase, Binance, or another exchange. Select '}
+            <strong className="text-grey-90">Polygon</strong>
+            {' as the withdrawal network.'}
           </p>
         </li>
         <li className="flex items-start gap-3 py-3 px-2">
@@ -125,9 +126,9 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
             2
           </span>
           <p className="text-grey-60 leading-5">
-            {'Send USDC.e to your wallet address below and select '}
-            <strong className="text-grey-90">Polygon</strong>
-            {' as the network.'}
+            {'Have USDC.e already? Use '}
+            <strong className="text-grey-90">Exchange</strong>
+            {' to swap USDC.e → USDC on Uniswap, then send USDC to the address below.'}
           </p>
         </li>
       </ol>

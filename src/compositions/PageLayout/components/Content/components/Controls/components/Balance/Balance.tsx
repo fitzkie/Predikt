@@ -20,7 +20,8 @@ import { Dropdown } from 'components/inputs'
 import messages from './messages'
 
 
-const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as `0x${string}`
+// Native USDC on Polygon (Circle-issued) — the collateral token for Predikts/Polymarket
+const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
 
 type ChainCurrencyProps = {
   className?: string
@@ -29,9 +30,10 @@ type ChainCurrencyProps = {
   size: 4 | 5
   borderColor?: 'bg-l0' | 'grey-10' | 'grey-20'
   withGrayscale?: boolean
+  currencyIconOverride?: string
 }
 
-const ChainCurrency: React.FC<ChainCurrencyProps> = ({ className, chainClassName, chainId, size, withGrayscale }) => {
+const ChainCurrency: React.FC<ChainCurrencyProps> = ({ className, chainClassName, chainId, size, withGrayscale, currencyIconOverride }) => {
   return (
     <div className={cx('flex items-center', className)}>
       <div className={cx('border-2 rounded-full z-10 transition-colors', chainClassName)}>
@@ -42,7 +44,7 @@ const ChainCurrency: React.FC<ChainCurrencyProps> = ({ className, chainClassName
       </div>
       <Icon
         className={cx('-ml-1.5', `size-${size}`, { 'grayscale': withGrayscale })}
-        name={constants.currencyIcons[chainId]}
+        name={(currencyIconOverride as any) ?? constants.currencyIcons[chainId]}
       />
     </div>
   )
@@ -122,16 +124,16 @@ const BalanceInfo: React.FC = () => {
   const { data: betsSummaryData, isLoading: isBetsSummaryFetching } = useBetsSummary({
     account: address!,
   })
-  const { data: usdceBalanceData, isLoading: isUsdceFetching } = useBalance({
+  const { data: usdcBalanceData, isLoading: isUsdcFetching } = useBalance({
     address: address as `0x${string}` | undefined,
-    token: USDC_E_ADDRESS,
+    token: NATIVE_USDC_ADDRESS,
     chainId: polygon.id,
   })
 
   const { inBets, toPayout } = betsSummaryData || {}
   const { balance } = balanceData || {}
   const { balance: nativeBalance } = nativeBalanceData || {}
-  const usdceBalance = usdceBalanceData ? Number(usdceBalanceData.formatted) : 0
+  const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.formatted) : 0
 
   return (
     <div className="rounded-md bg-bg-l1 overflow-hidden">
@@ -139,13 +141,13 @@ const BalanceInfo: React.FC = () => {
         <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.balance} />
         <div className="space-x-1">
           {
-            Boolean(isBalanceFetching || isNativeBalanceFetching || isUsdceFetching) ? (
+            Boolean(isBalanceFetching || isNativeBalanceFetching || isUsdcFetching) ? (
               <div className="bone h-4 w-10 rounded-full" />
             ) : (
               <>
                 {isPredikts ? (
                   <span className="text-caption-13 font-semibold">
-                    {toLocaleString(usdceBalance, { digits: 2 })} USDC.e
+                    {toLocaleString(usdcBalance, { digits: 2 })} USDC
                   </span>
                 ) : (
                   <span className="text-caption-13 font-semibold">
@@ -246,18 +248,18 @@ const Balance: React.FC = () => {
   const { appChain } = useChain()
   const { account: address } = useWallet()
   const { data: balanceData, isLoading: isBetTokenLoading } = useBetTokenBalance()
-  const { data: usdceBalanceData, isLoading: isUsdceLoading } = useBalance({
+  const { data: usdcBalanceData, isLoading: isUsdcLoading } = useBalance({
     address: address as `0x${string}` | undefined,
-    token: USDC_E_ADDRESS,
+    token: NATIVE_USDC_ADDRESS,
     chainId: polygon.id,
   })
   const pathname = usePathname()
   const isPredikts = pathname?.startsWith('/predikts')
 
   const { balance } = balanceData || {}
-  const usdceBalance = usdceBalanceData ? Number(usdceBalanceData.formatted) : 0
-  const isLoading = isPredikts ? isUsdceLoading : isBetTokenLoading
-  const displayBalance = isPredikts ? usdceBalance : (balance || 0)
+  const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.formatted) : 0
+  const isLoading = isPredikts ? isUsdcLoading : isBetTokenLoading
+  const displayBalance = isPredikts ? usdcBalance : (balance || 0)
 
   const handleDepositClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
@@ -288,6 +290,7 @@ const Balance: React.FC = () => {
             chainId={appChain.id}
             size={5}
             withGrayscale
+            currencyIconOverride={isPredikts ? 'currency/usdc' : undefined}
           />
           {
             isLoading ? (

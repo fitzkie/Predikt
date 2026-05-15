@@ -357,7 +357,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
                   onClick={handleFundWallet}
                   type="button"
                 >
-                  Deposit USDC.e
+                  Deposit USDC
                 </button>
               ) : null}
             </div>
