@@ -428,6 +428,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
           <PrediktsTradingPanel
             initialOutcomeIndex={selectedOutcomeIndex}
             market={selectedMarket}
+            onOutcomeChange={setSelectedOutcomeIndex}
           />
         </aside>
       </section>

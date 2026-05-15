@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AssetType, OrderType, Side } from '@polymarket/clob-client-v2'
 import { useWalletClient, usePublicClient, useBalance } from 'wagmi'
@@ -120,6 +120,11 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     chainId: polygon.id,
   })
   const onChainUsdcBalance = onChainUsdcData ? Number(onChainUsdcData.formatted) : 0
+  // Ref so the value is always current inside memoized callbacks without needing to add
+  // it to their dependency arrays (stale closure guard).
+  const onChainUsdcBalanceRef = useRef(0)
+  onChainUsdcBalanceRef.current = onChainUsdcBalance
+
   const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
   // Clear stale credentials when the wallet address changes
@@ -289,9 +294,9 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   }): PolymarketOrderReadiness => {
     const apiBalance = toNumeric(payload.balance)
     // Use whichever is higher: Polymarket API balance or on-chain wallet balance.
-    // The API can return 0 for POLY_GNOSIS_SAFE even when the Safe has funds, because
-    // the L1 auth header uses the EOA address while funds may sit in the Safe.
-    const balance = assetType === 'COLLATERAL' ? Math.max(apiBalance, onChainUsdcBalance) : apiBalance
+    // Read from ref (not closure) so we always get the latest wagmi-fetched value even
+    // when this function is called from a stale useCallback closure.
+    const balance = assetType === 'COLLATERAL' ? Math.max(apiBalance, onChainUsdcBalanceRef.current) : apiBalance
     const maxAllowance = getMaxAllowance(payload.allowances)
     const isBalanceSufficient = balance >= requiredAmount
     const isAllowanceSufficient = maxAllowance >= requiredAmount
