@@ -58,6 +58,8 @@ const Content: React.FC = () => {
     catch {}
 
     disconnect()
+    // Navigate to root so Privy/wagmi state is fully cleared on remount
+    window.location.href = '/'
   }
 
   const itemClassName = 'flex items-center justify-between rounded-sm border border-white/5 bg-bg-l1 px-3 py-2 text-caption-13 text-grey-60 transition hover:text-grey-90 hover:border-white/10'

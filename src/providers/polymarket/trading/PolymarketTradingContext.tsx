@@ -381,6 +381,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
         token_id: isBuy ? undefined : input.tokenId,
       })
+      addDebug(`wallet: ${isAAWallet ? 'AA/Safe' : 'EOA'} addr=${polymarketAddress}`)
       addDebug(`readiness API: balance=${(payload as PolymarketBalanceAllowance).balance} allowances=${JSON.stringify((payload as PolymarketBalanceAllowance).allowances)} onChain=${onChainUsdcBalanceRef.current} approvedRef=${approvedUsdcAllowanceRef.current === Number.MAX_SAFE_INTEGER ? 'MAX' : approvedUsdcAllowanceRef.current}`)
 
       const result = buildReadinessResult({
