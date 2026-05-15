@@ -8,6 +8,7 @@ import { PrediktsMarketCard, usePrediktsMarketBrowser } from 'modules/predikts'
 import { Button } from 'components/inputs'
 import { Logo } from 'components/ui'
 import { Href } from 'components/navigation'
+import Controls from 'compositions/PageLayout/components/Content/components/Controls/Controls'
 
 
 const HERO_BANNERS = [
@@ -50,7 +51,7 @@ const HeroBannerCarousel: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full rounded-[1rem] overflow-hidden" style={{ aspectRatio: '3/1' }}>
+    <div className="relative w-full rounded-[1rem] overflow-hidden" style={{ aspectRatio: '2/1' }}>
       {HERO_BANNERS.map((src, i) => (
         <img
           key={src}
@@ -203,9 +204,12 @@ const PrediktsHub: React.FC = () => {
                 />
               </label>
 
-              <Href className="hidden ds:block" href={constants.links.sportsApp}>
-                <Button size={40} style="primary" title="Switch to Sports" />
-              </Href>
+              <div className="hidden ds:flex items-center gap-3">
+                <Controls />
+                <Href href={constants.links.sportsApp}>
+                  <Button size={40} style="primary" title="Switch to Sports" />
+                </Href>
+              </div>
             </div>
 
             <HeroBannerCarousel />

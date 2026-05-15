@@ -42,12 +42,17 @@ const proxyRequest = async (
   }
 
   const upstreamUrl = buildUpstreamUrl(provider as ProviderKey, path, request.url)
+  const forwardedHeaders = new Headers()
+
+  request.headers.forEach((value, key) => {
+    if (key.toLowerCase() !== 'host') {
+      forwardedHeaders.set(key, value)
+    }
+  })
+
   const upstreamResponse = await fetch(upstreamUrl, {
     method: request.method,
-    headers: {
-      Accept: request.headers.get('accept') || 'application/json',
-      'Content-Type': request.headers.get('content-type') || 'application/json',
-    },
+    headers: forwardedHeaders,
     body: request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text(),
     cache: 'no-store',
   })
