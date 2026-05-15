@@ -116,12 +116,20 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
       await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
     }
     else {
+      // Market order price must be the WORST PRICE YOU'LL ACCEPT, not the displayed mid-price.
+      // For BUY: bid/ask spread means the actual ask is above the displayed price. If we pass
+      // the mid-price as the limit, takerAmount ends up too high and the FOK order is rejected
+      // silently. Add 10% buffer so the order matches at the actual market ask.
+      // For SELL: the actual bid is below the displayed price, so subtract 10%.
+      const worstAcceptablePrice = side === 'BUY'
+        ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
+        : Math.max(0.001, (currentPrice || 0.5) * 0.90)
       await trading.placeMarketOrder({
         tokenId: selectedTokenId,
         amount: numericAmount,
         side,
-        price: currentPrice || undefined,
-        orderType: 'FOK',
+        price: worstAcceptablePrice,
+        orderType: 'FAK', // Fill and Kill: fill what's available, cancel the rest (tolerates partial fills)
       })
     }
 
