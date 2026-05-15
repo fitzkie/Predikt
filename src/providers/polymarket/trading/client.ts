@@ -24,8 +24,16 @@ const mapCredentials = (credentials: PolymarketApiCredentials) => ({
   passphrase: credentials.passphrase,
 })
 
+const resolveHost = (host: string): string => {
+  if (typeof window !== 'undefined' && host.startsWith('/')) {
+    return `${window.location.origin}${host}`
+  }
+
+  return host
+}
+
 const getClientOptions = ({ signer, isAAWallet, funderAddress, credentials }: CreateTradingClientArgs) => ({
-  host: polymarketClientConfig.clobApiUrl,
+  host: resolveHost(polymarketClientConfig.clobApiUrl),
   chain: Chain.POLYGON,
   signer,
   creds: credentials ? mapCredentials(credentials) : undefined,

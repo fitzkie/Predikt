@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import cx from 'classnames'
 import { constants } from 'helpers'
 import { PrediktsMarketCard, usePrediktsMarketBrowser } from 'modules/predikts'
@@ -116,11 +117,12 @@ const skeletonCards = new Array(12).fill(0)
 
 const PrediktsHub: React.FC = () => {
   const browser = usePrediktsMarketBrowser()
+  const searchParams = useSearchParams()
   const [ activeSection, setActiveSection ] = useState<string>('trending')
   const [ activeSubcategory, setActiveSubcategory ] = useState<string>('all')
-  const [ search, setSearch ] = useState('')
   const tabsRef = useRef<HTMLDivElement>(null)
 
+  const search = searchParams.get('q') || ''
   const normalizedSearch = search.trim().toLowerCase()
   const activeLane = browser.lanes.find((lane) => lane.slug === activeSection)
   const baseEvents = useMemo(() => {
@@ -187,27 +189,12 @@ const PrediktsHub: React.FC = () => {
       <div className="space-y-5">
         <section className="rounded-[1.4rem] border border-white/10 bg-[#151515] p-4 ds:p-5">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 ds:flex-row ds:items-center">
-              <div className="flex items-center justify-between ds:min-w-[15rem]">
-                <Logo className="h-5" />
-                <Href className="ds:hidden" href={constants.links.sportsApp}>
-                  <Button size={32} style="primary" title="Switch to Sports" />
-                </Href>
-              </div>
-
-              <label className="block flex-1">
-                <input
-                  className="w-full rounded-[1rem] border border-white/10 bg-[#101010] px-4 py-3 text-caption-14 text-grey-90 placeholder:text-grey-40"
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search across Predikt"
-                  value={search}
-                />
-              </label>
-
-              <div className="hidden ds:flex items-center gap-3">
+            <div className="flex items-center justify-between">
+              <Logo className="h-5" />
+              <div className="flex items-center gap-3">
                 <Controls />
                 <Href href={constants.links.sportsApp}>
-                  <Button size={40} style="primary" title="Switch to Sports" />
+                  <Button size={32} style="primary" title="Switch to Sports" />
                 </Href>
               </div>
             </div>
