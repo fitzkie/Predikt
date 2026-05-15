@@ -140,6 +140,18 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
   const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
+  // Restore persisted approval from localStorage so the allowance check passes
+  // immediately on page load without requiring another on-chain approve().
+  useEffect(() => {
+    if (!polymarketAddress) return
+    try {
+      if (localStorage.getItem(`predikt_approved_usdc_${polymarketAddress}`) === '1') {
+        approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
+      }
+    }
+    catch {}
+  }, [ polymarketAddress ])
+
   // Clear stale credentials when the wallet address changes
   useEffect(() => {
     if (polymarketAddress && credentials?.walletAddress &&
@@ -398,51 +410,60 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     try {
       const client = getExecutionClient()
 
-      if (isAAWallet && aaWalletClient) {
-        // For POLY_GNOSIS_SAFE the CLOB client's updateBalanceAllowance only posts to the
-        // Polymarket API — it does NOT trigger an on-chain ERC-20 approve. We must send the
-        // approve() transaction through the Safe directly so the CTF Exchange can spend USDC.
+      if (isBuy) {
+        // For BUY orders (COLLATERAL = USDC): do a real on-chain ERC-20 approve().
+        // The CLOB client's updateBalanceAllowance only posts to the Polymarket REST API
+        // and does NOT create an on-chain approval — so the CTF Exchange can never call
+        // transferFrom() at settlement. This applies to both AA (Safe) and EOA wallets.
         const payload = await client.getBalanceAllowance({
-          asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
-          token_id: isBuy ? undefined : input.tokenId,
+          asset_type: AssetType.COLLATERAL,
         }) as PolymarketBalanceAllowance
 
         const spenders = Object.keys(payload.allowances || {})
 
         if (spenders.length === 0) {
-          throw new Error('No allowance targets returned by Polymarket. Cannot approve.')
+          throw new Error('No allowance targets returned by Polymarket. Cannot approve USDC.')
         }
 
-        for (const spender of spenders) {
+        const approveData = encodeFunctionData({
+          abi: ERC20_APPROVE_ABI,
+          functionName: 'approve',
+          // approve the first (primary) spender — the CTF Exchange
+          args: [ spenders[0] as `0x${string}`, maxUint256 ],
+        })
+
+        if (isAAWallet && aaWalletClient) {
           await aaWalletClient.sendTransaction({
             to: NATIVE_USDC_ADDRESS,
             value: 0n,
-            data: encodeFunctionData({
-              abi: ERC20_APPROVE_ABI,
-              functionName: 'approve',
-              args: [ spender as `0x${string}`, maxUint256 ],
-            }),
+            data: approveData,
+          })
+        }
+        else {
+          const signer = getActiveSigner()
+          await signer.sendTransaction({
+            account: signer.account!,
+            to: NATIVE_USDC_ADDRESS,
+            data: approveData,
+            chain: polygon,
           })
         }
 
-        // Set BEFORE invalidate so the refetch triggered below sees the updated ref
-        // and returns isAllowanceSufficient=true without waiting for API indexing.
-        if (isBuy) {
-          approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
-        }
+        // Set ref BEFORE invalidate so the immediate refetch returns isAllowanceSufficient=true.
+        approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
+        // Persist so subsequent page loads don't ask for approval again.
+        try { localStorage.setItem(`predikt_approved_usdc_${polymarketAddress}`, '1') } catch {}
       }
       else {
+        // SELL orders use conditional token allowance — keep the CLOB API path for now.
         await client.updateBalanceAllowance({
-          asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
-          token_id: isBuy ? undefined : input.tokenId,
+          asset_type: AssetType.CONDITIONAL,
+          token_id: input.tokenId,
         })
-        if (isBuy) {
-          approvedUsdcAllowanceRef.current = Number.MAX_SAFE_INTEGER
-        }
       }
 
       await invalidateTradingQueries()
-      setLastExecutionMessage('USDC approved. Placing your order should work now.')
+      setLastExecutionMessage(isBuy ? 'USDC approved. Click Buy to place your order.' : 'Share allowance updated.')
       setFixingAllowance(false)
       analytics.trackEvent('predikt_polymarket_allowance_update_submitted', {
         asset_type: isBuy ? 'COLLATERAL' : 'CONDITIONAL',
@@ -557,7 +578,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       }, undefined, input.orderType === 'FAK' ? OrderType.FAK : OrderType.FOK)
 
       await invalidateTradingQueries()
-      setLastExecutionMessage(`Market order submitted with status ${response.status}.`)
+      const statusMsg = response.status === 'matched'
+        ? 'Order filled!'
+        : response.status === 'delayed'
+          ? 'Order queued — will fill when matched.'
+          : `Order not filled (${response.status}). The market may have moved — try again or switch to Limit order.`
+      setLastExecutionMessage(statusMsg)
       setSubmittingOrder(false)
       analytics.trackEvent('predikt_polymarket_market_order_submitted', {
         token_id: input.tokenId,
