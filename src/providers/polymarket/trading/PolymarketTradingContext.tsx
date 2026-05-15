@@ -6,7 +6,18 @@ import { AssetType, OrderType, Side } from '@polymarket/clob-client-v2'
 import { useWalletClient, usePublicClient, useBalance } from 'wagmi'
 import { useWallet } from 'wallet'
 import { polygon } from 'viem/chains'
-import { type WalletClient } from 'viem'
+import { type WalletClient, encodeFunctionData, maxUint256 } from 'viem'
+
+const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
+const ERC20_APPROVE_ABI = [
+  {
+    name: 'approve',
+    type: 'function',
+    inputs: [ { name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' } ],
+    outputs: [ { name: '', type: 'bool' } ],
+    stateMutability: 'nonpayable',
+  },
+] as const
 import { useAnalytics } from 'providers/analytics'
 import { type PolymarketApiCredentials, type PolymarketBalanceAllowance, type PolymarketOpenOrder, type PolymarketOrderResponse } from 'providers/polymarket/client'
 
@@ -384,19 +395,49 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     try {
       const client = getExecutionClient()
 
-      await client.updateBalanceAllowance({
-        asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
-        token_id: isBuy ? undefined : input.tokenId,
-      })
+      if (isAAWallet && aaWalletClient) {
+        // For POLY_GNOSIS_SAFE the CLOB client's updateBalanceAllowance only posts to the
+        // Polymarket API — it does NOT trigger an on-chain ERC-20 approve. We must send the
+        // approve() transaction through the Safe directly so the CTF Exchange can spend USDC.
+        const payload = await client.getBalanceAllowance({
+          asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
+          token_id: isBuy ? undefined : input.tokenId,
+        }) as PolymarketBalanceAllowance
+
+        const spenders = Object.keys(payload.allowances || {})
+
+        if (spenders.length === 0) {
+          throw new Error('No allowance targets returned by Polymarket. Cannot approve.')
+        }
+
+        for (const spender of spenders) {
+          await aaWalletClient.sendTransaction({
+            to: NATIVE_USDC_ADDRESS,
+            value: 0n,
+            data: encodeFunctionData({
+              abi: ERC20_APPROVE_ABI,
+              functionName: 'approve',
+              args: [ spender as `0x${string}`, maxUint256 ],
+            }),
+          })
+        }
+      }
+      else {
+        await client.updateBalanceAllowance({
+          asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
+          token_id: isBuy ? undefined : input.tokenId,
+        })
+      }
 
       await invalidateTradingQueries()
-      setLastExecutionMessage(`Allowance update submitted for ${isBuy ? 'USDC collateral' : 'conditional shares'}. Refreshing readiness.`)
+      setLastExecutionMessage('USDC spending approved. You can now place your order.')
       setFixingAllowance(false)
       analytics.trackEvent('predikt_polymarket_allowance_update_submitted', {
         asset_type: isBuy ? 'COLLATERAL' : 'CONDITIONAL',
         token_id: input.tokenId,
         side: input.side,
         order_mode: input.orderMode,
+        wallet_type: isAAWallet ? 'safe' : 'eoa',
       })
 
       return true
@@ -416,7 +457,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       return false
     }
-  }, [ account, analytics, getExecutionClient, hasCredentials, invalidateTradingQueries, isExecutionEnabled ])
+  }, [ account, aaWalletClient, analytics, getExecutionClient, hasCredentials, invalidateTradingQueries, isAAWallet, isExecutionEnabled ])
 
   const placeLimitOrder = useCallback(async (input: PolymarketLimitOrderInput) => {
     setExecutionError(null)

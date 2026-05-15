@@ -267,14 +267,14 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           </div>
         )}
 
-        {/* To win — Polymarket style */}
+        {/* To win — always green, dollar bill icon */}
         {numericAmount > 0 && estimatedPayout > 0 && (
           <div>
             <div className="flex items-baseline justify-between">
               <span className="text-caption-13 text-grey-60">
-                To win {isYes ? '🟢' : '🔴'}
+                To win 💵
               </span>
-              <span className="text-[1.8rem] font-bold leading-none" style={{ color: accentColor }}>
+              <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">
                 {fmt(estimatedPayout)}
               </span>
             </div>
@@ -356,10 +356,9 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
             </button>
           ) : (
             <button
-              className="w-full rounded-xl px-4 py-3.5 text-caption-14 font-bold text-black disabled:opacity-50"
+              className="w-full rounded-xl bg-brand-50 px-4 py-3.5 text-caption-14 font-bold text-black disabled:opacity-50 hover:bg-brand-50/90 transition-colors"
               disabled={!isTradeReady || trading.isSubmittingOrder || Boolean(readinessQuery.data?.reason) || readinessQuery.isFetching || trading.isCheckingReadiness}
               onClick={() => { void handleSubmitOrder() }}
-              style={{ backgroundColor: accentColor }}
               type="button"
             >
               {trading.isSubmittingOrder ? 'Submitting...' : `${side === 'BUY' ? 'Buy' : 'Sell'} ${selectedOutcome}`}
