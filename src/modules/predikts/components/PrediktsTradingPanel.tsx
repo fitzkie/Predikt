@@ -382,11 +382,15 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           ) : !trading.hasCredentials ? (
             <button
               className="w-full rounded-xl bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={trading.isAuthenticating || !trading.isReadyForAuthentication}
+              disabled={trading.isAuthenticating || trading.isDeployingSafe || !trading.isReadyForAuthentication}
               onClick={() => { void handleEnableTrading() }}
               type="button"
             >
-              {trading.isAuthenticating ? 'Connecting to Polymarket...' : 'Sign to Enable Trading'}
+              {trading.isDeployingSafe
+                ? 'Setting up Smart Wallet...'
+                : trading.isAuthenticating
+                  ? 'Connecting to Polymarket...'
+                  : 'Sign to Enable Trading'}
             </button>
           ) : (
             <button

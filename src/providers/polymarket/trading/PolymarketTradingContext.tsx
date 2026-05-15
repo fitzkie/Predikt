@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AssetType, OrderType, Side } from '@polymarket/clob-client-v2'
-import { useWalletClient } from 'wagmi'
+import { useWalletClient, usePublicClient } from 'wagmi'
 import { useWallet } from 'wallet'
 import { polygon } from 'viem/chains'
 import { type WalletClient } from 'viem'
@@ -60,6 +60,7 @@ type PolymarketTradingContextValue = {
   hasCredentials: boolean
   credentials: PolymarketApiCredentials | null
   isAuthenticating: boolean
+  isDeployingSafe: boolean
   isSubmittingOrder: boolean
   isRefreshingOrders: boolean
   isCheckingReadiness: boolean
@@ -83,12 +84,14 @@ type PolymarketTradingContextValue = {
 const Context = createContext<PolymarketTradingContextValue | null>(null)
 
 export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
-  const { account, chainId } = useWallet()
+  const { account, chainId, isAAWallet, aaWalletClient } = useWallet()
   const walletClient = useWalletClient()
+  const publicClient = usePublicClient({ chainId: polygon.id })
   const queryClient = useQueryClient()
   const analytics = useAnalytics()
   const { credentials, hasCredentials, saveCredentials, clearCredentials } = usePolymarketApiCredentials()
   const [ isAuthenticating, setAuthenticating ] = useState(false)
+  const [ isDeployingSafe, setDeployingSafe ] = useState(false)
   const [ isSubmittingOrder, setSubmittingOrder ] = useState(false)
   const [ isRefreshingOrders, setRefreshingOrders ] = useState(false)
   const [ isCheckingReadiness, setCheckingReadiness ] = useState(false)
@@ -98,16 +101,18 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   const [ executionError, setExecutionError ] = useState<string | null>(null)
   const [ lastExecutionMessage, setLastExecutionMessage ] = useState<string | null>(null)
 
-  // For Polymarket, always use the underlying EOA from wagmi.
-  // AA/Smart wallets (Privy Gnosis Safe) use POLY_1271 which requires an
-  // on-chain contract — new users have no deployed contract so auth fails.
-  // The wagmi walletClient is always the EOA regardless of AA setup.
-  const polymarketAddress = walletClient.data?.account?.address?.toLowerCase()
+  // For AA (Privy Gnosis Safe) users, use the Safe address as the Polymarket account
+  // so sports betting and Predikts share one unified wallet address.
+  // For non-AA users (MetaMask/WalletConnect), use the EOA directly.
+  const polymarketAddress = isAAWallet && account
+    ? account.toLowerCase()
+    : walletClient.data?.account?.address?.toLowerCase()
 
   const isOnSupportedChain = chainId === polygon.id
   const isExecutionEnabled = Boolean(process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED === 'true')
+  const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
-  // Clear stale credentials when the underlying EOA changes
+  // Clear stale credentials when the wallet address changes
   useEffect(() => {
     if (polymarketAddress && credentials?.walletAddress &&
         credentials.walletAddress.toLowerCase() !== polymarketAddress) {
@@ -115,6 +120,8 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     }
   }, [ polymarketAddress, credentials?.walletAddress, clearCredentials ])
 
+  // getActiveSigner always returns the EOA wallet client.
+  // For POLY_GNOSIS_SAFE the EOA signs, with the Safe as the funder/maker.
   const getActiveSigner = useCallback(() => {
     const signer = walletClient.data as WalletClient | undefined
 
@@ -124,6 +131,36 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
     return signer
   }, [ walletClient.data ])
+
+  // Ensures the Privy Gnosis Safe is deployed on Polygon before trading.
+  // POLY_GNOSIS_SAFE requires an on-chain Safe so Polymarket can read its owners.
+  // If the Safe is already deployed this is a no-op (single getCode call).
+  const ensureSafeDeployed = useCallback(async () => {
+    if (!isAAWallet || !account || !aaWalletClient || !publicClient) {
+      return
+    }
+
+    const code = await publicClient.getCode({ address: account as `0x${string}` })
+
+    if (code && code !== '0x') {
+      return
+    }
+
+    setDeployingSafe(true)
+
+    try {
+      // Sending a zero-value UserOp through the Safe triggers ERC-4337 deployment.
+      // The Privy paymaster covers gas so the user pays nothing.
+      await aaWalletClient.sendTransaction({
+        to: account as `0x${string}`,
+        value: 0n,
+        data: '0x',
+      })
+    }
+    finally {
+      setDeployingSafe(false)
+    }
+  }, [ isAAWallet, account, aaWalletClient, publicClient ])
 
   const invalidateTradingQueries = useCallback(async () => {
     await Promise.all([
@@ -149,8 +186,14 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     setAuthError(null)
 
     try {
+      // For AA users, ensure the Gnosis Safe is deployed before attempting auth.
+      // POLY_GNOSIS_SAFE requires the Safe to exist on-chain for owner verification.
+      await ensureSafeDeployed()
+
       const client = createPolymarketAuthClient({
         signer: getActiveSigner(),
+        isAAWallet,
+        funderAddress: isAAWallet ? account : undefined,
       })
       const nextCredentials = await client.createOrDeriveApiKey(nonce)
 
@@ -165,7 +208,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       saveCredentials(normalizedCredentials)
       setAuthenticating(false)
       setLastExecutionMessage('Trading is enabled for authenticated order placement.')
-      analytics.trackEvent('predikt_polymarket_auth_success', { wallet_type: 'eoa' })
+      analytics.trackEvent('predikt_polymarket_auth_success', { wallet_type: isAAWallet ? 'safe' : 'eoa' })
 
       return normalizedCredentials
     }
@@ -174,11 +217,12 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       setAuthError(message)
       setAuthenticating(false)
+      setDeployingSafe(false)
       analytics.trackEvent('predikt_polymarket_auth_failed', { error_message: message })
 
       return null
     }
-  }, [ polymarketAddress, analytics, getActiveSigner, isOnSupportedChain, saveCredentials ])
+  }, [ polymarketAddress, account, isAAWallet, analytics, ensureSafeDeployed, getActiveSigner, isOnSupportedChain, saveCredentials ])
 
   const getExecutionClient = useCallback(() => {
     if (!polymarketAddress) {
@@ -196,8 +240,10 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     return createPolymarketExecutionClient({
       signer: getActiveSigner(),
       credentials,
+      isAAWallet,
+      funderAddress: isAAWallet ? account : undefined,
     })
-  }, [ polymarketAddress, credentials, getActiveSigner, isExecutionEnabled, isOnSupportedChain ])
+  }, [ polymarketAddress, account, isAAWallet, credentials, getActiveSigner, isExecutionEnabled, isOnSupportedChain ])
 
   const toNumeric = (value?: string) => {
     const parsed = Number(value || 0)
@@ -521,15 +567,24 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   }, [ analytics, getExecutionClient, invalidateTradingQueries ])
 
   const value = useMemo<PolymarketTradingContextValue>(() => {
+    const deployingMessage = isDeployingSafe ? 'Setting up your Smart Wallet on Polygon...' : null
+    const statusMessage = deployingMessage
+      ?? (isExecutionEnabled
+        ? (hasCredentials
+          ? 'Trading boundary enabled. Signed CLOB order placement and cancellation are live for authenticated wallets.'
+          : 'Trading is available. Enable this wallet before submitting live orders.')
+        : 'Trading boundary is wired, but execution is disabled until NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED is set to true.')
+
     return {
       mode: 'live',
       isWalletConnected: Boolean(polymarketAddress),
-      isReadyForAuthentication: Boolean(polymarketAddress),
+      isReadyForAuthentication,
       isOnSupportedChain,
       isExecutionEnabled,
       credentials,
       hasCredentials,
       isAuthenticating,
+      isDeployingSafe,
       isSubmittingOrder,
       isRefreshingOrders,
       isCheckingReadiness,
@@ -538,11 +593,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       authError,
       executionError,
       lastExecutionMessage,
-      statusMessage: isExecutionEnabled
-        ? (hasCredentials
-          ? 'Trading boundary enabled. Signed CLOB order placement and cancellation are live for authenticated wallets.'
-          : 'Trading is available. Enable this wallet before submitting live orders.')
-        : 'Trading boundary is wired, but execution is disabled until NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED is set to true.',
+      statusMessage,
       saveCredentials,
       clearCredentials,
       createOrDeriveApiKey,
@@ -553,7 +604,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       getOpenOrders,
       cancelOrder,
     }
-  }, [ polymarketAddress, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
+  }, [ polymarketAddress, isReadyForAuthentication, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isDeployingSafe, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
 
   return (
     <Context.Provider value={value}>
