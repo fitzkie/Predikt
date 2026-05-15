@@ -117,9 +117,17 @@ const skeletonCards = new Array(12).fill(0)
 const PrediktsHub: React.FC = () => {
   const browser = usePrediktsMarketBrowser()
   const searchParams = useSearchParams()
-  const [ activeSection, setActiveSection ] = useState<string>('trending')
+  const sectionParam = searchParams.get('section') || ''
+  const [ activeSection, setActiveSection ] = useState<string>(sectionParam || 'trending')
   const [ activeSubcategory, setActiveSubcategory ] = useState<string>('all')
   const tabsRef = useRef<HTMLDivElement>(null)
+
+  // Sync active section when the ?section= URL param changes (sidebar navigation)
+  useEffect(() => {
+    if (sectionParam && sectionParam !== activeSection) {
+      setActiveSection(sectionParam)
+    }
+  }, [ sectionParam ])
 
   const search = searchParams.get('q') || ''
   const normalizedSearch = search.trim().toLowerCase()
