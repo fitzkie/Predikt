@@ -83,7 +83,7 @@ type PolymarketTradingContextValue = {
 const Context = createContext<PolymarketTradingContextValue | null>(null)
 
 export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
-  const { account, isAAWallet, aaWalletClient, isReady, chainId } = useWallet()
+  const { account, chainId } = useWallet()
   const walletClient = useWalletClient()
   const queryClient = useQueryClient()
   const analytics = useAnalytics()
@@ -98,27 +98,32 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   const [ executionError, setExecutionError ] = useState<string | null>(null)
   const [ lastExecutionMessage, setLastExecutionMessage ] = useState<string | null>(null)
 
+  // For Polymarket, always use the underlying EOA from wagmi.
+  // AA/Smart wallets (Privy Gnosis Safe) use POLY_1271 which requires an
+  // on-chain contract — new users have no deployed contract so auth fails.
+  // The wagmi walletClient is always the EOA regardless of AA setup.
+  const polymarketAddress = walletClient.data?.account?.address?.toLowerCase()
+
   const isOnSupportedChain = chainId === polygon.id
   const isExecutionEnabled = Boolean(process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED === 'true')
 
-  // Clear stale credentials when the connected wallet address changes
+  // Clear stale credentials when the underlying EOA changes
   useEffect(() => {
-    if (account && credentials?.walletAddress && credentials.walletAddress.toLowerCase() !== account.toLowerCase()) {
+    if (polymarketAddress && credentials?.walletAddress &&
+        credentials.walletAddress.toLowerCase() !== polymarketAddress) {
       clearCredentials()
     }
-  }, [ account, credentials?.walletAddress, clearCredentials ])
+  }, [ polymarketAddress, credentials?.walletAddress, clearCredentials ])
 
   const getActiveSigner = useCallback(() => {
-    const signer = (isAAWallet ? aaWalletClient : walletClient.data) as WalletClient | undefined
+    const signer = walletClient.data as WalletClient | undefined
 
     if (!signer) {
-      throw new Error(isAAWallet
-        ? 'Privy smart-wallet signer is not ready yet.'
-        : 'Wallet signer is not ready for market execution.')
+      throw new Error('Wallet signer is not ready for market execution.')
     }
 
     return signer
-  }, [ aaWalletClient, isAAWallet, walletClient.data ])
+  }, [ walletClient.data ])
 
   const invalidateTradingQueries = useCallback(async () => {
     await Promise.all([
@@ -130,7 +135,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   }, [ queryClient ])
 
   const createOrDeriveApiKey = useCallback(async (nonce = 0) => {
-    if (!account) {
+    if (!polymarketAddress) {
       setAuthError('Connect a wallet before enabling market trading.')
       return null
     }
@@ -146,8 +151,6 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     try {
       const client = createPolymarketAuthClient({
         signer: getActiveSigner(),
-        isAAWallet,
-        funderAddress: account,
       })
       const nextCredentials = await client.createOrDeriveApiKey(nonce)
 
@@ -155,16 +158,14 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         apiKey: nextCredentials.key,
         passphrase: nextCredentials.passphrase,
         secret: nextCredentials.secret,
-        walletAddress: account,
+        walletAddress: polymarketAddress,
         createdAt: new Date().toISOString(),
       }
 
       saveCredentials(normalizedCredentials)
       setAuthenticating(false)
       setLastExecutionMessage('Trading is enabled for authenticated order placement.')
-      analytics.trackEvent('predikt_polymarket_auth_success', {
-        wallet_type: isAAWallet ? 'smart_wallet' : 'eoa',
-      })
+      analytics.trackEvent('predikt_polymarket_auth_success', { wallet_type: 'eoa' })
 
       return normalizedCredentials
     }
@@ -173,17 +174,14 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       setAuthError(message)
       setAuthenticating(false)
-      analytics.trackEvent('predikt_polymarket_auth_failed', {
-        wallet_type: isAAWallet ? 'smart_wallet' : 'eoa',
-        error_message: message,
-      })
+      analytics.trackEvent('predikt_polymarket_auth_failed', { error_message: message })
 
       return null
     }
-  }, [ account, analytics, getActiveSigner, isAAWallet, isOnSupportedChain, saveCredentials ])
+  }, [ polymarketAddress, analytics, getActiveSigner, isOnSupportedChain, saveCredentials ])
 
   const getExecutionClient = useCallback(() => {
-    if (!account) {
+    if (!polymarketAddress) {
       throw new Error('Connect a wallet before trading on this market.')
     }
 
@@ -197,11 +195,9 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
     return createPolymarketExecutionClient({
       signer: getActiveSigner(),
-      isAAWallet,
-      funderAddress: account,
       credentials,
     })
-  }, [ account, credentials, getActiveSigner, isAAWallet, isExecutionEnabled, isOnSupportedChain ])
+  }, [ polymarketAddress, credentials, getActiveSigner, isExecutionEnabled, isOnSupportedChain ])
 
   const toNumeric = (value?: string) => {
     const parsed = Number(value || 0)
@@ -527,8 +523,8 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   const value = useMemo<PolymarketTradingContextValue>(() => {
     return {
       mode: 'live',
-      isWalletConnected: Boolean(account),
-      isReadyForAuthentication: Boolean(account && isReady),
+      isWalletConnected: Boolean(polymarketAddress),
+      isReadyForAuthentication: Boolean(polymarketAddress),
       isOnSupportedChain,
       isExecutionEnabled,
       credentials,
@@ -557,7 +553,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       getOpenOrders,
       cancelOrder,
     }
-  }, [ account, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isReady, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
+  }, [ polymarketAddress, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
 
   return (
     <Context.Provider value={value}>

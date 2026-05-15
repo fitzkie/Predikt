@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { openModal } from '@locmod/modal'
 import { Icon } from 'components/ui'
 
-import Controls from '../Controls/Controls'
 import messages from './messages'
 
 
@@ -55,7 +54,6 @@ const PrediktsSearch: React.FC = () => {
       <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60 shrink-0">
         Predikt Markets
       </div>
-      <Controls />
     </div>
   )
 }

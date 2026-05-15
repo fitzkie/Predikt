@@ -9,13 +9,7 @@ import { type PolymarketApiCredentials } from 'providers/polymarket/client'
 
 type CreateTradingClientArgs = {
   signer: WalletClient
-  isAAWallet: boolean
-  funderAddress?: string
   credentials?: PolymarketApiCredentials | null
-}
-
-const getSignatureType = (isAAWallet: boolean) => {
-  return isAAWallet ? SignatureTypeV2.POLY_1271 : SignatureTypeV2.EOA
 }
 
 const mapCredentials = (credentials: PolymarketApiCredentials) => ({
@@ -43,13 +37,14 @@ const getBuilderConfig = (): BuilderConfig | undefined => {
   return { builderCode: code }
 }
 
-const getClientOptions = ({ signer, isAAWallet, funderAddress, credentials }: CreateTradingClientArgs) => ({
+const getClientOptions = ({ signer, credentials }: CreateTradingClientArgs) => ({
   host: resolveHost(polymarketClientConfig.clobApiUrl),
   chain: Chain.POLYGON,
   signer,
   creds: credentials ? mapCredentials(credentials) : undefined,
-  signatureType: getSignatureType(isAAWallet),
-  funderAddress: isAAWallet ? funderAddress : undefined,
+  // Always use plain EOA signing — POLY_1271/POLY_GNOSIS_SAFE require an
+  // on-chain contract that may not be deployed for new users.
+  signatureType: SignatureTypeV2.EOA,
   useServerTime: true,
   throwOnError: true,
   builderConfig: getBuilderConfig(),
