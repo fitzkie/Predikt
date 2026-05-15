@@ -52,6 +52,8 @@ const ChainCurrency: React.FC<ChainCurrencyProps> = ({ className, chainClassName
 
 const ChainSelect: React.FC = () => {
   const { appChain, setAppChainId } = useChain()
+  const pathname = usePathname()
+  const isPredikts = pathname?.startsWith('/predikts')
 
   return (
     <div className="border border-grey-20 p-1 rounded-md" onClick={(e) => e.stopPropagation()}>
@@ -65,6 +67,7 @@ const ChainSelect: React.FC = () => {
               chainClassName="border-bg-l2"
               chainId={appChain.id}
               size={4}
+              currencyIconOverride={isPredikts ? 'currency/usdc' : undefined}
             />
             <div className="text-caption-13">{appChain.name}</div>
           </div>
@@ -162,32 +165,34 @@ const BalanceInfo: React.FC = () => {
           }
         </div>
       </div>
-      <div className="flex items-center">
-        <div className="w-full py-2 px-3">
-          <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.inBets} tag="p" />
-          {
-            isBetsSummaryFetching ? (
-              <div className="bone h-4 w-10 rounded-full" />
-            ) : (
-              <div className="text-caption-13 font-semibold">
-                {toLocaleString(inBets || 0, { digits: 2 })} {betToken.symbol}
-              </div>
-            )
-          }
+      {!isPredikts && (
+        <div className="flex items-center">
+          <div className="w-full py-2 px-3">
+            <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.inBets} tag="p" />
+            {
+              isBetsSummaryFetching ? (
+                <div className="bone h-4 w-10 rounded-full" />
+              ) : (
+                <div className="text-caption-13 font-semibold">
+                  {toLocaleString(inBets || 0, { digits: 2 })} {betToken.symbol}
+                </div>
+              )
+            }
+          </div>
+          <div className="w-full border-l border-l-bg-l2 py-2 px-3">
+            <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.toRedeem} tag="p" />
+            {
+              isBetsSummaryFetching ? (
+                <div className="bone h-4 w-10 rounded-full" />
+              ) : (
+                <div className="text-caption-13 font-semibold">
+                  {toLocaleString(toPayout || 0, { digits: 2 })} {betToken.symbol}
+                </div>
+              )
+            }
+          </div>
         </div>
-        <div className="w-full border-l border-l-bg-l2 py-2 px-3">
-          <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.toRedeem} tag="p" />
-          {
-            isBetsSummaryFetching ? (
-              <div className="bone h-4 w-10 rounded-full" />
-            ) : (
-              <div className="text-caption-13 font-semibold">
-                {toLocaleString(toPayout || 0, { digits: 2 })} {betToken.symbol}
-              </div>
-            )
-          }
-        </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -209,13 +214,7 @@ const Content: React.FC = () => {
 
   const handleExchangeClick = (event: React.MouseEvent) => {
     event.stopPropagation()
-
-    if (isPredikts) {
-      openModal('PrediktsExchangeModal')
-    }
-    else {
-      openModal('FundingExchangeModal')
-    }
+    openModal('PrediktsExchangeModal')
   }
 
   return (

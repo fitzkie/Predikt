@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AssetType, OrderType, Side } from '@polymarket/clob-client-v2'
-import { useWalletClient, usePublicClient } from 'wagmi'
+import { useWalletClient, usePublicClient, useBalance } from 'wagmi'
 import { useWallet } from 'wallet'
 import { polygon } from 'viem/chains'
 import { type WalletClient } from 'viem'
@@ -110,6 +110,16 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
   const isOnSupportedChain = chainId === polygon.id
   const isExecutionEnabled = process.env.NEXT_PUBLIC_POLYMARKET_TRADING_ENABLED !== 'false'
+
+  // On-chain native USDC balance at the trading address. Polymarket's getBalanceAllowance
+  // sometimes returns 0 for POLY_GNOSIS_SAFE setups even when the Safe holds USDC.
+  // We use this as a floor so the UI doesn't block orders when the wallet clearly has funds.
+  const { data: onChainUsdcData } = useBalance({
+    address: polymarketAddress as `0x${string}` | undefined,
+    token: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+    chainId: polygon.id,
+  })
+  const onChainUsdcBalance = onChainUsdcData ? Number(onChainUsdcData.formatted) : 0
   const isReadyForAuthentication = Boolean(polymarketAddress) && (!isAAWallet || Boolean(aaWalletClient))
 
   // Clear stale credentials when the wallet address changes
@@ -277,7 +287,11 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     requiredAmount: number
     payload: PolymarketBalanceAllowance
   }): PolymarketOrderReadiness => {
-    const balance = toNumeric(payload.balance)
+    const apiBalance = toNumeric(payload.balance)
+    // Use whichever is higher: Polymarket API balance or on-chain wallet balance.
+    // The API can return 0 for POLY_GNOSIS_SAFE even when the Safe has funds, because
+    // the L1 auth header uses the EOA address while funds may sit in the Safe.
+    const balance = assetType === 'COLLATERAL' ? Math.max(apiBalance, onChainUsdcBalance) : apiBalance
     const maxAllowance = getMaxAllowance(payload.allowances)
     const isBalanceSufficient = balance >= requiredAmount
     const isAllowanceSufficient = maxAllowance >= requiredAmount
