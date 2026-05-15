@@ -386,7 +386,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               onClick={() => { void handleEnableTrading() }}
               type="button"
             >
-              {trading.isAuthenticating ? 'Enabling Trading...' : 'Enable Trading'}
+              {trading.isAuthenticating ? 'Connecting to Polymarket...' : 'Sign to Enable Trading'}
             </button>
           ) : (
             <button

@@ -305,7 +305,7 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
   const image = eventImage(event, selectedMarket)
   const totalVolume = eventMarkets.reduce((acc, market) => acc + marketVolume(market), 0)
   const marketContext = event?.description || selectedMarket.description || ''
-  const rules = getResolutionRules(event, selectedMarket)
+  const rules = getResolutionRules(event, selectedMarket) || marketContext
 
   return (
     <div className="px-2 py-6 ds:px-4">
@@ -409,22 +409,12 @@ const PrediktsMarketDetail: React.FC<Props> = ({ slug }) => {
             </div>
           </div>
 
-          {/* Market Context */}
-          {marketContext ? (
-            <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
-              <div className="text-[1.3rem] font-semibold tracking-[-0.03em] text-grey-90">Market Context</div>
-              <p className="mt-4 text-[1rem] leading-7 text-grey-70">
-                {truncateBody(marketContext, 520)}
-              </p>
-            </div>
-          ) : null}
-
-          {/* Resolution Rules */}
-          {rules ? (
+          {/* Resolution Rules (combines market context + resolution criteria) */}
+          {(marketContext || rules) ? (
             <div className="rounded-[1.5rem] border border-white/10 bg-[#151515] p-5 ds:p-6">
               <div className="text-[1.3rem] font-semibold tracking-[-0.03em] text-grey-90">Resolution Rules</div>
               <p className="mt-4 text-[1rem] leading-7 text-grey-70 whitespace-pre-line">
-                {truncateBody(rules, 800)}
+                {truncateBody(rules || marketContext, 800)}
               </p>
             </div>
           ) : null}
