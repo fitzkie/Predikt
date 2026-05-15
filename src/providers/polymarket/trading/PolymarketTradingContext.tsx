@@ -80,6 +80,7 @@ type PolymarketTradingContextValue = {
   authError: string | null
   executionError: string | null
   lastExecutionMessage: string | null
+  debugLog: string[]
   statusMessage: string
   saveCredentials: ReturnType<typeof usePolymarketApiCredentials>['saveCredentials']
   clearCredentials: ReturnType<typeof usePolymarketApiCredentials>['clearCredentials']
@@ -111,6 +112,11 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
   const [ authError, setAuthError ] = useState<string | null>(null)
   const [ executionError, setExecutionError ] = useState<string | null>(null)
   const [ lastExecutionMessage, setLastExecutionMessage ] = useState<string | null>(null)
+  const [ debugLog, setDebugLog ] = useState<string[]>([])
+  const addDebug = useCallback((msg: string) => {
+    const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    setDebugLog((prev) => [ ...prev.slice(-19), `${ts} ${msg}` ])
+  }, [])
 
   // For AA (Privy Gnosis Safe) users, use the Safe address as the Polymarket account
   // so sports betting and Predikts share one unified wallet address.
@@ -375,8 +381,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         asset_type: isBuy ? AssetType.COLLATERAL : AssetType.CONDITIONAL,
         token_id: isBuy ? undefined : input.tokenId,
       })
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM checkReadiness] API payload:', JSON.stringify(payload), '| onChainUsdcBalance:', onChainUsdcBalanceRef.current, '| approvedRef:', approvedUsdcAllowanceRef.current === Number.MAX_SAFE_INTEGER ? 'MAX' : approvedUsdcAllowanceRef.current)
+      addDebug(`readiness API: balance=${(payload as PolymarketBalanceAllowance).balance} allowances=${JSON.stringify((payload as PolymarketBalanceAllowance).allowances)} onChain=${onChainUsdcBalanceRef.current} approvedRef=${approvedUsdcAllowanceRef.current === Number.MAX_SAFE_INTEGER ? 'MAX' : approvedUsdcAllowanceRef.current}`)
 
       const result = buildReadinessResult({
         assetType: isBuy ? 'COLLATERAL' : 'CONDITIONAL',
@@ -385,8 +390,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         payload: payload as PolymarketBalanceAllowance,
       })
 
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM checkReadiness] result:', JSON.stringify(result))
+      addDebug(`readiness result: bal=${result.balance} allowance=${result.maxAllowance === Number.MAX_SAFE_INTEGER ? 'MAX' : result.maxAllowance} reason=${result.reason ?? 'ok'}`)
 
       setCheckingReadiness(false)
 
@@ -400,7 +404,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       return null
     }
-  }, [ account, getExecutionClient, hasCredentials, isExecutionEnabled ])
+  }, [ account, addDebug, getExecutionClient, hasCredentials, isExecutionEnabled ])
 
   const fixAllowance = useCallback(async (input: PolymarketOrderReadinessInput) => {
     if (!hasCredentials || !account || !isExecutionEnabled) {
@@ -438,8 +442,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
           args: [ spenders[0] as `0x${string}`, maxUint256 ],
         })
 
-        // DEBUG LOGGING — remove once orders are confirmed working
-        console.log('[PM fixAllowance] approving spender:', spenders[0], '| isAAWallet:', isAAWallet)
+        addDebug(`approve: spender=${spenders[0]} isAA=${isAAWallet}`)
 
         if (isAAWallet && aaWalletClient) {
           const txHash = await aaWalletClient.sendTransaction({
@@ -447,18 +450,18 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
             value: 0n,
             data: approveData,
           })
-          console.log('[PM fixAllowance] AA approve tx hash:', txHash)
+          addDebug(`approve AA tx: ${String(txHash)}`)
         }
         else {
           const signer = getActiveSigner()
-          console.log('[PM fixAllowance] EOA signer account:', signer.account?.address)
+          addDebug(`approve EOA: signer=${signer.account?.address}`)
           const txHash = await signer.sendTransaction({
             account: signer.account!,
             to: NATIVE_USDC_ADDRESS,
             data: approveData,
             chain: polygon,
           })
-          console.log('[PM fixAllowance] EOA approve tx hash:', txHash)
+          addDebug(`approve EOA tx: ${String(txHash)}`)
         }
 
         // Set ref BEFORE invalidate so the immediate refetch returns isAllowanceSufficient=true.
@@ -502,7 +505,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       return false
     }
-  }, [ account, aaWalletClient, analytics, getExecutionClient, hasCredentials, invalidateTradingQueries, isAAWallet, isExecutionEnabled ])
+  }, [ account, aaWalletClient, addDebug, analytics, getActiveSigner, getExecutionClient, hasCredentials, invalidateTradingQueries, isAAWallet, isExecutionEnabled, polymarketAddress ])
 
   const placeLimitOrder = useCallback(async (input: PolymarketLimitOrderInput) => {
     setExecutionError(null)
@@ -576,8 +579,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         amount: input.amount,
       })
 
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM placeMarketOrder] readiness check result:', JSON.stringify(readiness))
+      addDebug(`order readiness: ${readiness ? `bal=${readiness.balance} allowance=${readiness.maxAllowance === Number.MAX_SAFE_INTEGER ? 'MAX' : readiness.maxAllowance} reason=${readiness.reason ?? 'ok'}` : 'null (check error above)'}`)
 
       if (readiness?.reason) {
         throw new Error(readiness.reason)
@@ -585,13 +587,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       const client = getExecutionClient()
 
-      console.log('[PM placeMarketOrder] submitting order:', {
-        tokenId: input.tokenId,
-        amount: input.amount,
-        price: input.price,
-        side: input.side,
-        orderType: input.orderType,
-      })
+      addDebug(`submitting: amt=${input.amount} price=${input.price} side=${input.side} type=${input.orderType}`)
 
       const rawResponse = await client.createAndPostMarketOrder({
         tokenID: input.tokenId,
@@ -601,8 +597,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
         orderType: input.orderType === 'FAK' ? OrderType.FAK : OrderType.FOK,
       }, undefined, input.orderType === 'FAK' ? OrderType.FAK : OrderType.FOK)
 
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM placeMarketOrder] raw API response:', JSON.stringify(rawResponse))
+      addDebug(`API response: ${JSON.stringify(rawResponse)}`)
 
       // Handle Polymarket returning success:false with errorMsg (HTTP 200 logical rejection).
       // The CLOB client's throwIfError only catches "error" key, not "errorMsg".
@@ -637,9 +632,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       return response
     }
     catch (error) {
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.error('[PM placeMarketOrder] caught error:', error)
-
+      addDebug(`ERROR: ${error instanceof Error ? error.message : JSON.stringify(error)}`)
       const message = error instanceof Error ? error.message : 'Could not place the market order.'
 
       setExecutionError(message)
@@ -655,7 +648,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
 
       return null
     }
-  }, [ analytics, checkOrderReadiness, getExecutionClient, invalidateTradingQueries ])
+  }, [ addDebug, analytics, checkOrderReadiness, getExecutionClient, invalidateTradingQueries ])
 
   const getOpenOrders = useCallback(async (assetIds?: string[]) => {
     if (!hasCredentials || !account || !isExecutionEnabled) {
@@ -744,6 +737,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       authError,
       executionError,
       lastExecutionMessage,
+      debugLog,
       statusMessage,
       saveCredentials,
       clearCredentials,
@@ -755,7 +749,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       getOpenOrders,
       cancelOrder,
     }
-  }, [ polymarketAddress, isReadyForAuthentication, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isDeployingSafe, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
+  }, [ polymarketAddress, isReadyForAuthentication, authError, cancelOrder, checkOrderReadiness, clearCredentials, createOrDeriveApiKey, credentials, debugLog, executionError, fixAllowance, getOpenOrders, hasCredentials, isAuthenticating, isDeployingSafe, isCancellingOrderId, isCheckingReadiness, isExecutionEnabled, isFixingAllowance, isOnSupportedChain, isRefreshingOrders, isSubmittingOrder, lastExecutionMessage, placeLimitOrder, placeMarketOrder, saveCredentials ])
 
   return (
     <Context.Provider value={value}>

@@ -113,8 +113,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     if (orderMode === 'LIMIT') {
       if (numericLimitPrice <= 0 || numericLimitPrice >= 1) { setTicketError('Price must be between 0 and 1 for a limit order.'); return }
       if (limitShares <= 0) { setTicketError('Amount and price must both be greater than zero.'); return }
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM Panel] placing LIMIT order:', { tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
       await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
     }
     else {
@@ -126,8 +124,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
       const worstAcceptablePrice = side === 'BUY'
         ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
         : Math.max(0.001, (currentPrice || 0.5) * 0.90)
-      // DEBUG LOGGING — remove once orders are confirmed working
-      console.log('[PM Panel] placing MARKET order:', { tokenId: selectedTokenId, amount: numericAmount, side, price: worstAcceptablePrice, orderType: 'FAK', currentPrice, isAllowanceApprovedLocally })
       await trading.placeMarketOrder({
         tokenId: selectedTokenId,
         amount: numericAmount,
@@ -136,9 +132,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
         orderType: 'FAK', // Fill and Kill: fill what's available, cancel the rest (tolerates partial fills)
       })
     }
-
-    // DEBUG LOGGING — remove once orders are confirmed working
-    console.log('[PM Panel] post-submit state: executionError=', trading.executionError, 'lastMsg=', trading.lastExecutionMessage)
 
     await openOrdersQuery.refetch()
   }
@@ -393,6 +386,16 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
             </button>
           )}
         </div>
+
+        {/* Debug log — remove once orders are confirmed working */}
+        {trading.debugLog.length > 0 && (
+          <div className="rounded-lg border border-white/10 bg-black/40 p-2 space-y-0.5">
+            <div className="text-[10px] font-bold text-grey-50 uppercase tracking-wider mb-1">Debug log</div>
+            {trading.debugLog.map((line, i) => (
+              <div key={i} className="text-[10px] font-mono text-grey-60 break-all leading-4">{line}</div>
+            ))}
+          </div>
+        )}
 
         {/* Open orders */}
         {(openOrdersQuery.data?.length || openOrdersQuery.isLoading) ? (
