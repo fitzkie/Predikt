@@ -278,46 +278,8 @@ const CardDeposit: React.FC<CardDepositProps> = ({ userAddress, onSuccess }) => 
   const isMounted = useIsMounted()
   const transakRef = useRef<any>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
-  const [isPolling, setIsPolling] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
-
-  // Poll for balance after order is placed (webhook credits the balance server-side)
-  useEffect(() => {
-    if (!orderPlaced || !userAddress) return
-
-    setIsPolling(true)
-    let attempts = 0
-    const MAX_ATTEMPTS = 20 // 10 minutes at 30s intervals
-
-    const check = async () => {
-      try {
-        const res = await fetch(`/api/predikts/balance?address=${userAddress}`)
-        const data = await res.json()
-
-        if (data.balance > 0) {
-          if (isMounted()) onSuccess(data.balance)
-
-          return
-        }
-      }
-      catch {}
-
-      attempts++
-
-      if (attempts < MAX_ATTEMPTS && isMounted()) {
-        setTimeout(check, 30_000)
-      }
-      else if (isMounted()) {
-        setIsPolling(false)
-      }
-    }
-
-    // First check after 15s (give Transak time to call webhook)
-    const timeout = setTimeout(check, 15_000)
-
-    return () => clearTimeout(timeout)
-  }, [orderPlaced, userAddress, isMounted, onSuccess])
 
   // Cleanup Transak widget on unmount
   useEffect(() => {
@@ -356,9 +318,38 @@ const CardDeposit: React.FC<CardDepositProps> = ({ userAddress, onSuccess }) => 
 
       transakRef.current = transak
 
-      Transak.on(Transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL as any, () => {
+      // Credit balance immediately from the browser event — no webhook config needed.
+      // Transak fires TRANSAK_ORDER_SUCCESSFUL when they've accepted the fiat payment,
+      // which is reliable enough to credit. The deposit API is idempotent on txHash.
+      Transak.on(Transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL as any, async (orderData: any) => {
         transak.close()
-        if (isMounted()) setOrderPlaced(true)
+        if (!isMounted()) return
+
+        setOrderPlaced(true)
+
+        const order = orderData?.status ?? orderData
+        const cryptoAmount = Number(order?.cryptoAmount ?? 0)
+        const orderId = order?.id ?? `transak-browser-${Date.now()}`
+
+        if (cryptoAmount > 0) {
+          try {
+            const creditRes = await fetch('/api/predikts/deposit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userAddress,
+                amountUsdc: cryptoAmount,
+                txHash: `transak-${orderId}`,
+              }),
+            })
+            const result = await creditRes.json()
+
+            if (!result.error && isMounted()) {
+              onSuccess(result.newBalance)
+            }
+          }
+          catch {}
+        }
       })
 
       transak.init()
@@ -379,11 +370,8 @@ const CardDeposit: React.FC<CardDepositProps> = ({ userAddress, onSuccess }) => 
         </div>
         <p className="text-caption-14 font-semibold text-grey-90">Order placed!</p>
         <p className="text-caption-13 text-grey-60 leading-5">
-          Transak is processing your payment. Your balance will appear here within a few minutes.
+          Your balance is being credited. This takes a moment — hang tight.
         </p>
-        {isPolling && (
-          <p className="text-caption-12 text-grey-50">Watching for confirmation…</p>
-        )}
       </div>
     )
   }
