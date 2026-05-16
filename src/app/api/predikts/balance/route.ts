@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from 'lib/db'
 
+export const dynamic = 'force-dynamic'
+
 
 // GET /api/predikts/balance?address=0x...
 // Returns the user's pUSD balance from our internal ledger.

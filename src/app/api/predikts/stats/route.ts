@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from 'lib/db'
 import { getPlatformOnChainBalances } from 'lib/platform-wallet'
 
+export const dynamic = 'force-dynamic'
+
 
 export async function GET() {
   try {

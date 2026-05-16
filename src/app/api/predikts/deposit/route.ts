@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from 'lib/db'
 import { getPlatformAddress } from 'lib/platform-wallet'
 
+export const dynamic = 'force-dynamic'
+
 
 // GET — returns the platform deposit address so the UI can display it
 export async function GET() {

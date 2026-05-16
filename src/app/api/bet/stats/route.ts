@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getBetsGraphqlEndpoint } from '@azuro-org/toolkit'
 
+export const dynamic = 'force-dynamic'
 
 // 137 = Polygon mainnet
 const GRAPH_URL = process.env.NEXT_PUBLIC_AZURO_GRAPH_API_URL || getBetsGraphqlEndpoint(137 as any)

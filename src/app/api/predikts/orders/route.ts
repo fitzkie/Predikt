@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getPlatformOpenOrders } from 'lib/platform-wallet'
 
+export const dynamic = 'force-dynamic'
+
 
 export async function GET(request: Request) {
   try {

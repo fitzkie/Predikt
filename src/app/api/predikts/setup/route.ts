@@ -8,6 +8,8 @@ import {
   wrapUsdcToPusd,
 } from 'lib/platform-wallet'
 
+export const dynamic = 'force-dynamic'
+
 
 // GET — check platform wallet status (balances, credentials, approvals)
 export async function GET() {
