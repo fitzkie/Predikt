@@ -32,6 +32,8 @@
     "@locmod/intl": "1.0.5",
     "@locmod/local-storage": "1.0.4",
     "@locmod/modal": "3.0.2",
+    "@paywithglide/glide-js": "^0.13.49",
+    "@paywithglide/glide-react": "^0.0.52",
     "@polymarket/clob-client-v2": "^1.0.6",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",

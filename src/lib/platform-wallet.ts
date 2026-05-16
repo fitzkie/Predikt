@@ -96,7 +96,7 @@ function getPlatformWalletClient() {
   })
 }
 
-function getPublicClient() {
+export function getPublicClient() {
   return createPublicClient({
     chain: polygon,
     transport: polygonTransport,
@@ -328,4 +328,27 @@ export async function getPlatformOpenOrders(tokenIds?: string[]) {
   const result = await client.getOpenOrders(tokenIds ? { asset_id: tokenIds[0] } : undefined) as any
 
   return result?.data || result || []
+}
+
+// Called after any deposit is credited. Wraps available USDC → pUSD and re-registers
+// the balance with Polymarket's CLOB so the platform wallet can continue trading.
+// Fire-and-forget: call with .catch(console.error), never await in a request handler.
+export async function autoWrapIfNeeded(): Promise<void> {
+  const { usdcBalance, usdceBalance } = await getPlatformOnChainBalances()
+
+  // Wrap native USDC if present
+  if (usdcBalance >= 1) {
+    const amount = Math.floor(usdcBalance * 100) / 100
+    await wrapUsdcToPusd(amount)
+    await updateClobBalance()
+
+    return
+  }
+
+  // Wrap USDC.e if present and native USDC isn't available
+  if (usdceBalance >= 1) {
+    const amount = Math.floor(usdceBalance * 100) / 100
+    await wrapUsdcToPusd(amount)
+    await updateClobBalance()
+  }
 }
