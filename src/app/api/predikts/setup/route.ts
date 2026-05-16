@@ -64,9 +64,9 @@ export async function POST(request: Request) {
     }
 
     if (action === 'approve-exchanges') {
-      const txHashes = await approveExchangeContracts()
+      const receipts = await approveExchangeContracts()
 
-      return NextResponse.json({ message: 'Exchange approvals submitted.', txHashes })
+      return NextResponse.json({ message: 'Exchange approvals confirmed.', receipts })
     }
 
     if (action === 'wrap-usdc') {

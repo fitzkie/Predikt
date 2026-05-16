@@ -13,6 +13,8 @@ const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x$
 const CTF_EXCHANGE_V2 = '0xE111180000d2663C0091e4f400237545B87B996B' as `0x${string}`
 const NEG_RISK_EXCHANGE_V2 = '0xe2222d279d744050d28e00520010520000310F59' as `0x${string}`
 const NEG_RISK_ADAPTER = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296' as `0x${string}`
+// CollateralOnramp: approve this for USDC, then call wrap() to mint pUSD 1:1
+const COLLATERAL_ONRAMP = '0x93070a847efEf7F70739046A929D47a521F5B8ee' as `0x${string}`
 
 // The Amsterdam proxy bypasses Polymarket's geo-block on Railway's US IP.
 const CLOB_HOST = 'http://188.166.103.169:3001'
@@ -51,13 +53,16 @@ const ERC20_ABI = [
   },
 ] as const
 
-// pUSD has a deposit() function: approve USDC for pUSD contract, then call deposit(amount)
-const PUSD_ABI = [
-  ...ERC20_ABI,
+// CollateralOnramp: approve it for USDC, then call wrap(asset, to, amount) to mint pUSD 1:1
+const COLLATERAL_ONRAMP_ABI = [
   {
-    name: 'deposit',
+    name: 'wrap',
     type: 'function',
-    inputs: [{ name: 'amount', type: 'uint256' }],
+    inputs: [
+      { name: '_asset', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_amount', type: 'uint256' },
+    ],
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -157,37 +162,47 @@ export async function getPlatformOnChainBalances() {
 }
 
 // Approve all three exchange contracts to spend pUSD from the platform wallet.
+// Waits for each tx to confirm before sending the next to avoid nonce collisions.
 export async function approveExchangeContracts() {
   const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
   const account = getPlatformAccount()
-  const txHashes: string[] = []
+  const receipts: { spender: string; hash: string; status: string }[] = []
 
   for (const spender of [CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, NEG_RISK_ADAPTER]) {
     const data = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, maxUint256] })
     const hash = await walletClient.sendTransaction({ account, to: PUSD_ADDRESS, data, chain: polygon })
+    const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
 
-    txHashes.push(hash)
+    receipts.push({ spender, hash, status: receipt.status })
   }
 
-  return txHashes
+  return receipts
 }
 
-// Wrap native USDC into pUSD. Requires prior USDC allowance for pUSD contract.
-// amount is in USDC (e.g. 10 = $10).
+// Wrap native USDC into pUSD via Polymarket's CollateralOnramp contract (1:1 mint).
+// amount is in USDC (e.g. 10 = $10). Waits for approve to confirm before wrapping.
 export async function wrapUsdcToPusd(amountUsdc: number) {
   const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
   const account = getPlatformAccount()
   const amountRaw = BigInt(Math.floor(amountUsdc * 1e6))
 
-  // Step 1: approve pUSD contract to pull USDC
-  const approveData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [PUSD_ADDRESS, amountRaw] })
+  // Step 1: approve CollateralOnramp to pull USDC, then wait for confirmation
+  const approveData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [COLLATERAL_ONRAMP, amountRaw] })
   const approveTx = await walletClient.sendTransaction({ account, to: NATIVE_USDC_ADDRESS, data: approveData, chain: polygon })
+  await publicClient.waitForTransactionReceipt({ hash: approveTx, confirmations: 1 })
 
-  // Step 2: deposit USDC → pUSD
-  const depositData = encodeFunctionData({ abi: PUSD_ABI, functionName: 'deposit', args: [amountRaw] })
-  const depositTx = await walletClient.sendTransaction({ account, to: PUSD_ADDRESS, data: depositData, chain: polygon })
+  // Step 2: call CollateralOnramp.wrap(usdc, platformWallet, amount) → mints pUSD 1:1
+  const wrapData = encodeFunctionData({
+    abi: COLLATERAL_ONRAMP_ABI,
+    functionName: 'wrap',
+    args: [NATIVE_USDC_ADDRESS, account.address, amountRaw],
+  })
+  const wrapTx = await walletClient.sendTransaction({ account, to: COLLATERAL_ONRAMP, data: wrapData, chain: polygon })
+  const wrapReceipt = await publicClient.waitForTransactionReceipt({ hash: wrapTx, confirmations: 1 })
 
-  return { approveTx, depositTx }
+  return { approveTx, wrapTx, wrapStatus: wrapReceipt.status }
 }
 
 // Get the platform wallet's pUSD balance as seen by Polymarket's CLOB API.
