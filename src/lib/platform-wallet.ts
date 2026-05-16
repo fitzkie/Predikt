@@ -152,7 +152,7 @@ export async function getPlatformOnChainBalances() {
 
   const [usdcBalance, pUsdBalance] = await Promise.all([
     publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
-    publicClient.readContract({ address: PUSD_ADDRESS, abi: PUSD_ABI, functionName: 'balanceOf', args: [address] }),
+    publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
   ])
 
   return {
