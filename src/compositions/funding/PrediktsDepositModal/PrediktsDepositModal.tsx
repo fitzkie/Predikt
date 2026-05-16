@@ -270,17 +270,17 @@ const ManualSend: React.FC<ManualSendProps> = ({ platformAddress, userAddress, o
 // ── Transak card tab ──────────────────────────────────────────────────────────
 
 type CardDepositProps = {
-  platformAddress: string
   userAddress: string | undefined
   onSuccess: (newBalance: number) => void
 }
 
-const CardDeposit: React.FC<CardDepositProps> = ({ platformAddress, userAddress, onSuccess }) => {
+const CardDeposit: React.FC<CardDepositProps> = ({ userAddress, onSuccess }) => {
   const isMounted = useIsMounted()
   const transakRef = useRef<any>(null)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [isPolling, setIsPolling] = useState(false)
-  const apiKey = process.env.NEXT_PUBLIC_TRANSAK_API_KEY
+  const [isLoading, setIsLoading] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   // Poll for balance after order is placed (webhook credits the balance server-side)
   useEffect(() => {
@@ -325,42 +325,50 @@ const CardDeposit: React.FC<CardDepositProps> = ({ platformAddress, userAddress,
   }, [])
 
   const openTransak = async () => {
-    if (!userAddress || !platformAddress || !apiKey) return
+    if (!userAddress || isLoading) return
 
-    const { Transak } = await import('@transak/transak-sdk')
+    setSessionError(null)
+    setIsLoading(true)
 
-    const params = new URLSearchParams({
-      apiKey,
-      productsAvailed: 'BUY',
-      defaultNetwork: 'polygon',
-      network: 'polygon',
-      cryptoCurrencyCode: 'USDC',
-      walletAddress: platformAddress,
-      // partnerOrderId maps the purchase back to this user in the webhook
-      partnerOrderId: userAddress.toLowerCase(),
-      disableWalletAddressForm: 'true',
-      defaultFiatAmount: '50',
-      themeColor: 'C4FF48',
-    })
+    try {
+      // Fetch secure widget URL from our backend (keeps API secret server-side)
+      const res = await fetch('/api/predikts/transak-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress }),
+      })
+      const data = await res.json()
 
-    const environment = process.env.NEXT_PUBLIC_TRANSAK_ENVIRONMENT ?? 'STAGING'
-    const host = environment === 'PRODUCTION' ? 'https://global.transak.com' : 'https://staging-global.transak.com'
+      if (data.error || !data.widgetUrl) {
+        setSessionError(data.error ?? 'Failed to start card payment session.')
 
-    transakRef.current?.cleanup()
+        return
+      }
 
-    const transak = new Transak({
-      widgetUrl: `${host}/?${params.toString()}`,
-      referrer: typeof window !== 'undefined' ? window.location.origin : '',
-    })
+      const { Transak } = await import('@transak/transak-sdk')
 
-    transakRef.current = transak
+      transakRef.current?.cleanup()
 
-    Transak.on(Transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL as any, () => {
-      transak.close()
-      if (isMounted()) setOrderPlaced(true)
-    })
+      const transak = new Transak({
+        widgetUrl: data.widgetUrl,
+        referrer: typeof window !== 'undefined' ? window.location.origin : '',
+      })
 
-    transak.init()
+      transakRef.current = transak
+
+      Transak.on(Transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL as any, () => {
+        transak.close()
+        if (isMounted()) setOrderPlaced(true)
+      })
+
+      transak.init()
+    }
+    catch (err: any) {
+      if (isMounted()) setSessionError(err?.message ?? 'Unexpected error.')
+    }
+    finally {
+      if (isMounted()) setIsLoading(false)
+    }
   }
 
   if (orderPlaced) {
@@ -377,14 +385,6 @@ const CardDeposit: React.FC<CardDepositProps> = ({ platformAddress, userAddress,
           <p className="text-caption-12 text-grey-50">Watching for confirmation…</p>
         )}
       </div>
-    )
-  }
-
-  if (!apiKey) {
-    return (
-      <p className="text-caption-12 text-red-400 text-center py-4">
-        Card payments are not configured yet. Try another deposit method.
-      </p>
     )
   }
 
@@ -411,11 +411,12 @@ const CardDeposit: React.FC<CardDepositProps> = ({ platformAddress, userAddress,
       {!userAddress && (
         <p className="text-caption-12 text-grey-50 text-center">Connect a wallet to use this option.</p>
       )}
+      {sessionError && <p className="text-caption-12 text-red-400">{sessionError}</p>}
       <Button
         className="w-full"
-        title={{ en: 'Buy with Card' }}
+        title={isLoading ? { en: 'Opening…' } : { en: 'Buy with Card' }}
         size={40}
-        disabled={!userAddress || !platformAddress}
+        disabled={!userAddress || isLoading}
         onClick={openTransak}
       />
     </div>
@@ -481,23 +482,22 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         ))}
       </div>
 
-      {!platformAddress ? (
+      {!platformAddress && tab !== 'card' ? (
         <div className="bone h-32 rounded-md" />
       ) : tab === 'wallet' ? (
         <WalletDeposit
           address={address as string}
-          platformAddress={platformAddress}
+          platformAddress={platformAddress!}
           onSuccess={setSuccessBalance}
         />
       ) : tab === 'manual' ? (
         <ManualSend
-          platformAddress={platformAddress}
+          platformAddress={platformAddress!}
           userAddress={address as string | undefined}
           onSuccess={setSuccessBalance}
         />
       ) : (
         <CardDeposit
-          platformAddress={platformAddress}
           userAddress={address as string | undefined}
           onSuccess={setSuccessBalance}
         />
