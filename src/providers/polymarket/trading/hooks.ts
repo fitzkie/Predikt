@@ -18,12 +18,11 @@ type OrderReadinessArgs = {
 export const usePolymarketOpenOrders = (assetIds?: string[]) => {
   const trading = usePolymarketTrading()
   const normalizedAssetIds = Array.from(new Set((assetIds || []).filter(Boolean))).sort()
-  const shouldFetchAll = assetIds === undefined
 
   return useQuery({
     queryKey: getPolymarketOpenOrdersQueryKey(normalizedAssetIds),
     queryFn: () => trading.getOpenOrders(normalizedAssetIds),
-    enabled: trading.isExecutionEnabled && trading.isWalletConnected && trading.hasCredentials && (shouldFetchAll || normalizedAssetIds.length > 0),
+    enabled: trading.isExecutionEnabled && trading.isWalletConnected && normalizedAssetIds.length > 0,
     staleTime: 15_000,
     retry: 1,
   })
@@ -34,8 +33,6 @@ export const usePolymarketOrderReadiness = (args: OrderReadinessArgs) => {
   const { tokenId, side, orderMode, price, size, amount } = args
   const requiredValue = orderMode === 'LIMIT' ? size : amount
   const hasNumericAmount = typeof requiredValue === 'number' && !Number.isNaN(requiredValue) && requiredValue > 0
-  const needsPrice = orderMode === 'LIMIT'
-  const hasValidPrice = !needsPrice || (typeof price === 'number' && !Number.isNaN(price) && price > 0 && price < 1)
   const hasToken = Boolean(tokenId)
 
   return useQuery({
@@ -48,7 +45,7 @@ export const usePolymarketOrderReadiness = (args: OrderReadinessArgs) => {
       size,
       amount,
     }),
-    enabled: trading.isExecutionEnabled && trading.isWalletConnected && trading.hasCredentials && hasToken && hasNumericAmount && hasValidPrice,
+    enabled: trading.isExecutionEnabled && trading.isWalletConnected && hasToken && hasNumericAmount,
     staleTime: 10_000,
     retry: 1,
   })

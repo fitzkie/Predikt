@@ -89,6 +89,12 @@
       "shared/*": [
         "src/shared/*"
       ],
+      "lib": [
+        "src/lib"
+      ],
+      "lib/*": [
+        "src/lib/*"
+      ],
       "graph/*": [
         "src/graph/*"
       ],

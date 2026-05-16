@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PrediktsUser {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  pUsdBalance   Decimal  @default(0) @db.Decimal(18, 6)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        PrediktsOrder[]
+  deposits      PrediktsDeposit[]
+
+  @@map("predikts_users")
+}
+
+model PrediktsDeposit {
+  id            String   @id @default(cuid())
+  userId        String
+  user          PrediktsUser @relation(fields: [userId], references: [id])
+  txHash        String   @unique
+  amountUsdc    Decimal  @db.Decimal(18, 6)
+  status        String   @default("confirmed")
+  createdAt     DateTime @default(now())
+
+  @@map("predikts_deposits")
+}
+
+model PrediktsOrder {
+  id              String   @id @default(cuid())
+  userId          String
+  user            PrediktsUser @relation(fields: [userId], references: [id])
+  polyOrderId     String?
+  tokenId         String
+  marketQuestion  String?
+  side            String
+  amount          Decimal  @db.Decimal(18, 6)
+  price           Float
+  orderType       String   @default("MARKET")
+  status          String   @default("pending")
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("predikts_orders")
+}

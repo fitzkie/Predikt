@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { openModal } from '@locmod/modal'
-import { polygon } from 'viem/chains'
 import { useAnalytics } from 'providers/analytics'
 import { useOptionalPrivy } from 'providers/auth'
+import { openModal } from '@locmod/modal'
 import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
@@ -35,10 +34,8 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const [ selectedOutcomeIndex, setSelectedOutcomeIndex ] = useState(initialOutcomeIndex)
   const [ amount, setAmount ] = useState('10')
   const [ limitPrice, setLimitPrice ] = useState(String(prices[0] || 0.5))
-  const [ ticketError, setTicketError ] = useState<string | null>(null)
-  // Set true after a successful on-chain approve so the button unlocks immediately
-  // while the react-query refetch is still in flight (API lags a few blocks).
-  const [ isAllowanceApprovedLocally, setIsAllowanceApprovedLocally ] = useState(false)
+  const [ showDepositInfo, setShowDepositInfo ] = useState(false)
+  const [ copied, setCopied ] = useState(false)
   const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
 
   useEffect(() => {
@@ -46,7 +43,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     setLimitPrice(String(prices[initialOutcomeIndex] || prices[0] || 0.5))
   }, [ initialOutcomeIndex, market.id ])
 
-  const isTradeReady = trading.isExecutionEnabled && trading.isWalletConnected && trading.hasCredentials
   const selectedOutcome = outcomes[selectedOutcomeIndex] || 'Yes'
   const selectedTokenId = tokenIds[selectedOutcomeIndex]
   const numericAmount = Number(amount) || 0
@@ -65,18 +61,11 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const estimatedPayout = estimatedShares
   const avgPriceCents = Math.round((orderMode === 'LIMIT' ? numericLimitPrice : currentPrice) * 100)
 
-  const readinessQuery = usePolymarketOrderReadiness(
-    orderMode === 'LIMIT'
-      ? { tokenId: selectedTokenId, side, orderMode: 'LIMIT', price: numericLimitPrice || undefined, size: limitShares > 0 ? limitShares : undefined }
-      : { tokenId: selectedTokenId, side, orderMode: 'MARKET', amount: numericAmount || undefined }
-  )
-
-  const balance = readinessQuery.data?.balance ?? 0
+  const balance = trading.userBalance
 
   const handleSelectOutcome = (index: number) => {
     setSelectedOutcomeIndex(index)
     setLimitPrice(String(prices[index] ?? limitPrice))
-    setIsAllowanceApprovedLocally(false)
     onOutcomeChange?.(index)
   }
 
@@ -87,82 +76,42 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     })
   }
 
-  const handleEnableTrading = async () => {
-    setTicketError(null)
-    await trading.createOrDeriveApiKey()
-    await openOrdersQuery.refetch()
-  }
-
   const handleSubmitOrder = async () => {
-    setTicketError(null)
+    if (!selectedTokenId) return
+    if (numericAmount <= 0) return
 
-    if (!trading.hasCredentials) {
-      const creds = await trading.createOrDeriveApiKey()
-      if (!creds) { setTicketError('Enable trading before placing a live order.'); return }
-    }
-
-    if (!selectedTokenId) { setTicketError('This market outcome is missing a tradable token ID.'); return }
-    if (numericAmount <= 0) { setTicketError('Enter an amount greater than zero.'); return }
-    // Skip stale readiness error if we've locally confirmed the approval — the context's
-    // approvedUsdcAllowanceRef ensures the internal readiness check inside placeLimitOrder/
-    // placeMarketOrder will also pass.
-    if (readinessQuery.data?.reason && !isAllowanceApprovedLocally) {
-      setTicketError(readinessQuery.data.reason); return
+    if (side === 'BUY' && balance < numericAmount) {
+      setShowDepositInfo(true)
+      return
     }
 
     if (orderMode === 'LIMIT') {
-      if (numericLimitPrice <= 0 || numericLimitPrice >= 1) { setTicketError('Price must be between 0 and 1 for a limit order.'); return }
-      if (limitShares <= 0) { setTicketError('Amount and price must both be greater than zero.'); return }
+      if (numericLimitPrice <= 0 || numericLimitPrice >= 1) return
+      if (limitShares <= 0) return
       await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
     }
     else {
-      // Market order price must be the WORST PRICE YOU'LL ACCEPT, not the displayed mid-price.
-      // For BUY: bid/ask spread means the actual ask is above the displayed price. If we pass
-      // the mid-price as the limit, takerAmount ends up too high and the FOK order is rejected
-      // silently. Add 10% buffer so the order matches at the actual market ask.
-      // For SELL: the actual bid is below the displayed price, so subtract 10%.
-      const worstAcceptablePrice = side === 'BUY'
+      const worstPrice = side === 'BUY'
         ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
         : Math.max(0.001, (currentPrice || 0.5) * 0.90)
-      await trading.placeMarketOrder({
-        tokenId: selectedTokenId,
-        amount: numericAmount,
-        side,
-        price: worstAcceptablePrice,
-        orderType: 'FAK', // Fill and Kill: fill what's available, cancel the rest (tolerates partial fills)
-      })
+      await trading.placeMarketOrder({ tokenId: selectedTokenId, amount: numericAmount, side, price: worstPrice, orderType: 'FAK' })
     }
 
     await openOrdersQuery.refetch()
   }
 
-  const handleFixAllowance = async () => {
-    setTicketError(null)
-    if (!selectedTokenId) return
-    const success = await trading.fixAllowance({
-      tokenId: selectedTokenId, side, orderMode,
-      price: numericLimitPrice || undefined,
-      size: orderMode === 'LIMIT' && limitShares > 0 ? limitShares : undefined,
-      amount: orderMode === 'MARKET' ? numericAmount : undefined,
-    })
-    if (success) {
-      setIsAllowanceApprovedLocally(true)
-      // Refetch in background — the ref in the context already unblocks the order
-      void readinessQuery.refetch()
+  const handleCopyAddress = () => {
+    if (trading.platformAddress) {
+      navigator.clipboard.writeText(trading.platformAddress).catch(() => {})
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
-  }
-
-  const handleFundWallet = () => {
-    analytics.trackEvent('predikt_polymarket_funding_opened', { side, order_mode: orderMode, required_amount: readinessQuery.data?.requiredAmount, token_id: selectedTokenId })
-    openModal('PrediktsDepositModal')
   }
 
   const handleConnect = () => {
     if (canLogin && ready) { try { connectWallet(); return } catch {} }
     openModal('ConnectModal')
   }
-
-  const handleSwitchToPolygon = () => openModal('SwitchNetworkModal', { chainId: polygon.id })
 
   const yesColor = '#7ef0a5'
   const noColor = '#ff6f7c'
@@ -247,7 +196,11 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
         <div>
           <div className="flex items-center justify-between text-caption-12 text-grey-60 mb-2">
             <span className="font-medium text-grey-90 text-caption-13">Amount</span>
-            {balance > 0 && <span>{fmt(balance)} cash</span>}
+            {account && (
+              <button className="text-grey-50 hover:text-grey-90 transition-colors" onClick={() => setShowDepositInfo((v) => !v)} type="button">
+                {fmt(balance)} cash
+              </button>
+            )}
           </div>
           <div className="flex items-center rounded-xl border border-white/15 bg-bg-l3 px-4 py-3">
             <span className="mr-1 text-[1.4rem] font-semibold text-grey-60">$</span>
@@ -260,7 +213,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
-          {/* Fixed increment buttons — Polymarket style */}
           <div className="mt-2 flex gap-1.5">
             {INCREMENT_AMOUNTS.map((add) => (
               <button
@@ -288,27 +240,44 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           </div>
         )}
 
-        {/* To win — always green, dollar bill icon */}
+        {/* To win */}
         {numericAmount > 0 && estimatedPayout > 0 && (
           <div>
             <div className="flex items-baseline justify-between">
-              <span className="text-caption-13 text-grey-60">
-                To win 💵
-              </span>
-              <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">
-                {fmt(estimatedPayout)}
-              </span>
+              <span className="text-caption-13 text-grey-60">To win 💵</span>
+              <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">{fmt(estimatedPayout)}</span>
             </div>
-            <div className="mt-1 text-caption-12 text-grey-50">
-              Avg. Price {avgPriceCents}¢
-            </div>
+            <div className="mt-1 text-caption-12 text-grey-50">Avg. Price {avgPriceCents}¢</div>
           </div>
         )}
 
-        {/* Errors */}
-        {(trading.authError || trading.executionError || ticketError) && (
+        {/* Deposit info panel — shown when user taps balance or has insufficient funds */}
+        {showDepositInfo && trading.platformAddress && (
+          <div className="rounded-lg border border-brand-50/20 bg-brand-50/5 p-3 space-y-2">
+            <div className="text-caption-12 font-semibold text-grey-90">Deposit USDC to trade</div>
+            <div className="text-caption-12 text-grey-60 leading-5">
+              Send native USDC on Polygon to the address below. Your balance updates automatically.
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-white/10 bg-bg-l3 px-3 py-2">
+              <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-grey-70">{trading.platformAddress}</span>
+              <button
+                className="flex-none text-caption-11 font-semibold text-brand-50 hover:text-brand-50/80 transition-colors"
+                onClick={handleCopyAddress}
+                type="button"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <button className="text-caption-11 text-grey-50 hover:text-grey-70" onClick={() => setShowDepositInfo(false)} type="button">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Errors and success messages */}
+        {trading.executionError && (
           <div className="rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
-            {trading.authError || trading.executionError || ticketError}
+            {trading.executionError}
           </div>
         )}
         {trading.lastExecutionMessage && (
@@ -317,68 +286,14 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           </div>
         )}
 
-        {/* Readiness CTAs — hide allowance error once locally approved */}
-        {readinessQuery.data?.reason && !isAllowanceApprovedLocally && (
-          <div className="rounded-lg border border-risk-red/30 bg-risk-red/10 px-3 py-3 text-caption-12 text-risk-red">
-            <div>{readinessQuery.data.reason}</div>
-            {!readinessQuery.data.isBalanceSufficient && (
-              <div className="mt-1 text-risk-red/80">
-                {`You have ${fmt(readinessQuery.data.balance)} but need ${fmt(readinessQuery.data.requiredAmount)}.`}
-              </div>
-            )}
-            <div className="mt-2 flex flex-wrap gap-2">
-              {readinessQuery.data.isBalanceSufficient && !readinessQuery.data.isAllowanceSufficient && (
-                <button
-                  className="rounded-md border border-brand-50/30 bg-brand-50/10 px-3 py-1.5 text-caption-12 font-semibold text-brand-50 disabled:opacity-50"
-                  disabled={trading.isFixingAllowance}
-                  onClick={() => { void handleFixAllowance() }}
-                  type="button"
-                >
-                  {trading.isFixingAllowance ? 'Approving...' : 'Approve USDC spending'}
-                </button>
-              )}
-              {!readinessQuery.data.isBalanceSufficient && (
-                <button
-                  className="rounded-md border border-brand-50/30 bg-brand-50/10 px-3 py-1.5 text-caption-12 font-semibold text-brand-50"
-                  onClick={handleFundWallet}
-                  type="button"
-                >
-                  Deposit USDC
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Primary action */}
         <div>
           {!account ? (
             <Button className="w-full" size={40} title={buttonMessages.connectWallet} onClick={handleConnect} />
-          ) : !trading.isOnSupportedChain ? (
-            <button
-              className="w-full rounded-xl bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black"
-              onClick={handleSwitchToPolygon}
-              type="button"
-            >
-              Switch to Polygon
-            </button>
-          ) : !trading.hasCredentials ? (
-            <button
-              className="w-full rounded-xl bg-brand-50 px-4 py-3 text-caption-13 font-semibold text-black disabled:opacity-50"
-              disabled={trading.isAuthenticating || trading.isDeployingSafe || !trading.isReadyForAuthentication}
-              onClick={() => { void handleEnableTrading() }}
-              type="button"
-            >
-              {trading.isDeployingSafe
-                ? 'Setting up Smart Wallet...'
-                : trading.isAuthenticating
-                  ? 'Connecting to Polymarket...'
-                  : 'Sign to Enable Trading'}
-            </button>
           ) : (
             <button
               className="w-full rounded-xl bg-brand-50 px-4 py-3.5 text-caption-14 font-bold text-black disabled:opacity-50 hover:bg-brand-50/90 transition-colors"
-              disabled={!isTradeReady || trading.isSubmittingOrder || (Boolean(readinessQuery.data?.reason) && !isAllowanceApprovedLocally) || (readinessQuery.isFetching && !isAllowanceApprovedLocally) || trading.isCheckingReadiness}
+              disabled={trading.isSubmittingOrder || numericAmount <= 0 || !selectedTokenId}
               onClick={() => { void handleSubmitOrder() }}
               type="button"
             >
@@ -391,16 +306,6 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           )}
         </div>
 
-        {/* Debug log — remove once orders are confirmed working */}
-        {trading.debugLog.length > 0 && (
-          <div className="rounded-lg border border-white/10 bg-black/40 p-2 space-y-0.5">
-            <div className="text-[10px] font-bold text-grey-50 uppercase tracking-wider mb-1">Debug log</div>
-            {trading.debugLog.map((line, i) => (
-              <div key={i} className="text-[10px] font-mono text-grey-60 break-all leading-4">{line}</div>
-            ))}
-          </div>
-        )}
-
         {/* Open orders */}
         {(openOrdersQuery.data?.length || openOrdersQuery.isLoading) ? (
           <div className="border-t border-white/10 pt-4">
@@ -408,7 +313,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               <span className="uppercase tracking-[0.14em]">Open orders</span>
               <button
                 className="text-grey-50 hover:text-grey-90 disabled:opacity-50"
-                disabled={openOrdersQuery.isFetching || !trading.hasCredentials}
+                disabled={openOrdersQuery.isFetching}
                 onClick={() => { void openOrdersQuery.refetch() }}
                 type="button"
               >
