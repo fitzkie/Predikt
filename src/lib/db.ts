@@ -7,7 +7,7 @@ declare global {
   var __prisma: PrismaClient | undefined
 }
 
-function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL
 
   if (!connectionString) {
@@ -16,11 +16,22 @@ function createPrismaClient() {
 
   const adapter = new PrismaPg({ connectionString })
 
-  return new PrismaClient({ adapter } as any)
+  const client = new PrismaClient({ adapter } as any)
+
+  if (process.env.NODE_ENV !== 'production') {
+    global.__prisma = client
+  }
+
+  return client
 }
 
-export const db = global.__prisma ?? createPrismaClient()
+// Lazy proxy — defers createPrismaClient() to first property access (request time, not build time)
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, prop: string | symbol) {
+    if (!global.__prisma) {
+      global.__prisma = createPrismaClient()
+    }
 
-if (process.env.NODE_ENV !== 'production') {
-  global.__prisma = db
-}
+    return (global.__prisma as any)[prop]
+  },
+})

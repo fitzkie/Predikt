@@ -1,9 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 
 type Result = Record<string, any>
+
+type PrediktsStats = {
+  platformPUsdBalance: number | null
+  platformUsdcBalance: number | null
+  totalBetters: number
+  totalOrders: number
+  totalBetAmount: number
+  totalPayouts: number
+}
+
+type SportsStats = {
+  totalBetters: number
+  totalBets: number
+  totalBetAmount: number
+  totalPayouts: number
+}
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="border border-white/10 rounded-xl p-5 space-y-3">
@@ -23,9 +39,33 @@ const ResultBox: React.FC<{ result: Result | null; loading: boolean }> = ({ resu
   )
 }
 
+const StatCard: React.FC<{ label: string; value: string | number | null; sub?: string }> = ({ label, value, sub }) => (
+  <div className="bg-bg-l3 rounded-lg px-4 py-3">
+    <p className="text-caption-11 text-grey-50 uppercase tracking-wide">{label}</p>
+    <p className="text-heading-h3 font-bold text-grey-90 mt-0.5">
+      {value === null ? '–' : value}
+    </p>
+    {sub && <p className="text-caption-11 text-grey-50 mt-0.5">{sub}</p>}
+  </div>
+)
+
 export default function PrediktsAdminPage() {
   const [ results, setResults ] = useState<Record<string, Result | null>>({})
   const [ loading, setLoading ] = useState<Record<string, boolean>>({})
+  const [ prediktsStats, setPrediktsStats ] = useState<PrediktsStats | null>(null)
+  const [ sportsStats, setSportsStats ] = useState<SportsStats | null>(null)
+  const [ statsLoading, setStatsLoading ] = useState(true)
+
+  useEffect(() => {
+    setStatsLoading(true)
+    Promise.all([
+      fetch('/api/predikts/stats').then((r) => r.json()).catch(() => null),
+      fetch('/api/bet/stats').then((r) => r.json()).catch(() => null),
+    ]).then(([ ps, ss ]) => {
+      if (ps && !ps.error) setPrediktsStats(ps)
+      if (ss && !ss.error) setSportsStats(ss)
+    }).finally(() => setStatsLoading(false))
+  }, [])
 
   const run = async (key: string, method: 'GET' | 'POST', url: string, body?: object) => {
     setLoading((p) => ({ ...p, [key]: true }))
@@ -52,12 +92,86 @@ export default function PrediktsAdminPage() {
   const btn = (label: string, disabled = false) =>
     `px-4 py-2 rounded-lg text-caption-13 font-semibold transition-colors ${disabled ? 'bg-grey-10 text-grey-50 cursor-not-allowed' : 'bg-brand-50 text-black hover:bg-brand-50/90'}`
 
+  const fmt = (n: number, decimals = 2) => n.toLocaleString('en-US', { maximumFractionDigits: decimals })
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
       <div>
         <h1 className="text-heading-h2 font-bold text-grey-90">Predikts Admin</h1>
         <p className="mt-1 text-caption-13 text-grey-60">One-time platform wallet setup. Run steps 1–4 in order.</p>
       </div>
+
+      {/* Platform Stats */}
+      <Section title="Platform Stats — Predikt Markets">
+        {statsLoading ? (
+          <p className="text-caption-12 text-grey-50">Loading stats…</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <StatCard
+                label="Platform pUSD balance"
+                value={prediktsStats ? `$${fmt(prediktsStats.platformPUsdBalance ?? 0)} pUSD` : null}
+                sub="On-chain wallet balance"
+              />
+              <StatCard
+                label="Platform USDC balance"
+                value={prediktsStats ? `$${fmt(prediktsStats.platformUsdcBalance ?? 0)} USDC` : null}
+                sub="Unwrapped USDC"
+              />
+              <StatCard
+                label="Total betters"
+                value={prediktsStats ? prediktsStats.totalBetters : null}
+                sub="Unique wallets"
+              />
+              <StatCard
+                label="Total bets placed"
+                value={prediktsStats ? prediktsStats.totalOrders : null}
+                sub="Orders submitted"
+              />
+              <StatCard
+                label="Total bet amount"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalBetAmount)} pUSD` : null}
+              />
+              <StatCard
+                label="Total payouts"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalPayouts)} pUSD` : null}
+                sub="SELL orders processed"
+              />
+            </div>
+            <button
+              className={btn('Refresh')}
+              onClick={() => {
+                setStatsLoading(true)
+                Promise.all([
+                  fetch('/api/predikts/stats').then((r) => r.json()).catch(() => null),
+                  fetch('/api/bet/stats').then((r) => r.json()).catch(() => null),
+                ]).then(([ ps, ss ]) => {
+                  if (ps && !ps.error) setPrediktsStats(ps)
+                  if (ss && !ss.error) setSportsStats(ss)
+                }).finally(() => setStatsLoading(false))
+              }}
+            >
+              Refresh Stats
+            </button>
+          </div>
+        )}
+      </Section>
+
+      {/* Sports Stats */}
+      <Section title="Platform Stats — Sports Betting (/bet)">
+        {statsLoading ? (
+          <p className="text-caption-12 text-grey-50">Loading stats…</p>
+        ) : sportsStats ? (
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Total betters" value={sportsStats.totalBetters} sub="Unique wallets" />
+            <StatCard label="Total bets" value={sportsStats.totalBets} />
+            <StatCard label="Total bet amount" value={`$${fmt(sportsStats.totalBetAmount)} USDT`} />
+            <StatCard label="Total payouts" value={`$${fmt(sportsStats.totalPayouts)} USDT`} />
+          </div>
+        ) : (
+          <p className="text-caption-12 text-grey-50">Sports stats unavailable (check NEXT_PUBLIC_AFFILIATE_ADDRESS env var).</p>
+        )}
+      </Section>
 
       {/* Step 1 */}
       <Section title="Step 1 — Check platform wallet status">
