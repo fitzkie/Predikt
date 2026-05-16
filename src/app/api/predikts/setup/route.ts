@@ -13,6 +13,17 @@ export const dynamic = 'force-dynamic'
 
 // GET — check platform wallet status (balances, credentials, approvals)
 export async function GET() {
+  // Diagnostic: show which PLATFORM_ keys are visible at runtime (names only, not values)
+  const platformEnvKeys = Object.keys(process.env).filter((k) => k.startsWith('PLATFORM_'))
+  const keyRaw = process.env.PLATFORM_WALLET_PRIVATE_KEY
+  const keyDiag = {
+    present: 'PLATFORM_WALLET_PRIVATE_KEY' in process.env,
+    type: typeof keyRaw,
+    length: keyRaw?.length ?? 0,
+    startsWithZeroX: keyRaw?.startsWith('0x') ?? false,
+    allPlatformKeys: platformEnvKeys,
+  }
+
   try {
     const address = getPlatformAddress()
     const onChain = await getPlatformOnChainBalances()
@@ -38,10 +49,11 @@ export async function GET() {
       hasCredentials,
       onChain,
       clobBalance,
+      _diag: keyDiag,
     })
   }
   catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    return NextResponse.json({ error: String(error), _diag: keyDiag }, { status: 500 })
   }
 }
 
