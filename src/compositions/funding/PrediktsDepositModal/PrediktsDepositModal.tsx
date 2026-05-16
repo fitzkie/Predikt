@@ -1,9 +1,11 @@
 'use client'
 
 import { type ModalComponent } from '@locmod/modal'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
+import { polygon } from 'viem/chains'
+import { useBalance, usePublicClient } from 'wagmi'
 import copy from 'copy-to-clipboard'
-import { useGlidePay } from '@paywithglide/glide-react'
 import { useIsMounted } from 'hooks'
 import { useWallet } from 'wallet'
 
@@ -12,92 +14,104 @@ import { Button, ButtonBase } from 'components/inputs'
 import { Icon } from 'components/ui'
 
 
-type Tab = 'glide' | 'direct'
+const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
 
-// ── Glide tab ────────────────────────────────────────────────────────────────
+type Tab = 'wallet' | 'manual'
 
-type GlideDepositProps = {
-  address: string | undefined
+// ── Wallet transfer tab ───────────────────────────────────────────────────────
+
+type WalletDepositProps = {
+  address: string
+  platformAddress: string
   onSuccess: (newBalance: number) => void
 }
 
-const GlideDeposit: React.FC<GlideDepositProps> = ({ address, onSuccess }) => {
+const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress, onSuccess }) => {
+  const { aaWalletClient } = useWallet()
+  const publicClient = usePublicClient()
   const [amount, setAmount] = useState(10)
-  const [sessionId, setSessionId] = useState<string | undefined>()
-  const [isCreatingSession, setIsCreatingSession] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const pendingOpenRef = useRef(false)
 
-  const { openGlidePay } = useGlidePay({
-    app: process.env.NEXT_PUBLIC_GLIDE_PROJECT_ID!,
-    sessionId,
-    onSuccess: async (_txHash, session) => {
-      try {
-        const res = await fetch('/api/predikts/glide-verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.sessionId, userAddress: address }),
-        })
-        const data = await res.json()
-
-        if (data.newBalance !== undefined) {
-          onSuccess(data.newBalance)
-        }
-      }
-      catch {}
-    },
-    onClose: () => {
-      pendingOpenRef.current = false
-    },
+  const { data: usdcBalance } = useBalance({
+    address: address as `0x${string}`,
+    token: NATIVE_USDC_ADDRESS,
+    chainId: polygon.id,
   })
 
-  // Open Glide widget once sessionId is set
-  useEffect(() => {
-    if (pendingOpenRef.current && sessionId) {
-      pendingOpenRef.current = false
-      openGlidePay()
-    }
-  }, [sessionId, openGlidePay])
+  const balance = usdcBalance ? parseFloat(usdcBalance.formatted) : null
 
   const handleDeposit = async () => {
-    if (isCreatingSession || !address) return
+    if (isSending || !aaWalletClient || !publicClient) return
 
     setError(null)
-    setIsCreatingSession(true)
-    pendingOpenRef.current = true
+    setIsSending(true)
 
     try {
-      const res = await fetch('/api/predikts/glide-session', {
+      const amountRaw = parseUnits(String(amount), 6)
+
+      const data = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [platformAddress as `0x${string}`, amountRaw],
+      })
+
+      await aaWalletClient.switchChain({ id: polygon.id })
+
+      const txHash = await aaWalletClient.sendTransaction({
+        account: aaWalletClient.account as any,
+        to: NATIVE_USDC_ADDRESS,
+        data,
+      })
+
+      await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+      const res = await fetch('/api/predikts/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userAddress: address, amountUsdc: amount }),
+        body: JSON.stringify({ userAddress: address, amountUsdc: amount, txHash }),
       })
-      const data = await res.json()
+      const result = await res.json()
 
-      if (!data.sessionId) {
-        setError(data.error || 'Failed to start deposit session.')
-        pendingOpenRef.current = false
+      if (result.error) {
+        // Already credited (idempotent) or real error
+        if (result.error.includes('already')) {
+          onSuccess(0)
+        }
+        else {
+          setError(result.error)
+        }
 
         return
       }
 
-      setSessionId(data.sessionId)
+      onSuccess(result.newBalance)
     }
-    catch {
-      setError('Could not reach payment service. Try again.')
-      pendingOpenRef.current = false
+    catch (err: any) {
+      if (err?.message?.includes('User rejected')) {
+        setError('Transaction cancelled.')
+      }
+      else {
+        setError(err?.message || 'Transaction failed. Try again.')
+      }
     }
     finally {
-      setIsCreatingSession(false)
+      setIsSending(false)
     }
   }
+
+  const insufficient = balance !== null && amount > balance
 
   return (
     <div className="space-y-4">
       <p className="text-caption-13 text-grey-60 leading-5">
-        Pay with a credit card, Coinbase, any exchange, or any wallet on any chain.
-        You&apos;ll receive exactly the amount below in your Predikt Markets balance.
+        Send native USDC from your connected wallet on Polygon. Your balance is credited the moment the transaction confirms.
       </p>
+      {balance !== null && (
+        <p className="text-caption-12 text-grey-50">
+          Available: <span className="text-grey-90 font-semibold">{balance.toFixed(2)} USDC</span> on Polygon
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-caption-13 text-grey-60">$</span>
@@ -112,40 +126,39 @@ const GlideDeposit: React.FC<GlideDepositProps> = ({ address, onSuccess }) => {
         </div>
         <span className="text-caption-13 text-grey-60 flex-none">USDC</span>
       </div>
-      {error && (
-        <p className="text-caption-12 text-red-400">{error}</p>
+      {insufficient && (
+        <p className="text-caption-12 text-red-400">
+          Insufficient balance. You have {balance?.toFixed(2)} USDC on Polygon.
+        </p>
       )}
+      {error && <p className="text-caption-12 text-red-400">{error}</p>}
       <Button
         className="w-full"
-        title={isCreatingSession ? { en: 'Opening…' } : { en: `Deposit $${amount} USDC` }}
+        title={isSending ? { en: 'Sending…' } : { en: `Deposit ${amount} USDC` }}
         size={40}
-        disabled={isCreatingSession || amount < 1}
+        disabled={isSending || insufficient || amount < 1}
         onClick={handleDeposit}
       />
+      {!aaWalletClient && (
+        <p className="text-caption-12 text-grey-50 text-center">Connect a wallet to use this option.</p>
+      )}
     </div>
   )
 }
 
-// ── Direct send tab ───────────────────────────────────────────────────────────
+// ── Manual send tab ───────────────────────────────────────────────────────────
 
-type DirectSendProps = {
+type ManualSendProps = {
+  platformAddress: string
   userAddress: string | undefined
   onSuccess: (newBalance: number) => void
 }
 
-const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
+const ManualSend: React.FC<ManualSendProps> = ({ platformAddress, userAddress, onSuccess }) => {
   const isMounted = useIsMounted()
   const [isCopied, setIsCopied] = useState(false)
   const [showQR, setShowQR] = useState(false)
-  const [platformAddress, setPlatformAddress] = useState<string | null>(null)
   const [isChecking, setIsChecking] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/predikts/deposit')
-      .then((r) => r.json())
-      .then((d) => { if (d.depositAddress) setPlatformAddress(d.depositAddress) })
-      .catch(() => {})
-  }, [])
 
   // Poll for incoming transfers while this tab is visible
   useEffect(() => {
@@ -175,14 +188,10 @@ const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
   }, [userAddress, isMounted, onSuccess])
 
   const handleCopy = () => {
-    if (!platformAddress) return
-
     copy(platformAddress)
     setIsCopied(true)
     setTimeout(() => { if (isMounted()) setIsCopied(false) }, 1500)
   }
-
-  const depositAddress = platformAddress || 'Loading…'
 
   if (showQR) {
     return (
@@ -195,13 +204,11 @@ const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
           >
             <Icon name="interface/arrow_back" className="w-full h-full" />
           </ButtonBase>
-          {platformAddress && (
-            <QRCode
-              className="h-36 w-36 rounded-md bg-white p-2"
-              uri={platformAddress}
-              size={128}
-            />
-          )}
+          <QRCode
+            className="h-36 w-36 rounded-md bg-white p-2"
+            uri={platformAddress}
+            size={128}
+          />
         </div>
         <Button
           className="w-full"
@@ -223,20 +230,19 @@ const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
         <li className="flex items-start gap-3 py-3 px-2">
           <span className="flex-none flex items-center justify-center size-6 rounded-md bg-brand-50 text-caption-12 font-semibold text-black">1</span>
           <p className="text-grey-60 leading-5">
-            {'Buy '}
-            <strong className="text-grey-90">USDC</strong>
-            {' on Coinbase or Binance. Select '}
-            <strong className="text-grey-90">Polygon</strong>
-            {' as the withdrawal network.'}
+            Buy <strong className="text-grey-90">USDC</strong> on Coinbase or Binance.
+            Select <strong className="text-grey-90">Polygon</strong> as the withdrawal network.
           </p>
         </li>
         <li className="flex items-start gap-3 py-3 px-2">
           <span className="flex-none flex items-center justify-center size-6 rounded-md bg-brand-50 text-caption-12 font-semibold text-black">2</span>
-          <p className="text-grey-60 leading-5">Send to the address below. Your balance updates automatically within a few minutes.</p>
+          <p className="text-grey-60 leading-5">
+            Send to the address below. Your balance updates automatically within a few minutes.
+          </p>
         </li>
       </ol>
       <div className="px-3 py-2.5 rounded-md border border-grey-20 text-caption-13 font-medium text-grey-90 break-all">
-        {depositAddress}
+        {platformAddress}
       </div>
       <div className="flex items-center gap-2">
         <Button
@@ -246,14 +252,12 @@ const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
           leftIcon={isCopied ? 'interface/accepted' : 'interface/copy'}
           onClick={handleCopy}
         />
-        {platformAddress && (
-          <ButtonBase
-            className="flex-none size-10 border border-grey-20 rounded-md p-2 text-grey-60 hover:text-brand-50"
-            onClick={() => setShowQR(true)}
-          >
-            <Icon name="interface/qr_code" className="size-full" />
-          </ButtonBase>
-        )}
+        <ButtonBase
+          className="flex-none size-10 border border-grey-20 rounded-md p-2 text-grey-60 hover:text-brand-50"
+          onClick={() => setShowQR(true)}
+        >
+          <Icon name="interface/qr_code" className="size-full" />
+        </ButtonBase>
       </div>
       {userAddress && (
         <p className="text-caption-12 text-grey-50 text-center">
@@ -268,8 +272,16 @@ const DirectSend: React.FC<DirectSendProps> = ({ userAddress, onSuccess }) => {
 
 const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
   const { account: address } = useWallet()
-  const [tab, setTab] = useState<Tab>('glide')
+  const [tab, setTab] = useState<Tab>('wallet')
   const [successBalance, setSuccessBalance] = useState<number | null>(null)
+  const [platformAddress, setPlatformAddress] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/predikts/deposit')
+      .then((r) => r.json())
+      .then((d) => { if (d.depositAddress) setPlatformAddress(d.depositAddress) })
+      .catch(() => {})
+  }, [])
 
   if (successBalance !== null) {
     return (
@@ -280,8 +292,7 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
           </div>
           <h3 className="text-heading-h2 font-bold text-grey-90">Deposit received!</h3>
           <p className="text-caption-14 text-grey-60">
-            Your new Predikt Markets balance is
-            {' '}
+            Your new Predikt Markets balance is{' '}
             <strong className="text-grey-90">${successBalance.toFixed(2)} pUSD</strong>.
           </p>
           <Button className="w-full mt-2" title={{ en: 'Done' }} size={40} onClick={() => closeModal()} />
@@ -297,31 +308,34 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         <p className="mt-1 text-caption-13 text-grey-60">Fund your Predikt Markets balance with USDC.</p>
       </div>
 
-      {/* Tab toggle */}
       <div className="flex rounded-md bg-bg-l3 p-0.5 mb-4">
         <button
-          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'glide' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
+          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'wallet' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
           type="button"
-          onClick={() => setTab('glide')}
+          onClick={() => setTab('wallet')}
         >
-          Card / Exchange / Wallet
+          From Connected Wallet
         </button>
         <button
-          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'direct' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
+          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'manual' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
           type="button"
-          onClick={() => setTab('direct')}
+          onClick={() => setTab('manual')}
         >
-          Send from Polygon
+          Send from Exchange
         </button>
       </div>
 
-      {tab === 'glide' ? (
-        <GlideDeposit
+      {!platformAddress ? (
+        <div className="bone h-32 rounded-md" />
+      ) : tab === 'wallet' ? (
+        <WalletDeposit
           address={address as string}
+          platformAddress={platformAddress}
           onSuccess={setSuccessBalance}
         />
       ) : (
-        <DirectSend
+        <ManualSend
+          platformAddress={platformAddress}
           userAddress={address as string | undefined}
           onSuccess={setSuccessBalance}
         />
