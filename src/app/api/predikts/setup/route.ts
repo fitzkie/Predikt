@@ -6,6 +6,7 @@ import {
   getPlatformClobBalance,
   approveExchangeContracts,
   wrapUsdcToPusd,
+  updateClobBalance,
 } from 'lib/platform-wallet'
 
 export const dynamic = 'force-dynamic'
@@ -77,6 +78,12 @@ export async function POST(request: Request) {
       const result = await wrapUsdcToPusd(amount)
 
       return NextResponse.json({ message: `Wrapped ${amount} USDC to pUSD.`, ...result })
+    }
+
+    if (action === 'update-clob-balance') {
+      const result = await updateClobBalance()
+
+      return NextResponse.json({ message: 'CLOB balance updated.', result })
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

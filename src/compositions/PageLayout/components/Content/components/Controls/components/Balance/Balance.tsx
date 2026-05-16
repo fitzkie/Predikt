@@ -247,18 +247,25 @@ const Balance: React.FC = () => {
   const { appChain } = useChain()
   const { account: address } = useWallet()
   const { data: balanceData, isLoading: isBetTokenLoading } = useBetTokenBalance()
-  const { data: usdcBalanceData, isLoading: isUsdcLoading } = useBalance({
-    address: address as `0x${string}` | undefined,
-    token: NATIVE_USDC_ADDRESS,
-    chainId: polygon.id,
-  })
   const pathname = usePathname()
   const isPredikts = pathname?.startsWith('/predikts')
+  const [ prediktsBalance, setPrediktsBalance ] = React.useState<number | null>(null)
+  const [ isPrediktsLoading, setIsPrediktsLoading ] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!isPredikts || !address) return
+
+    setIsPrediktsLoading(true)
+    fetch(`/api/predikts/balance?address=${address}`)
+      .then((r) => r.json())
+      .then((d) => setPrediktsBalance(d.balance ?? 0))
+      .catch(() => setPrediktsBalance(0))
+      .finally(() => setIsPrediktsLoading(false))
+  }, [ isPredikts, address ])
 
   const { balance } = balanceData || {}
-  const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.formatted) : 0
-  const isLoading = isPredikts ? isUsdcLoading : isBetTokenLoading
-  const displayBalance = isPredikts ? usdcBalance : (balance || 0)
+  const isLoading = isPredikts ? isPrediktsLoading : isBetTokenLoading
+  const displayBalance = isPredikts ? (prediktsBalance ?? 0) : (balance || 0)
 
   const handleDepositClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()

@@ -245,6 +245,18 @@ export default function PrediktsAdminPage() {
         <ResultBox result={results['wrap'] ?? null} loading={!!loading['wrap']} />
       </Section>
 
+      {/* Step 5 */}
+      <Section title="Step 5 — Register balance with CLOB">
+        <p className="text-caption-12 text-grey-60 leading-5">
+          Tells Polymarket's CLOB to re-read the platform wallet's on-chain pUSD balance.
+          <strong className="text-grey-90"> Must be run after every wrap</strong> — without it, the CLOB won't allow trading ("maker address not allowed").
+        </p>
+        <button className={btn('Update CLOB Balance')} onClick={() => run('clobupdate', 'POST', '/api/predikts/setup', { action: 'update-clob-balance' })}>
+          Update CLOB Balance
+        </button>
+        <ResultBox result={results['clobupdate'] ?? null} loading={!!loading['clobupdate']} />
+      </Section>
+
       {/* Manual balance credit */}
       <Section title="Credit a user balance (manual deposit)">
         <p className="text-caption-12 text-grey-60 leading-5">

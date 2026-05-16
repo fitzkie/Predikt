@@ -251,6 +251,15 @@ export async function getPlatformClobBalance(): Promise<number> {
   return Number((payload as any).balance || 0)
 }
 
+// Tell the CLOB to re-read the platform wallet's on-chain pUSD balance and allowances.
+// Must be called after wrapping USDC → pUSD; without it the CLOB won't allow trading.
+export async function updateClobBalance() {
+  const client = createClobClient(true)
+  const result = await client.updateBalanceAllowance({ asset_type: 'COLLATERAL' as any })
+
+  return result
+}
+
 type PlaceOrderInput = {
   tokenId: string
   side: 'BUY' | 'SELL'
