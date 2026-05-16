@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "npm run watch-icons & next dev",
     "build": "npm run build-icons && prisma generate && next build",
-    "migrate": "prisma migrate deploy",
-    "start": "mkdir -p .next/standalone/.next && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public && cp -R node_modules/.prisma .next/standalone/node_modules/.prisma 2>/dev/null; cp -R node_modules/@prisma .next/standalone/node_modules/@prisma 2>/dev/null; cp -R prisma .next/standalone/prisma 2>/dev/null; prisma migrate deploy && HOSTNAME=0.0.0.0 PORT=${PORT:-3000} node .next/standalone/server.js",
+    "migrate": "prisma db push",
+    "start": "mkdir -p .next/standalone/.next && cp -R .next/static .next/standalone/.next/static && cp -R public .next/standalone/public && cp -R node_modules/.prisma .next/standalone/node_modules/.prisma 2>/dev/null; cp -R node_modules/@prisma .next/standalone/node_modules/@prisma 2>/dev/null; cp -R prisma .next/standalone/prisma 2>/dev/null; prisma db push && HOSTNAME=0.0.0.0 PORT=${PORT:-3000} node .next/standalone/server.js",
     "lint-ts": "tsc --noEmit",
     "lint": "next lint && tsc --noEmit",
     "test:contracts:azuro": "node scripts/test-azuro-contracts.mjs",
