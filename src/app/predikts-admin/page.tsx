@@ -101,6 +101,15 @@ export default function PrediktsAdminPage() {
         <p className="mt-1 text-caption-13 text-grey-60">One-time platform wallet setup. Run steps 1–4 in order.</p>
       </div>
 
+      {/* DB Setup */}
+      <Section title="Database — Create Tables">
+        <p className="text-caption-12 text-grey-60">Run once on a fresh database. Safe to re-run — uses CREATE TABLE IF NOT EXISTS.</p>
+        <button className={btn('Create Tables')} onClick={() => run('migrate', 'POST', '/api/predikts/migrate')}>
+          Create Tables
+        </button>
+        <ResultBox result={results['migrate'] ?? null} loading={!!loading['migrate']} />
+      </Section>
+
       {/* Platform Stats */}
       <Section title="Platform Stats — Predikt Markets">
         {statsLoading ? (
