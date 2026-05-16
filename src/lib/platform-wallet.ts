@@ -10,6 +10,7 @@ import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket
 // Contract addresses on Polygon for Polymarket V2
 const PUSD_ADDRESS = '0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB' as `0x${string}`
 const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
+const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as `0x${string}`
 const CTF_EXCHANGE_V2 = '0xE111180000d2663C0091e4f400237545B87B996B' as `0x${string}`
 const NEG_RISK_EXCHANGE_V2 = '0xe2222d279d744050d28e00520010520000310F59' as `0x${string}`
 const NEG_RISK_ADAPTER = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296' as `0x${string}`
@@ -157,13 +158,15 @@ export async function getPlatformOnChainBalances() {
   const publicClient = getPublicClient()
   const address = getPlatformAccount().address
 
-  const [usdcBalance, pUsdBalance] = await Promise.all([
+  const [usdcBalance, usdceBalance, pUsdBalance] = await Promise.all([
     publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
+    publicClient.readContract({ address: USDC_E_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
     publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
   ])
 
   return {
     usdcBalance: Number(usdcBalance) / 1e6,
+    usdceBalance: Number(usdceBalance) / 1e6,
     pUsdBalance: Number(pUsdBalance) / 1e6,
   }
 }
@@ -195,45 +198,49 @@ export async function wrapUsdcToPusd(amountUsdc: number) {
   const account = getPlatformAccount()
   const amountRaw = BigInt(Math.floor(amountUsdc * 1e6))
 
-  // Pre-flight: check that native USDC is not paused on the onramp
-  const isPaused = await publicClient.readContract({
-    address: COLLATERAL_ONRAMP,
-    abi: COLLATERAL_ONRAMP_ABI,
-    functionName: 'paused',
-    args: [NATIVE_USDC_ADDRESS],
-  })
+  // Pre-flight: pick whichever USDC variant is unpaused on the onramp
+  const [nativePaused, usdcePaused] = await Promise.all([
+    publicClient.readContract({ address: COLLATERAL_ONRAMP, abi: COLLATERAL_ONRAMP_ABI, functionName: 'paused', args: [NATIVE_USDC_ADDRESS] }),
+    publicClient.readContract({ address: COLLATERAL_ONRAMP, abi: COLLATERAL_ONRAMP_ABI, functionName: 'paused', args: [USDC_E_ADDRESS] }),
+  ])
 
-  if (isPaused) {
-    throw new Error('CollateralOnramp has native USDC paused. Try USDC.e (0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174) or check Polymarket status.')
+  const assetAddress = !nativePaused ? NATIVE_USDC_ADDRESS : !usdcePaused ? USDC_E_ADDRESS : null
+
+  if (!assetAddress) {
+    throw new Error('Both native USDC and USDC.e are paused on the CollateralOnramp. Check Polymarket status.')
   }
 
-  // Step 1: approve CollateralOnramp to pull USDC, then wait for confirmation
+  const assetLabel = assetAddress === NATIVE_USDC_ADDRESS ? 'native USDC' : 'USDC.e'
+
+  // Verify wallet has enough of the chosen asset
+  const walletBalance = await publicClient.readContract({ address: assetAddress, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] })
+
+  if (walletBalance < amountRaw) {
+    throw new Error(`Insufficient ${assetLabel} balance: have ${Number(walletBalance) / 1e6}, need ${amountUsdc}. Send ${assetLabel} to ${account.address}.`)
+  }
+
+  // Step 1: approve CollateralOnramp to pull the chosen asset, then wait for confirmation
   const approveData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [COLLATERAL_ONRAMP, amountRaw] })
-  const approveTx = await walletClient.sendTransaction({ account, to: NATIVE_USDC_ADDRESS, data: approveData, chain: polygon })
+  const approveTx = await walletClient.sendTransaction({ account, to: assetAddress, data: approveData, chain: polygon })
   await publicClient.waitForTransactionReceipt({ hash: approveTx, confirmations: 1 })
 
   // Verify the allowance actually landed before calling wrap
-  const allowance = await publicClient.readContract({
-    address: NATIVE_USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: [account.address, COLLATERAL_ONRAMP],
-  })
+  const allowance = await publicClient.readContract({ address: assetAddress, abi: ERC20_ABI, functionName: 'allowance', args: [account.address, COLLATERAL_ONRAMP] })
 
   if (allowance < amountRaw) {
-    throw new Error(`Allowance too low: have ${allowance}, need ${amountRaw}. Approve tx may have failed.`)
+    throw new Error(`Allowance too low: have ${Number(allowance) / 1e6}, need ${amountUsdc}. Approve tx may have failed.`)
   }
 
-  // Step 2: call CollateralOnramp.wrap(usdc, platformWallet, amount) → mints pUSD 1:1
+  // Step 2: call CollateralOnramp.wrap(asset, platformWallet, amount) → mints pUSD 1:1
   const wrapData = encodeFunctionData({
     abi: COLLATERAL_ONRAMP_ABI,
     functionName: 'wrap',
-    args: [NATIVE_USDC_ADDRESS, account.address, amountRaw],
+    args: [assetAddress, account.address, amountRaw],
   })
   const wrapTx = await walletClient.sendTransaction({ account, to: COLLATERAL_ONRAMP, data: wrapData, chain: polygon })
   const wrapReceipt = await publicClient.waitForTransactionReceipt({ hash: wrapTx, confirmations: 1 })
 
-  return { approveTx, wrapTx, wrapStatus: wrapReceipt.status }
+  return { assetUsed: assetLabel, approveTx, wrapTx, wrapStatus: wrapReceipt.status }
 }
 
 // Get the platform wallet's pUSD balance as seen by Polymarket's CLOB API.
