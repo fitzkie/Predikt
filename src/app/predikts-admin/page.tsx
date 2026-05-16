@@ -8,6 +8,7 @@ type Result = Record<string, any>
 type PrediktsStats = {
   platformPUsdBalance: number | null
   platformUsdcBalance: number | null
+  depositWalletPusdBalance: number | null
   totalBetters: number
   totalOrders: number
   totalBetAmount: number
@@ -21,12 +22,23 @@ type SportsStats = {
   totalPayouts: number
 }
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="border border-white/10 rounded-xl p-5 space-y-3">
-    <h2 className="text-caption-14 font-bold text-grey-90">{title}</h2>
-    {children}
-  </div>
-)
+const Section: React.FC<{ title: string; children: React.ReactNode; collapsed?: boolean }> = ({ title, children, collapsed }) => {
+  const [ open, setOpen ] = useState(!collapsed)
+
+  return (
+    <div className="border border-white/10 rounded-xl overflow-hidden">
+      <button
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <h2 className="text-caption-14 font-bold text-grey-90">{title}</h2>
+        <span className="text-grey-50 text-caption-12">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className="px-5 pb-5 space-y-3">{children}</div>}
+    </div>
+  )
+}
 
 const ResultBox: React.FC<{ result: Result | null; loading: boolean }> = ({ result, loading }) => {
   if (loading) return <div className="text-caption-12 text-grey-50 font-mono">Loading…</div>
@@ -39,10 +51,10 @@ const ResultBox: React.FC<{ result: Result | null; loading: boolean }> = ({ resu
   )
 }
 
-const StatCard: React.FC<{ label: string; value: string | number | null; sub?: string }> = ({ label, value, sub }) => (
-  <div className="bg-bg-l3 rounded-lg px-4 py-3">
+const StatCard: React.FC<{ label: string; value: string | number | null; sub?: string; warn?: boolean }> = ({ label, value, sub, warn }) => (
+  <div className={`bg-bg-l3 rounded-lg px-4 py-3 ${warn ? 'ring-1 ring-yellow-500/40' : ''}`}>
     <p className="text-caption-11 text-grey-50 uppercase tracking-wide">{label}</p>
-    <p className="text-heading-h3 font-bold text-grey-90 mt-0.5">
+    <p className={`text-heading-h3 font-bold mt-0.5 ${warn ? 'text-yellow-400' : 'text-grey-90'}`}>
       {value === null ? '–' : value}
     </p>
     {sub && <p className="text-caption-11 text-grey-50 mt-0.5">{sub}</p>}
@@ -56,7 +68,7 @@ export default function PrediktsAdminPage() {
   const [ sportsStats, setSportsStats ] = useState<SportsStats | null>(null)
   const [ statsLoading, setStatsLoading ] = useState(true)
 
-  useEffect(() => {
+  const loadStats = () => {
     setStatsLoading(true)
     Promise.all([
       fetch('/api/predikts/stats').then((r) => r.json()).catch(() => null),
@@ -65,7 +77,9 @@ export default function PrediktsAdminPage() {
       if (ps && !ps.error) setPrediktsStats(ps)
       if (ss && !ss.error) setSportsStats(ss)
     }).finally(() => setStatsLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadStats() }, [])
 
   const run = async (key: string, method: 'GET' | 'POST', url: string, body?: object) => {
     setLoading((p) => ({ ...p, [key]: true }))
@@ -94,21 +108,16 @@ export default function PrediktsAdminPage() {
 
   const fmt = (n: number, decimals = 2) => n.toLocaleString('en-US', { maximumFractionDigits: decimals })
 
+  const depositWalletPusd = prediktsStats?.depositWalletPusdBalance ?? null
+  const eoaUsdc = prediktsStats?.platformUsdcBalance ?? null
+  const unwrappedPending = eoaUsdc !== null && eoaUsdc >= 1
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-10 space-y-4">
       <div>
         <h1 className="text-heading-h2 font-bold text-grey-90">Predikts Admin</h1>
-        <p className="mt-1 text-caption-13 text-grey-60">One-time platform wallet setup. Run steps 1–4 in order.</p>
+        <p className="mt-1 text-caption-13 text-grey-60">Platform wallet management and trading setup.</p>
       </div>
-
-      {/* DB Setup */}
-      <Section title="Database — Create Tables">
-        <p className="text-caption-12 text-grey-60">Run once on a fresh database. Safe to re-run — uses CREATE TABLE IF NOT EXISTS.</p>
-        <button className={btn('Create Tables')} onClick={() => run('migrate', 'POST', '/api/predikts/migrate')}>
-          Create Tables
-        </button>
-        <ResultBox result={results['migrate'] ?? null} loading={!!loading['migrate']} />
-      </Section>
 
       {/* Platform Stats */}
       <Section title="Platform Stats — Predikt Markets">
@@ -118,14 +127,15 @@ export default function PrediktsAdminPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
               <StatCard
-                label="Platform pUSD balance"
-                value={prediktsStats ? `$${fmt(prediktsStats.platformPUsdBalance ?? 0)} pUSD` : null}
-                sub="On-chain wallet balance"
+                label="Deposit wallet pUSD"
+                value={depositWalletPusd !== null ? `$${fmt(depositWalletPusd)} pUSD` : null}
+                sub="Trading collateral"
               />
               <StatCard
-                label="Platform USDC balance"
-                value={prediktsStats ? `$${fmt(prediktsStats.platformUsdcBalance ?? 0)} USDC` : null}
-                sub="Unwrapped USDC"
+                label="EOA USDC (unwrapped)"
+                value={eoaUsdc !== null ? `$${fmt(eoaUsdc)} USDC` : null}
+                sub={unwrappedPending ? 'Run auto-wrap!' : 'On platform EOA'}
+                warn={unwrappedPending}
               />
               <StatCard
                 label="Total betters"
@@ -147,19 +157,7 @@ export default function PrediktsAdminPage() {
                 sub="SELL orders processed"
               />
             </div>
-            <button
-              className={btn('Refresh')}
-              onClick={() => {
-                setStatsLoading(true)
-                Promise.all([
-                  fetch('/api/predikts/stats').then((r) => r.json()).catch(() => null),
-                  fetch('/api/bet/stats').then((r) => r.json()).catch(() => null),
-                ]).then(([ ps, ss ]) => {
-                  if (ps && !ps.error) setPrediktsStats(ps)
-                  if (ss && !ss.error) setSportsStats(ss)
-                }).finally(() => setStatsLoading(false))
-              }}
-            >
+            <button className={btn('Refresh')} onClick={loadStats}>
               Refresh Stats
             </button>
           </div>
@@ -182,9 +180,74 @@ export default function PrediktsAdminPage() {
         )}
       </Section>
 
+      {/* Deposit Wallet Setup (new, required) */}
+      <Section title="Deposit Wallet Setup (required for trading)">
+        <p className="text-caption-12 text-grey-60 leading-5">
+          Polymarket requires all trades to go through a per-account <strong className="text-grey-90">Deposit Wallet</strong> (ERC-1967 proxy).
+          Run steps A → D once. After that, wrap + auto-wrap handles ongoing funds.
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">A — Check / deploy deposit wallet</p>
+            <div className="flex gap-2">
+              <button className={btn('Check')} onClick={() => run('dw-check', 'POST', '/api/predikts/setup', { action: 'check-deposit-wallet' })}>
+                Check Status
+              </button>
+              <button className={btn('Deploy')} onClick={() => run('dw-deploy', 'POST', '/api/predikts/setup', { action: 'deploy-deposit-wallet' })}>
+                Deploy Wallet
+              </button>
+            </div>
+            <ResultBox result={results['dw-check'] ?? results['dw-deploy'] ?? null} loading={!!(loading['dw-check'] || loading['dw-deploy'])} />
+          </div>
+
+          <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">B — Approve exchange contracts from deposit wallet</p>
+            <p className="text-caption-11 text-grey-50 mb-2">
+              Approves CTF Exchange V2, NegRisk Exchange V2, and NegRisk Adapter to spend pUSD from the deposit wallet.
+            </p>
+            <button className={btn('Approve')} onClick={() => run('dw-approve', 'POST', '/api/predikts/setup', { action: 'approve-from-deposit-wallet' })}>
+              Approve Exchanges
+            </button>
+            <ResultBox result={results['dw-approve'] ?? null} loading={!!loading['dw-approve']} />
+          </div>
+
+          <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">C — Migrate existing EOA pUSD to deposit wallet (one-time)</p>
+            <p className="text-caption-11 text-grey-50 mb-2">
+              If the EOA has pUSD from before the deposit-wallet switch, transfer it here.
+            </p>
+            <button className={btn('Transfer')} onClick={() => run('dw-transfer', 'POST', '/api/predikts/setup', { action: 'transfer-pusd-to-deposit-wallet' })}>
+              Transfer pUSD → Deposit Wallet
+            </button>
+            <ResultBox result={results['dw-transfer'] ?? null} loading={!!loading['dw-transfer']} />
+          </div>
+
+          <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">D — Register balance with CLOB</p>
+            <p className="text-caption-11 text-grey-50 mb-2">
+              After any wrap or transfer, tell the CLOB to re-read on-chain balances.
+            </p>
+            <button className={btn('Update CLOB')} onClick={() => run('clobupdate', 'POST', '/api/predikts/setup', { action: 'update-clob-balance' })}>
+              Update CLOB Balance
+            </button>
+            <ResultBox result={results['clobupdate'] ?? null} loading={!!loading['clobupdate']} />
+          </div>
+        </div>
+      </Section>
+
+      {/* DB Setup */}
+      <Section title="Database — Create Tables" collapsed>
+        <p className="text-caption-12 text-grey-60">Run once on a fresh database. Safe to re-run — uses CREATE TABLE IF NOT EXISTS.</p>
+        <button className={btn('Create Tables')} onClick={() => run('migrate', 'POST', '/api/predikts/migrate')}>
+          Create Tables
+        </button>
+        <ResultBox result={results['migrate'] ?? null} loading={!!loading['migrate']} />
+      </Section>
+
       {/* Step 1 */}
-      <Section title="Step 1 — Check platform wallet status">
-        <p className="text-caption-12 text-grey-60">See the wallet address, on-chain balances, and whether CLOB credentials are set.</p>
+      <Section title="Step 1 — Check platform wallet status" collapsed>
+        <p className="text-caption-12 text-grey-60">See the wallet address, on-chain balances, deposit wallet status, and CLOB credentials.</p>
         <button className={btn('Check status')} onClick={() => run('status', 'GET', '/api/predikts/setup')}>
           Check Status
         </button>
@@ -192,7 +255,7 @@ export default function PrediktsAdminPage() {
       </Section>
 
       {/* Step 2 */}
-      <Section title="Step 2 — Derive CLOB API credentials">
+      <Section title="Step 2 — Derive CLOB API credentials" collapsed>
         <p className="text-caption-12 text-grey-60 leading-5">
           Signs with the platform wallet to create Polymarket API credentials.
           Copy the <code className="text-brand-50">key</code>, <code className="text-brand-50">secret</code>, and <code className="text-brand-50">passphrase</code> values
@@ -204,23 +267,10 @@ export default function PrediktsAdminPage() {
         <ResultBox result={results['creds'] ?? null} loading={!!loading['creds']} />
       </Section>
 
-      {/* Step 3 */}
-      <Section title="Step 3 — Approve exchange contracts">
-        <p className="text-caption-12 text-grey-60 leading-5">
-          Sends 3 on-chain transactions approving Polymarket's exchange contracts to spend pUSD from the platform wallet.
-          Requires MATIC for gas.
-        </p>
-        <button className={btn('Approve exchanges')} onClick={() => run('approve', 'POST', '/api/predikts/setup', { action: 'approve-exchanges' })}>
-          Approve Exchanges
-        </button>
-        <ResultBox result={results['approve'] ?? null} loading={!!loading['approve']} />
-      </Section>
-
       {/* Step 4 */}
-      <Section title="Step 4 — Wrap USDC → pUSD">
+      <Section title="Wrap USDC → pUSD (manual)" collapsed>
         <p className="text-caption-12 text-grey-60 leading-5">
-          Converts native USDC in the platform wallet to pUSD (Polymarket's collateral token).
-          The platform wallet must hold native USDC on Polygon before running this.
+          Converts native USDC in the platform wallet to pUSD, minted directly to the deposit wallet.
         </p>
         <div className="flex items-center gap-3">
           <input
@@ -245,20 +295,8 @@ export default function PrediktsAdminPage() {
         <ResultBox result={results['wrap'] ?? null} loading={!!loading['wrap']} />
       </Section>
 
-      {/* Step 5 */}
-      <Section title="Step 5 — Register balance with CLOB">
-        <p className="text-caption-12 text-grey-60 leading-5">
-          Tells Polymarket's CLOB to re-read the platform wallet's on-chain pUSD balance.
-          <strong className="text-grey-90"> Must be run after every wrap</strong> — without it, the CLOB won't allow trading ("maker address not allowed").
-        </p>
-        <button className={btn('Update CLOB Balance')} onClick={() => run('clobupdate', 'POST', '/api/predikts/setup', { action: 'update-clob-balance' })}>
-          Update CLOB Balance
-        </button>
-        <ResultBox result={results['clobupdate'] ?? null} loading={!!loading['clobupdate']} />
-      </Section>
-
       {/* Manual balance credit */}
-      <Section title="Credit a user balance (manual deposit)">
+      <Section title="Credit a user balance (manual deposit)" collapsed>
         <p className="text-caption-12 text-grey-60 leading-5">
           After a user sends USDC to the platform wallet, credit their account here.
           Use the on-chain transaction hash as proof of deposit.

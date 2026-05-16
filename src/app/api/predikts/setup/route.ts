@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server'
 import {
   derivePlatformCredentials,
   getPlatformAddress,
+  getPlatformDepositWalletAddress,
   getPlatformOnChainBalances,
   getPlatformClobBalance,
   approveExchangeContracts,
+  approveExchangesFromDepositWallet,
+  checkDepositWalletDeployed,
+  deployPlatformDepositWallet,
+  transferPusdFromEoaToDepositWallet,
   wrapUsdcToPusd,
   updateClobBalance,
 } from 'lib/platform-wallet'
@@ -12,10 +17,11 @@ import {
 export const dynamic = 'force-dynamic'
 
 
-// GET — check platform wallet status (balances, credentials, approvals)
+// GET — check platform wallet status (balances, credentials, deposit wallet)
 export async function GET() {
   try {
     const address = getPlatformAddress()
+    const depositWalletAddress = getPlatformDepositWalletAddress()
     const onChain = await getPlatformOnChainBalances()
     const hasCredentials = !!(
       process.env.PLATFORM_CLOB_KEY &&
@@ -24,6 +30,7 @@ export async function GET() {
     )
 
     let clobBalance: number | null = null
+    let depositWalletDeployed: boolean | null = null
 
     if (hasCredentials) {
       try {
@@ -34,8 +41,17 @@ export async function GET() {
       }
     }
 
+    try {
+      depositWalletDeployed = await checkDepositWalletDeployed()
+    }
+    catch (e) {
+      depositWalletDeployed = null
+    }
+
     return NextResponse.json({
       address,
+      depositWalletAddress,
+      depositWalletDeployed,
       hasCredentials,
       onChain,
       clobBalance,
@@ -47,7 +63,6 @@ export async function GET() {
 }
 
 // POST — run one-time setup steps
-// Body: { action: 'derive-credentials' | 'approve-exchanges' | 'wrap-usdc', amount?: number }
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -64,10 +79,36 @@ export async function POST(request: Request) {
       })
     }
 
+    if (action === 'deploy-deposit-wallet') {
+      const result = await deployPlatformDepositWallet()
+
+      return NextResponse.json({ message: 'Deposit wallet deployed.', ...result })
+    }
+
+    if (action === 'check-deposit-wallet') {
+      const depositWalletAddress = getPlatformDepositWalletAddress()
+      const deployed = await checkDepositWalletDeployed()
+
+      return NextResponse.json({ depositWalletAddress, deployed })
+    }
+
+    if (action === 'approve-from-deposit-wallet') {
+      const result = await approveExchangesFromDepositWallet()
+
+      return NextResponse.json({ message: 'Exchange approvals submitted from deposit wallet.', ...result })
+    }
+
+    if (action === 'transfer-pusd-to-deposit-wallet') {
+      const result = await transferPusdFromEoaToDepositWallet()
+
+      return NextResponse.json({ message: `Transferred ${result.transferred} pUSD from EOA to deposit wallet.`, ...result })
+    }
+
+    // Legacy: EOA-level exchange approvals (no longer effective for trading since April 2026)
     if (action === 'approve-exchanges') {
       const receipts = await approveExchangeContracts()
 
-      return NextResponse.json({ message: 'Exchange approvals confirmed.', receipts })
+      return NextResponse.json({ message: 'Exchange approvals confirmed (EOA — see approve-from-deposit-wallet for trading).', receipts })
     }
 
     if (action === 'wrap-usdc') {
@@ -77,7 +118,7 @@ export async function POST(request: Request) {
 
       const result = await wrapUsdcToPusd(amount)
 
-      return NextResponse.json({ message: `Wrapped ${amount} USDC to pUSD.`, ...result })
+      return NextResponse.json({ message: `Wrapped ${amount} USDC to pUSD (minted to deposit wallet).`, ...result })
     }
 
     if (action === 'update-clob-balance') {

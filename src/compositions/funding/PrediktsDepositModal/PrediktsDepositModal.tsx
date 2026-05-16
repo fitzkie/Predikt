@@ -1,7 +1,7 @@
 'use client'
 
 import { type ModalComponent } from '@locmod/modal'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
 import { polygon } from 'viem/chains'
 import { useBalance, usePublicClient } from 'wagmi'
@@ -16,7 +16,7 @@ import { Icon } from 'components/ui'
 
 const NATIVE_USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
 
-type Tab = 'wallet' | 'manual'
+type Tab = 'wallet' | 'manual' | 'card'
 
 // ── Wallet transfer tab ───────────────────────────────────────────────────────
 
@@ -74,7 +74,6 @@ const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress,
       const result = await res.json()
 
       if (result.error) {
-        // Already credited (idempotent) or real error
         if (result.error.includes('already')) {
           onSuccess(0)
         }
@@ -268,6 +267,161 @@ const ManualSend: React.FC<ManualSendProps> = ({ platformAddress, userAddress, o
   )
 }
 
+// ── Transak card tab ──────────────────────────────────────────────────────────
+
+type CardDepositProps = {
+  platformAddress: string
+  userAddress: string | undefined
+  onSuccess: (newBalance: number) => void
+}
+
+const CardDeposit: React.FC<CardDepositProps> = ({ platformAddress, userAddress, onSuccess }) => {
+  const isMounted = useIsMounted()
+  const transakRef = useRef<any>(null)
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [isPolling, setIsPolling] = useState(false)
+  const apiKey = process.env.NEXT_PUBLIC_TRANSAK_API_KEY
+
+  // Poll for balance after order is placed (webhook credits the balance server-side)
+  useEffect(() => {
+    if (!orderPlaced || !userAddress) return
+
+    setIsPolling(true)
+    let attempts = 0
+    const MAX_ATTEMPTS = 20 // 10 minutes at 30s intervals
+
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/predikts/balance?address=${userAddress}`)
+        const data = await res.json()
+
+        if (data.balance > 0) {
+          if (isMounted()) onSuccess(data.balance)
+
+          return
+        }
+      }
+      catch {}
+
+      attempts++
+
+      if (attempts < MAX_ATTEMPTS && isMounted()) {
+        setTimeout(check, 30_000)
+      }
+      else if (isMounted()) {
+        setIsPolling(false)
+      }
+    }
+
+    // First check after 15s (give Transak time to call webhook)
+    const timeout = setTimeout(check, 15_000)
+
+    return () => clearTimeout(timeout)
+  }, [orderPlaced, userAddress, isMounted, onSuccess])
+
+  // Cleanup Transak widget on unmount
+  useEffect(() => {
+    return () => { transakRef.current?.cleanup() }
+  }, [])
+
+  const openTransak = async () => {
+    if (!userAddress || !platformAddress || !apiKey) return
+
+    const { Transak } = await import('@transak/transak-sdk')
+
+    const params = new URLSearchParams({
+      apiKey,
+      productsAvailed: 'BUY',
+      defaultNetwork: 'polygon',
+      network: 'polygon',
+      cryptoCurrencyCode: 'USDC',
+      walletAddress: platformAddress,
+      // partnerOrderId maps the purchase back to this user in the webhook
+      partnerOrderId: userAddress.toLowerCase(),
+      disableWalletAddressForm: 'true',
+      defaultFiatAmount: '50',
+      themeColor: 'C4FF48',
+    })
+
+    const environment = process.env.NEXT_PUBLIC_TRANSAK_ENVIRONMENT ?? 'STAGING'
+    const host = environment === 'PRODUCTION' ? 'https://global.transak.com' : 'https://staging-global.transak.com'
+
+    transakRef.current?.cleanup()
+
+    const transak = new Transak({
+      widgetUrl: `${host}/?${params.toString()}`,
+      referrer: typeof window !== 'undefined' ? window.location.origin : '',
+    })
+
+    transakRef.current = transak
+
+    Transak.on(Transak.EVENTS.TRANSAK_ORDER_SUCCESSFUL as any, () => {
+      transak.close()
+      if (isMounted()) setOrderPlaced(true)
+    })
+
+    transak.init()
+  }
+
+  if (orderPlaced) {
+    return (
+      <div className="text-center space-y-3 py-4">
+        <div className="inline-flex items-center justify-center size-12 mx-auto rounded-full bg-brand-50/15">
+          <Icon name="interface/accepted" className="size-6 text-brand-50" />
+        </div>
+        <p className="text-caption-14 font-semibold text-grey-90">Order placed!</p>
+        <p className="text-caption-13 text-grey-60 leading-5">
+          Transak is processing your payment. Your balance will appear here within a few minutes.
+        </p>
+        {isPolling && (
+          <p className="text-caption-12 text-grey-50">Watching for confirmation…</p>
+        )}
+      </div>
+    )
+  }
+
+  if (!apiKey) {
+    return (
+      <p className="text-caption-12 text-red-400 text-center py-4">
+        Card payments are not configured yet. Try another deposit method.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-caption-13 text-grey-60 leading-5">
+        Buy USDC with a credit card, debit card, or bank transfer. No crypto exchange needed.
+      </p>
+      <ol className="bg-bg-l3 rounded-md text-caption-13 divide-y divide-grey-20">
+        <li className="flex items-start gap-3 py-3 px-2">
+          <span className="flex-none flex items-center justify-center size-6 rounded-md bg-brand-50 text-caption-12 font-semibold text-black">1</span>
+          <p className="text-grey-60 leading-5">
+            Click below — Transak opens. Enter your amount and card details.
+          </p>
+        </li>
+        <li className="flex items-start gap-3 py-3 px-2">
+          <span className="flex-none flex items-center justify-center size-6 rounded-md bg-brand-50 text-caption-12 font-semibold text-black">2</span>
+          <p className="text-grey-60 leading-5">
+            Transak converts your payment to USDC and credits your Predikts balance automatically.
+          </p>
+        </li>
+      </ol>
+      <p className="text-caption-12 text-grey-50">Fees: 1–3.5% depending on payment method and region. Transak handles KYC.</p>
+      {!userAddress && (
+        <p className="text-caption-12 text-grey-50 text-center">Connect a wallet to use this option.</p>
+      )}
+      <Button
+        className="w-full"
+        title={{ en: 'Buy with Card' }}
+        size={40}
+        disabled={!userAddress || !platformAddress}
+        onClick={openTransak}
+      />
+    </div>
+  )
+}
+
 // ── Main modal ────────────────────────────────────────────────────────────────
 
 const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
@@ -301,6 +455,12 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
     )
   }
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'wallet', label: 'From Wallet' },
+    { id: 'manual', label: 'From Exchange' },
+    { id: 'card', label: 'Buy with Card' },
+  ]
+
   return (
     <PlainModal className="ds:max-w-[480px]" withCloseButton closeModal={closeModal}>
       <div className="mb-4">
@@ -309,20 +469,16 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
       </div>
 
       <div className="flex rounded-md bg-bg-l3 p-0.5 mb-4">
-        <button
-          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'wallet' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
-          type="button"
-          onClick={() => setTab('wallet')}
-        >
-          From Connected Wallet
-        </button>
-        <button
-          className={`flex-1 py-1.5 text-caption-13 font-semibold rounded-[5px] transition-colors ${tab === 'manual' ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
-          type="button"
-          onClick={() => setTab('manual')}
-        >
-          Send from Exchange
-        </button>
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            className={`flex-1 py-1.5 text-caption-12 font-semibold rounded-[5px] transition-colors ${tab === id ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
+            type="button"
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {!platformAddress ? (
@@ -333,8 +489,14 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
           platformAddress={platformAddress}
           onSuccess={setSuccessBalance}
         />
-      ) : (
+      ) : tab === 'manual' ? (
         <ManualSend
+          platformAddress={platformAddress}
+          userAddress={address as string | undefined}
+          onSuccess={setSuccessBalance}
+        />
+      ) : (
+        <CardDeposit
           platformAddress={platformAddress}
           userAddress={address as string | undefined}
           onSuccess={setSuccessBalance}

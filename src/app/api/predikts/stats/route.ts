@@ -31,6 +31,7 @@ export async function GET() {
     return NextResponse.json({
       platformPUsdBalance: onChain?.pUsdBalance ?? null,
       platformUsdcBalance: onChain?.usdcBalance ?? null,
+      depositWalletPusdBalance: onChain?.depositWalletPusdBalance ?? null,
       totalBetters,
       totalOrders,
       totalBetAmount: Number(amountAgg._sum.amount ?? 0),

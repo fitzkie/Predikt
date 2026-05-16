@@ -5,6 +5,7 @@ import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, cre
 import { polygon } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket/clob-client-v2'
+import { RelayClient, deriveDepositWallet } from '@polymarket/builder-relayer-client'
 
 
 // Contract addresses on Polygon for Polymarket V2
@@ -14,11 +15,17 @@ const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as `0x${stri
 const CTF_EXCHANGE_V2 = '0xE111180000d2663C0091e4f400237545B87B996B' as `0x${string}`
 const NEG_RISK_EXCHANGE_V2 = '0xe2222d279d744050d28e00520010520000310F59' as `0x${string}`
 const NEG_RISK_ADAPTER = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296' as `0x${string}`
-// CollateralOnramp: approve this for USDC, then call wrap() to mint pUSD 1:1
+// CollateralOnramp: approve it for USDC, then call wrap(asset, to, amount) to mint pUSD 1:1
 const COLLATERAL_ONRAMP = '0x93070a847efEf7F70739046A929D47a521F5B8ee' as `0x${string}`
+
+// Polymarket deposit wallet contracts on Polygon (required since CTF Exchange V2, April 2026)
+const DEPOSIT_WALLET_FACTORY = '0x00000000000Fb5C9ADea0298D729A0CB3823Cc07' as `0x${string}`
+const DEPOSIT_WALLET_IMPLEMENTATION = '0x58CA52ebe0DadfdF531Cde7062e76746de4Db1eB' as `0x${string}`
 
 // The Amsterdam proxy bypasses Polymarket's geo-block on Railway's US IP.
 const CLOB_HOST = 'http://188.166.103.169:3001'
+const RELAYER_URL = 'https://relayer-v2.polymarket.com'
+const POLYGON_CHAIN_ID = 137
 
 // Set POLYGON_RPC_URL in Railway to a dedicated Alchemy/QuickNode endpoint.
 // Falls back through several truly-free public RPCs if not set.
@@ -35,6 +42,13 @@ const ERC20_ABI = [
     name: 'approve',
     type: 'function',
     inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    name: 'transfer',
+    type: 'function',
+    inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
   },
@@ -107,6 +121,20 @@ export function getPlatformAddress(): string {
   return getPlatformAccount().address.toLowerCase()
 }
 
+// Derive the deterministic ERC-1967 deposit wallet address for the platform EOA.
+// Pure / synchronous — uses CREATE2 math, no network call needed.
+export function getPlatformDepositWalletAddress(): string {
+  const account = getPlatformAccount()
+
+  return deriveDepositWallet(account.address, DEPOSIT_WALLET_FACTORY, DEPOSIT_WALLET_IMPLEMENTATION)
+}
+
+function createRelayClient(): RelayClient {
+  const walletClient = getPlatformWalletClient()
+
+  return new RelayClient(RELAYER_URL, POLYGON_CHAIN_ID, walletClient as any)
+}
+
 function getClobCredentials() {
   const key = process.env.PLATFORM_CLOB_KEY
   const secret = process.env.PLATFORM_CLOB_SECRET
@@ -119,17 +147,18 @@ function getClobCredentials() {
   return { key, secret, passphrase }
 }
 
+// Uses POLY_1271 signature type with deposit wallet as funder — required since April 2026.
 function createClobClient(withCredentials = true) {
   const walletClient = getPlatformWalletClient()
   const creds = withCredentials ? getClobCredentials() : undefined
-
   const builderCode = process.env.NEXT_PUBLIC_POLYMARKET_BUILDER_CODE
 
   return new ClobClient({
     host: CLOB_HOST,
     chain: Chain.POLYGON,
     signer: walletClient as any,
-    signatureType: SignatureTypeV2.EOA,
+    signatureType: SignatureTypeV2.POLY_1271,
+    funderAddress: getPlatformDepositWalletAddress(),
     creds,
     useServerTime: true,
     throwOnError: true,
@@ -153,26 +182,99 @@ export async function derivePlatformCredentials() {
   return { key: creds.key, secret: creds.secret, passphrase: creds.passphrase }
 }
 
-// Check on-chain balances for the platform wallet.
+// Check whether the platform deposit wallet is deployed on-chain.
+export async function checkDepositWalletDeployed(): Promise<boolean> {
+  const relayClient = createRelayClient()
+  const depositWalletAddress = getPlatformDepositWalletAddress()
+
+  return relayClient.getDeployed(depositWalletAddress)
+}
+
+// Deploy the platform deposit wallet via Polymarket's relayer.
+// One-time setup — safe to call multiple times (no-op if already deployed).
+export async function deployPlatformDepositWallet() {
+  const relayClient = createRelayClient()
+  const response = await relayClient.deployDepositWallet()
+  const result = await response.wait()
+
+  return {
+    transactionId: response.transactionID,
+    status: result?.state ?? response.state,
+    hash: result?.transactionHash ?? response.transactionHash,
+    depositWalletAddress: getPlatformDepositWalletAddress(),
+  }
+}
+
+// Approve CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, and NEG_RISK_ADAPTER to spend pUSD
+// from the DEPOSIT WALLET (required after April 2026 — EOA approvals are no longer accepted).
+export async function approveExchangesFromDepositWallet() {
+  const relayClient = createRelayClient()
+  const depositWalletAddress = getPlatformDepositWalletAddress()
+  const deadline = String(Math.floor(Date.now() / 1000) + 600) // 10-minute window
+
+  const spenders = [CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, NEG_RISK_ADAPTER] as const
+
+  const calls = spenders.map((spender) => ({
+    target: PUSD_ADDRESS,
+    value: '0',
+    data: encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, maxUint256] }),
+  }))
+
+  const response = await relayClient.executeDepositWalletBatch(calls, depositWalletAddress, deadline)
+  const result = await response.wait()
+
+  return {
+    transactionId: response.transactionID,
+    status: result?.state ?? response.state,
+    hash: result?.transactionHash ?? response.transactionHash,
+    spenders,
+  }
+}
+
+// Transfer any pUSD sitting on the EOA to the deposit wallet.
+// One-time migration for funds wrapped before the deposit-wallet switch.
+export async function transferPusdFromEoaToDepositWallet() {
+  const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
+  const account = getPlatformAccount()
+  const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
+
+  const balance = await publicClient.readContract({
+    address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address],
+  })
+
+  if (balance === 0n) return { transferred: 0, hash: null }
+
+  const data = encodeFunctionData({ abi: ERC20_ABI, functionName: 'transfer', args: [depositWallet, balance] })
+  const hash = await walletClient.sendTransaction({ account, to: PUSD_ADDRESS, data, chain: polygon })
+  await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
+
+  return { transferred: Number(balance) / 1e6, hash }
+}
+
+// Check on-chain balances for the platform wallet (EOA + deposit wallet).
 export async function getPlatformOnChainBalances() {
   const publicClient = getPublicClient()
-  const address = getPlatformAccount().address
+  const account = getPlatformAccount()
+  const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
 
-  const [usdcBalance, usdceBalance, pUsdBalance] = await Promise.all([
-    publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
-    publicClient.readContract({ address: USDC_E_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
-    publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [address] }),
+  const [usdcBalance, usdceBalance, eoaPusdBalance, depositWalletPusdBalance] = await Promise.all([
+    publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
+    publicClient.readContract({ address: USDC_E_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
+    publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
+    publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [depositWallet] }),
   ])
 
   return {
     usdcBalance: Number(usdcBalance) / 1e6,
     usdceBalance: Number(usdceBalance) / 1e6,
-    pUsdBalance: Number(pUsdBalance) / 1e6,
+    pUsdBalance: Number(eoaPusdBalance) / 1e6,
+    depositWalletPusdBalance: Number(depositWalletPusdBalance) / 1e6,
   }
 }
 
-// Approve all three exchange contracts to spend pUSD from the platform wallet.
-// Waits for each tx to confirm before sending the next to avoid nonce collisions.
+// Approve all three exchange contracts to spend pUSD from the platform EOA wallet.
+// Deprecated since April 2026 — use approveExchangesFromDepositWallet() instead.
 export async function approveExchangeContracts() {
   const walletClient = getPlatformWalletClient()
   const publicClient = getPublicClient()
@@ -191,11 +293,12 @@ export async function approveExchangeContracts() {
 }
 
 // Wrap native USDC into pUSD via Polymarket's CollateralOnramp contract (1:1 mint).
-// amount is in USDC (e.g. 10 = $10). Waits for approve to confirm before wrapping.
+// Mints pUSD directly to the deposit wallet. amount is in USDC (e.g. 10 = $10).
 export async function wrapUsdcToPusd(amountUsdc: number) {
   const walletClient = getPlatformWalletClient()
   const publicClient = getPublicClient()
   const account = getPlatformAccount()
+  const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
   const amountRaw = BigInt(Math.floor(amountUsdc * 1e6))
 
   // Pre-flight: pick whichever USDC variant is unpaused on the onramp
@@ -219,23 +322,23 @@ export async function wrapUsdcToPusd(amountUsdc: number) {
     throw new Error(`Insufficient ${assetLabel} balance: have ${Number(walletBalance) / 1e6}, need ${amountUsdc}. Send ${assetLabel} to ${account.address}.`)
   }
 
-  // Step 1: approve CollateralOnramp to pull the chosen asset, then wait for confirmation
+  // Step 1: approve CollateralOnramp to pull the chosen asset
   const approveData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [COLLATERAL_ONRAMP, amountRaw] })
   const approveTx = await walletClient.sendTransaction({ account, to: assetAddress, data: approveData, chain: polygon })
   await publicClient.waitForTransactionReceipt({ hash: approveTx, confirmations: 1 })
 
-  // Verify the allowance actually landed before calling wrap
+  // Verify the allowance actually landed
   const allowance = await publicClient.readContract({ address: assetAddress, abi: ERC20_ABI, functionName: 'allowance', args: [account.address, COLLATERAL_ONRAMP] })
 
   if (allowance < amountRaw) {
     throw new Error(`Allowance too low: have ${Number(allowance) / 1e6}, need ${amountUsdc}. Approve tx may have failed.`)
   }
 
-  // Step 2: call CollateralOnramp.wrap(asset, platformWallet, amount) → mints pUSD 1:1
+  // Step 2: call CollateralOnramp.wrap → mints pUSD 1:1 directly to the deposit wallet
   const wrapData = encodeFunctionData({
     abi: COLLATERAL_ONRAMP_ABI,
     functionName: 'wrap',
-    args: [assetAddress, account.address, amountRaw],
+    args: [assetAddress, depositWallet, amountRaw],
   })
   const wrapTx = await walletClient.sendTransaction({ account, to: COLLATERAL_ONRAMP, data: wrapData, chain: polygon })
   const wrapReceipt = await publicClient.waitForTransactionReceipt({ hash: wrapTx, confirmations: 1 })
@@ -330,8 +433,8 @@ export async function getPlatformOpenOrders(tokenIds?: string[]) {
   return result?.data || result || []
 }
 
-// Called after any deposit is credited. Wraps available USDC → pUSD and re-registers
-// the balance with Polymarket's CLOB so the platform wallet can continue trading.
+// Called after any deposit is credited. Wraps available USDC → pUSD (minted to deposit wallet)
+// and re-registers the balance with Polymarket's CLOB so the platform wallet can continue trading.
 // Fire-and-forget: call with .catch(console.error), never await in a request handler.
 export async function autoWrapIfNeeded(): Promise<void> {
   const { usdcBalance, usdceBalance } = await getPlatformOnChainBalances()
