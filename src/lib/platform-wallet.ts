@@ -66,6 +66,13 @@ const COLLATERAL_ONRAMP_ABI = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  {
+    name: 'paused',
+    type: 'function',
+    inputs: [{ name: '_asset', type: 'address' }],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
 ] as const
 
 function getPlatformAccount() {
@@ -188,10 +195,34 @@ export async function wrapUsdcToPusd(amountUsdc: number) {
   const account = getPlatformAccount()
   const amountRaw = BigInt(Math.floor(amountUsdc * 1e6))
 
+  // Pre-flight: check that native USDC is not paused on the onramp
+  const isPaused = await publicClient.readContract({
+    address: COLLATERAL_ONRAMP,
+    abi: COLLATERAL_ONRAMP_ABI,
+    functionName: 'paused',
+    args: [NATIVE_USDC_ADDRESS],
+  })
+
+  if (isPaused) {
+    throw new Error('CollateralOnramp has native USDC paused. Try USDC.e (0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174) or check Polymarket status.')
+  }
+
   // Step 1: approve CollateralOnramp to pull USDC, then wait for confirmation
   const approveData = encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [COLLATERAL_ONRAMP, amountRaw] })
   const approveTx = await walletClient.sendTransaction({ account, to: NATIVE_USDC_ADDRESS, data: approveData, chain: polygon })
   await publicClient.waitForTransactionReceipt({ hash: approveTx, confirmations: 1 })
+
+  // Verify the allowance actually landed before calling wrap
+  const allowance = await publicClient.readContract({
+    address: NATIVE_USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: [account.address, COLLATERAL_ONRAMP],
+  })
+
+  if (allowance < amountRaw) {
+    throw new Error(`Allowance too low: have ${allowance}, need ${amountRaw}. Approve tx may have failed.`)
+  }
 
   // Step 2: call CollateralOnramp.wrap(usdc, platformWallet, amount) → mints pUSD 1:1
   const wrapData = encodeFunctionData({
