@@ -1,7 +1,7 @@
 // SERVER-ONLY — never import this from client components.
 // Contains the platform private key used for all Polymarket trades.
 
-import { createWalletClient, http, encodeFunctionData, maxUint256, createPublicClient } from 'viem'
+import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, createPublicClient } from 'viem'
 import { polygon } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket/clob-client-v2'
@@ -17,9 +17,15 @@ const NEG_RISK_ADAPTER = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296' as `0x${st
 // The Amsterdam proxy bypasses Polymarket's geo-block on Railway's US IP.
 const CLOB_HOST = 'http://188.166.103.169:3001'
 
-// polygon-rpc.com now requires an API key — use Ankr's free public endpoint as fallback.
-// Set POLYGON_RPC_URL in Railway env vars to use a dedicated Alchemy/Infura/QuickNode endpoint.
-const POLYGON_RPC = process.env.POLYGON_RPC_URL || 'https://rpc.ankr.com/polygon'
+// Set POLYGON_RPC_URL in Railway to a dedicated Alchemy/QuickNode endpoint.
+// Falls back through several truly-free public RPCs if not set.
+const polygonTransport = process.env.POLYGON_RPC_URL
+  ? http(process.env.POLYGON_RPC_URL)
+  : fallback([
+    http('https://polygon-bor-rpc.publicnode.com'),
+    http('https://polygon.llamarpc.com'),
+    http('https://1rpc.io/matic'),
+  ])
 
 const ERC20_ABI = [
   {
@@ -73,14 +79,14 @@ function getPlatformWalletClient() {
   return createWalletClient({
     account,
     chain: polygon,
-    transport: http(POLYGON_RPC),
+    transport: polygonTransport,
   })
 }
 
 function getPublicClient() {
   return createPublicClient({
     chain: polygon,
-    transport: http(POLYGON_RPC),
+    transport: polygonTransport,
   })
 }
 
