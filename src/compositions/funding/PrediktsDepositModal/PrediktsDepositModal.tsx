@@ -418,6 +418,7 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
   const [tab, setTab] = useState<Tab>('wallet')
   const [successBalance, setSuccessBalance] = useState<number | null>(null)
   const [platformAddress, setPlatformAddress] = useState<string | null>(null)
+  const [userDepositAddress, setUserDepositAddress] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/predikts/deposit')
@@ -425,6 +426,15 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
       .then((d) => { if (d.depositAddress) setPlatformAddress(d.depositAddress) })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!address) return
+
+    fetch(`/api/user/deposit-address?address=${address}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.depositAddress) setUserDepositAddress(d.depositAddress) })
+      .catch(() => {})
+  }, [address])
 
   if (successBalance !== null) {
     return (
@@ -470,7 +480,9 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         ))}
       </div>
 
-      {!platformAddress && tab !== 'card' ? (
+      {tab === 'wallet' && !platformAddress ? (
+        <div className="bone h-32 rounded-md" />
+      ) : tab === 'manual' && !userDepositAddress ? (
         <div className="bone h-32 rounded-md" />
       ) : tab === 'wallet' ? (
         <WalletDeposit
@@ -480,7 +492,7 @@ const PrediktsDepositModal: ModalComponent = ({ closeModal }) => {
         />
       ) : tab === 'manual' ? (
         <ManualSend
-          platformAddress={platformAddress!}
+          platformAddress={userDepositAddress!}
           userAddress={address as string | undefined}
           onSuccess={setSuccessBalance}
         />
