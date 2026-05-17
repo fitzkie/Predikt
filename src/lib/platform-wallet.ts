@@ -6,6 +6,7 @@ import { polygon } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket/clob-client-v2'
 import { RelayClient, deriveDepositWallet } from '@polymarket/builder-relayer-client'
+import { BuilderConfig } from '@polymarket/builder-signing-sdk'
 
 
 // Contract addresses on Polygon for Polymarket V2
@@ -131,8 +132,15 @@ export function getPlatformDepositWalletAddress(): string {
 
 function createRelayClient(): RelayClient {
   const walletClient = getPlatformWalletClient()
+  const creds = getClobCredentials()
 
-  return new RelayClient(RELAYER_URL, POLYGON_CHAIN_ID, walletClient as any)
+  // Builder auth headers (POLY_BUILDER_API_KEY etc.) are required by the relayer.
+  // They use the same CLOB credentials already set in Railway.
+  const builderConfig = creds
+    ? new BuilderConfig({ localBuilderCreds: { key: creds.key, secret: creds.secret, passphrase: creds.passphrase } })
+    : undefined
+
+  return new RelayClient(RELAYER_URL, POLYGON_CHAIN_ID, walletClient as any, builderConfig)
 }
 
 function getClobCredentials() {
