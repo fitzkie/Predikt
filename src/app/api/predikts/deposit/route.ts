@@ -10,20 +10,21 @@ export async function GET() {
   return NextResponse.json({ depositAddress: getPlatformAddress() })
 }
 
-// POST — manually credit a user's balance (admin use, or called after verifying a tx)
-// Body: { userAddress, amountUsdc, txHash }
+// POST — credit a user's unified USD balance after a confirmed deposit
+// Body: { userAddress, amountUsd, txHash, token? }
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { userAddress, amountUsdc, txHash } = body
+    // Accept both legacy `amountUsdc` and new `amountUsd` field names
+    const { userAddress, txHash, token = 'USDC' } = body
+    const amountUsd = body.amountUsd ?? body.amountUsdc
 
-    if (!userAddress || !amountUsdc || !txHash) {
-      return NextResponse.json({ error: 'Missing required fields: userAddress, amountUsdc, txHash' }, { status: 400 })
+    if (!userAddress || !amountUsd || !txHash) {
+      return NextResponse.json({ error: 'Missing required fields: userAddress, amountUsd, txHash' }, { status: 400 })
     }
 
     const normalizedAddress = userAddress.toLowerCase()
 
-    // Idempotent: skip if this tx was already processed
     const existing = await db.prediktsDeposit.findUnique({ where: { txHash } })
 
     if (existing) {
@@ -32,15 +33,20 @@ export async function POST(request: Request) {
 
     const user = await db.prediktsUser.upsert({
       where: { walletAddress: normalizedAddress },
-      create: { walletAddress: normalizedAddress, pUsdBalance: amountUsdc },
-      update: { pUsdBalance: { increment: amountUsdc } },
+      create: { walletAddress: normalizedAddress, usdBalance: amountUsd },
+      update: { usdBalance: { increment: amountUsd } },
     })
 
     await db.prediktsDeposit.create({
-      data: { userId: user.id, txHash, amountUsdc, status: 'confirmed' },
+      data: { userId: user.id, txHash, amountUsd, token, status: 'confirmed' },
     })
 
-    return NextResponse.json({ success: true, newBalance: Number(user.pUsdBalance) + amountUsdc })
+    const updated = await db.prediktsUser.findUnique({
+      where: { id: user.id },
+      select: { usdBalance: true },
+    })
+
+    return NextResponse.json({ success: true, newBalance: Number(updated?.usdBalance ?? 0) })
   }
   catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })

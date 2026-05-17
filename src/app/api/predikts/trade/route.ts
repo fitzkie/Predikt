@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     // Upsert the user record (creates on first trade)
     const user = await db.prediktsUser.upsert({
       where: { walletAddress: normalizedAddress },
-      create: { walletAddress: normalizedAddress, pUsdBalance: 0 },
+      create: { walletAddress: normalizedAddress, usdBalance: 0 },
       update: {},
     })
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     // SELL orders credit back (simplified: credit the full amount × price).
     if (side === 'BUY') {
       const cost = amount
-      const currentBalance = Number(user.pUsdBalance)
+      const currentBalance = Number(user.usdBalance)
 
       if (currentBalance < cost) {
         return NextResponse.json({
@@ -86,24 +86,24 @@ export async function POST(request: Request) {
     if (side === 'BUY') {
       await db.prediktsUser.update({
         where: { id: user.id },
-        data: { pUsdBalance: { decrement: amount } },
+        data: { usdBalance: { decrement: amount } },
       })
     }
     else {
       const proceeds = amount * price
       await db.prediktsUser.update({
         where: { id: user.id },
-        data: { pUsdBalance: { increment: proceeds } },
+        data: { usdBalance: { increment: proceeds } },
       })
     }
 
-    const updatedUser = await db.prediktsUser.findUnique({ where: { id: user.id }, select: { pUsdBalance: true } })
+    const updatedUser = await db.prediktsUser.findUnique({ where: { id: user.id }, select: { usdBalance: true } })
 
     return NextResponse.json({
       success: true,
       orderId: result.orderId,
       status: result.status,
-      newBalance: Number(updatedUser?.pUsdBalance ?? 0),
+      newBalance: Number(updatedUser?.usdBalance ?? 0),
       platformAddress: getPlatformAddress(),
     })
   }

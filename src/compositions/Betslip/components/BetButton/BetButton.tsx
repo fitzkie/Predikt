@@ -1,15 +1,14 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useState } from 'react'
 import cx from 'classnames'
-import { useBaseBetslip, useChain, useDetailedBetslip, useBet } from '@azuro-org/sdk'
-import { type Address } from 'viem'
+import { useBaseBetslip, useChain, useDetailedBetslip } from '@azuro-org/sdk'
 import { Message } from '@locmod/intl'
 import { openModal } from '@locmod/modal'
-import localStorage from '@locmod/local-storage'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAnalytics } from 'providers/analytics'
 import { useWallet } from 'wallet'
-import { constants, isUserRejectedRequestError, toLocaleString } from 'helpers'
+import { toLocaleString } from 'helpers'
 
 import { Icon } from 'components/ui'
 import { Warning } from 'components/feedback'
@@ -23,117 +22,107 @@ type BetButtonProps = {
   isBalanceFetching: boolean
 }
 
-const getErrorConfig = (error: unknown) => {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase()
-
-  if (isUserRejectedRequestError(error)) {
-    return messages.errors.walletRejected
-  }
-
-  if (/(insufficient|balance)/i.test(message)) {
-    return messages.errors.insufficientBalance
-  }
-
-  if (/(allowance|approve)/i.test(message)) {
-    return messages.errors.approvalRequired
-  }
-
-  if (/(odds|slippage|price|condition state|suspend|suspended|stale)/i.test(message)) {
-    return messages.errors.staleOdds
-  }
-
-  return messages.errors.generic
-}
-
-const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetching }) => {
+const BetButton: React.FC<BetButtonProps> = () => {
   const analytics = useAnalytics()
   const { account: address } = useWallet()
   const { betToken } = useChain()
   const { items, clear } = useBaseBetslip()
   const {
-    betAmount, odds, totalOdds, selectedFreebet,
+    betAmount, odds, totalOdds,
     isBetAllowed, isOddsFetching, isStatesFetching, isMaxBetFetching,
   } = useDetailedBetslip()
-  const totalOddsRef = useRef(totalOdds)
+  const queryClient = useQueryClient()
+  const [ isSubmitting, setSubmitting ] = useState(false)
+  const [ submitError, setSubmitError ] = useState<string | null>(null)
 
-  if (!isOddsFetching) {
-    totalOddsRef.current = totalOdds
-  }
-
-  const slippage = +(localStorage.getItem(constants.localStorageKeys.slippage) as string || constants.defaultSlippage)
-  const diff = selectedFreebet && selectedFreebet.params.isSponsoredBetReturnable ? +selectedFreebet.amount : 0
-  const possibleWin = toLocaleString(totalOddsRef.current * +betAmount - diff, { digits: 2 })
-
-  const {
-    submit,
-    approveTx,
-    betTx,
-    isRelayerFeeLoading,
-    isAllowanceLoading,
-    isApproveRequired,
-  } = useBet({
-    // betAmount: isBatch ? batchBetAmounts : betAmount,
-    betAmount,
-    slippage,
-    affiliate: process.env.NEXT_PUBLIC_AFFILIATE_ADDRESS as Address,
-    selections: items,
-    odds,
-    totalOdds,
-    freebet: selectedFreebet,
-    onSuccess: () => {
-      analytics.trackEvent('predikt_bet_submit_success', {
-        selections_count: items.length,
-        bet_amount: Number(betAmount || 0),
-        total_odds: Number(totalOddsRef.current || 0),
-        approval_required: isApproveRequired,
-        freebet_selected: Boolean(selectedFreebet),
-      })
-      openModal('SuccessModal', {
-        title: messages.success.title,
-      })
-      clear()
-    },
-      onError: (err) => {
-      analytics.trackEvent('predikt_bet_submit_failed', {
-        selections_count: items.length,
-        bet_amount: Number(betAmount || 0),
-        total_odds: Number(totalOddsRef.current || 0),
-        approval_required: isApproveRequired,
-        freebet_selected: Boolean(selectedFreebet),
-        rejected_by_user: isUserRejectedRequestError(err),
-        error_message: err instanceof Error ? err.message : String(err),
-      })
-      const errorConfig = getErrorConfig(err)
-
-      openModal('ErrorModal', {
-        title: errorConfig.title,
-        text: errorConfig.text,
-      })
-
-      console.log('Bet err:', err)
-    },
+  // Platform balance
+  const { data: balanceData, isLoading: isBalanceFetching } = useQuery<{ balance: number }>({
+    queryKey: [ 'platform-balance', address?.toLowerCase() ],
+    queryFn: () => fetch(`/api/predikts/balance?address=${address}`).then((r) => r.json()),
+    enabled: Boolean(address),
+    staleTime: 10_000,
   })
 
-  const isPending = approveTx.isPending || betTx.isPending
-  const isProcessing = approveTx.isProcessing || betTx.isProcessing
+  const platformBalance = balanceData?.balance ?? 0
+  const numericBetAmount = parseFloat(betAmount || '0')
+  const isEnoughBalance = !numericBetAmount || platformBalance >= numericBetAmount
+  const possibleWin = toLocaleString(totalOdds * numericBetAmount, { digits: 2 })
 
-  const isLoading = (
-    isOddsFetching
-    || isMaxBetFetching
-    || isBalanceFetching
-    || isStatesFetching
-    || isAllowanceLoading
-    || isPending
-    || isProcessing
-    || isRelayerFeeLoading
-  )
+  const isSingle = items.length === 1
+
+  const handleSubmit = async () => {
+    if (!address || !isSingle) return
+
+    const item = items[0]!
+    const currentOdds = odds?.[`${item.conditionId}-${item.outcomeId}`]
+
+    if (!currentOdds || !numericBetAmount) return
+
+    setSubmitting(true)
+    setSubmitError(null)
+
+    analytics.trackEvent('predikt_bet_submit_clicked', {
+      selections_count: items.length,
+      bet_amount: numericBetAmount,
+      total_odds: Number(totalOdds || 0),
+      action: 'custodial_place_bet',
+    })
+
+    try {
+      const res = await fetch('/api/sports/bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: address,
+          conditionId: item.conditionId,
+          outcomeId: item.outcomeId,
+          amount: numericBetAmount,
+          currentOdds: Number(currentOdds),
+          marketName: (item as any).game?.name ?? undefined,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Bet placement failed')
+      }
+
+      analytics.trackEvent('predikt_bet_submit_success', {
+        selections_count: items.length,
+        bet_amount: numericBetAmount,
+        total_odds: Number(totalOdds || 0),
+      })
+
+      // Refresh platform balance
+      queryClient.invalidateQueries({ queryKey: [ 'platform-balance', address.toLowerCase() ] })
+
+      openModal('SuccessModal', { title: messages.success.title })
+      clear()
+    }
+    catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      setSubmitError(errorMsg)
+      analytics.trackEvent('predikt_bet_submit_failed', {
+        selections_count: items.length,
+        bet_amount: numericBetAmount,
+        error_message: errorMsg,
+      })
+    }
+    finally {
+      setSubmitting(false)
+    }
+  }
+
+  const isLoading = isOddsFetching || isMaxBetFetching || isBalanceFetching || isStatesFetching || isSubmitting
 
   const isDisabled = (
     isLoading
     || !address
     || !isBetAllowed
-    || (!isEnoughBalance && !isApproveRequired)
-    || (!+betAmount && !selectedFreebet)
+    || !isEnoughBalance
+    || !numericBetAmount
+    || !isSingle  // combo bets not yet supported in custodial mode
   )
 
   const rootClassName = cx('flex items-center justify-between py-1 pr-1 border rounded-md w-full', {
@@ -147,24 +136,20 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
 
   return (
     <div className="space-y-3">
-      {
-        isApproveRequired && (
-          <Warning text={messages.errors.approvalRequired.text} />
-        )
-      }
+      {!isEnoughBalance && (
+        <Warning text={messages.errors.insufficientBalance.text} />
+      )}
+      {submitError && (
+        <Warning text={{ en: submitError }} />
+      )}
+      {items.length > 1 && (
+        <Warning text={{ en: 'Combo bets coming soon — place single bets for now.' }} />
+      )}
       <button
         className={rootClassName}
-        onClick={() => {
-          analytics.trackEvent('predikt_bet_submit_clicked', {
-            selections_count: items.length,
-            bet_amount: Number(betAmount || 0),
-            total_odds: Number(totalOddsRef.current || 0),
-            action: isApproveRequired ? 'approve' : 'place_bet',
-            freebet_selected: Boolean(selectedFreebet),
-          })
-          void submit()
-        }}
+        onClick={handleSubmit}
         disabled={isDisabled}
+        type="button"
       >
         <div className="w-full text-center px-1">
           {
@@ -173,7 +158,7 @@ const BetButton: React.FC<BetButtonProps> = ({ isEnoughBalance, isBalanceFetchin
             ) : (
               <Message
                 className="font-bold text-caption-14"
-                value={isApproveRequired ? buttonMessages.approve : buttonMessages.placeBet}
+                value={buttonMessages.placeBet}
               />
             )
           }

@@ -6,14 +6,20 @@ datasource db {
   provider = "postgresql"
 }
 
+// Unified user model — one USD balance usable for both Sports and Predikts
 model PrediktsUser {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  pUsdBalance   Decimal  @default(0) @db.Decimal(18, 6)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  orders        PrediktsOrder[]
-  deposits      PrediktsDeposit[]
+  id              String   @id @default(cuid())
+  walletAddress   String   @unique
+  privyUserId     String?  @unique
+  email           String?
+  depositAddress  String?  @unique
+  depositPrivKey  String?  // AES-256-GCM encrypted: iv:authTag:ciphertext (hex)
+  usdBalance      Decimal  @default(0) @db.Decimal(18, 6)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  orders          PrediktsOrder[]
+  deposits        PrediktsDeposit[]
+  sportsBets      SportsBet[]
 
   @@map("predikts_users")
 }
@@ -23,7 +29,8 @@ model PrediktsDeposit {
   userId        String
   user          PrediktsUser @relation(fields: [userId], references: [id])
   txHash        String   @unique
-  amountUsdc    Decimal  @db.Decimal(18, 6)
+  amountUsd     Decimal  @db.Decimal(18, 6)
+  token         String   @default("USDC")  // USDC | USDT
   status        String   @default("confirmed")
   createdAt     DateTime @default(now())
 
@@ -50,30 +57,16 @@ model PrediktsOrder {
   @@map("predikts_orders")
 }
 
-// ── Sports custodial model ───────────────────────────────────────────────────
-
-model SportsUser {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  usdtBalance   Decimal  @default(0) @db.Decimal(18, 6)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  bets          SportsBet[]
-  deposits      SportsDeposit[]
-
-  @@map("sports_users")
-}
-
 model SportsBet {
   id              String   @id @default(cuid())
   userId          String
-  user            SportsUser @relation(fields: [userId], references: [id])
+  user            PrediktsUser @relation(fields: [userId], references: [id])
   conditionId     String
   outcomeId       String
   odds            Float
   amount          Decimal  @db.Decimal(18, 6)
   potentialPayout Decimal  @db.Decimal(18, 6)
-  status          String   @default("pending") // pending | won | lost | refunded
+  status          String   @default("pending") // pending | won | lost | refunded | canceled
   txHash          String?
   azuroBetId      String?
   marketName      String?
@@ -83,20 +76,7 @@ model SportsBet {
   @@map("sports_bets")
 }
 
-model SportsDeposit {
-  id            String   @id @default(cuid())
-  userId        String
-  user          SportsUser @relation(fields: [userId], references: [id])
-  txHash        String   @unique
-  amountUsdt    Decimal  @db.Decimal(18, 6)
-  status        String   @default("confirmed")
-  createdAt     DateTime @default(now())
-
-  @@map("sports_deposits")
-}
-
-// ── Unified withdrawals (actual payouts to user wallet) ──────────────────────
-
+// Unified withdrawals (actual payouts to user wallet)
 model Withdrawal {
   id            String   @id @default(cuid())
   walletAddress String

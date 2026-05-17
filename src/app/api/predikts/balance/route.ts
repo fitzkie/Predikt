@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 
 // GET /api/predikts/balance?address=0x...
-// Returns the user's pUSD balance from our internal ledger.
+// Returns the user's unified USD balance (usable for both Sports and Predikts).
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const address = searchParams.get('address')?.toLowerCase()
@@ -17,10 +17,10 @@ export async function GET(request: Request) {
   try {
     const user = await db.prediktsUser.findUnique({
       where: { walletAddress: address },
-      select: { pUsdBalance: true },
+      select: { usdBalance: true },
     })
 
-    return NextResponse.json({ balance: user ? Number(user.pUsdBalance) : 0 })
+    return NextResponse.json({ balance: user ? Number(user.usdBalance) : 0 })
   }
   catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })

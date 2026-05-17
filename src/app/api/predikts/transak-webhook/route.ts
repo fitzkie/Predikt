@@ -66,27 +66,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, alreadyCredited: true })
     }
 
-    const amountUsdc = Number(cryptoAmount)
+    const amountUsd = Number(cryptoAmount)
 
     const user = await db.prediktsUser.upsert({
       where: { walletAddress: userAddress },
-      create: { walletAddress: userAddress, pUsdBalance: amountUsdc },
-      update: { pUsdBalance: { increment: amountUsdc } },
+      create: { walletAddress: userAddress, usdBalance: amountUsd },
+      update: { usdBalance: { increment: amountUsd } },
     })
 
     await db.prediktsDeposit.create({
       data: {
         userId: user.id,
         txHash,
-        amountUsdc,
+        amountUsd,
+        token: 'USDC',
         status: 'confirmed',
       },
     })
 
-    // Wrap newly arrived USDC into pUSD (fire-and-forget)
     autoWrapIfNeeded().catch(console.error)
 
-    return NextResponse.json({ ok: true, credited: amountUsdc, userAddress })
+    return NextResponse.json({ ok: true, credited: amountUsd, userAddress })
   }
   catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })

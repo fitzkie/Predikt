@@ -14,8 +14,15 @@ import { Button, ButtonBase } from 'components/inputs'
 import { Icon } from 'components/ui'
 
 
-// Polygon USDT (Tether USD — PoS bridge)
 const USDT_ADDRESS = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' as `0x${string}`
+const USDC_ADDRESS = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`
+
+const TOKEN_CONFIG = {
+  USDT: { address: USDT_ADDRESS, label: 'USDT' },
+  USDC: { address: USDC_ADDRESS, label: 'USDC' },
+} as const
+
+type TokenSymbol = keyof typeof TOKEN_CONFIG
 
 const ERC20_TRANSFER_ABI = [
   {
@@ -46,14 +53,17 @@ const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress,
   const [ amount, setAmount ] = useState(10)
   const [ isSending, setIsSending ] = useState(false)
   const [ error, setError ] = useState<string | null>(null)
+  const [ selectedToken, setSelectedToken ] = useState<TokenSymbol>('USDT')
 
-  const { data: usdtBalance } = useBalance({
+  const tokenCfg = TOKEN_CONFIG[selectedToken]
+
+  const { data: tokenBalance } = useBalance({
     address: address as `0x${string}`,
-    token: USDT_ADDRESS,
+    token: tokenCfg.address,
     chainId: polygon.id,
   })
 
-  const balance = usdtBalance ? parseFloat(usdtBalance.formatted) : null
+  const balance = tokenBalance ? parseFloat(tokenBalance.formatted) : null
   const insufficient = balance !== null && amount > balance
 
   const handleDeposit = async () => {
@@ -75,39 +85,29 @@ const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress,
 
       const txHash = await aaWalletClient.sendTransaction({
         account: aaWalletClient.account as any,
-        to: USDT_ADDRESS,
+        to: tokenCfg.address,
         data,
       })
 
       await publicClient.waitForTransactionReceipt({ hash: txHash })
 
-      const res = await fetch('/api/sports/deposit', {
+      const res = await fetch('/api/predikts/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userAddress: address, amountUsdt: amount, txHash }),
+        body: JSON.stringify({ userAddress: address, amountUsd: amount, token: selectedToken, txHash }),
       })
       const result = await res.json()
 
       if (result.error) {
-        if (result.error.includes('already')) {
-          onSuccess(0)
-        }
-        else {
-          setError(result.error)
-        }
-
+        if (result.error.includes('already')) onSuccess(0)
+        else setError(result.error)
         return
       }
 
       onSuccess(result.newBalance)
     }
     catch (err: any) {
-      if (err?.message?.includes('User rejected')) {
-        setError('Transaction cancelled.')
-      }
-      else {
-        setError(err?.message || 'Transaction failed. Try again.')
-      }
+      setError(err?.message?.includes('User rejected') ? 'Transaction cancelled.' : (err?.message || 'Transaction failed. Try again.'))
     }
     finally {
       setIsSending(false)
@@ -117,11 +117,23 @@ const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress,
   return (
     <div className="space-y-4">
       <p className="text-caption-13 text-grey-60 leading-5">
-        Send USDT from your connected wallet on Polygon. Your balance is credited the moment the transaction confirms.
+        Send USDC or USDT from your connected wallet on Polygon. Credited the moment the transaction confirms.
       </p>
+      <div className="flex rounded-md bg-bg-l3 p-0.5">
+        {(Object.keys(TOKEN_CONFIG) as TokenSymbol[]).map((sym) => (
+          <button
+            key={sym}
+            type="button"
+            className={`flex-1 py-1 text-caption-12 font-semibold rounded-[5px] transition-colors ${selectedToken === sym ? 'bg-bg-l1 text-grey-90' : 'text-grey-60 hover:text-grey-90'}`}
+            onClick={() => setSelectedToken(sym)}
+          >
+            {sym}
+          </button>
+        ))}
+      </div>
       {balance !== null && (
         <p className="text-caption-12 text-grey-50">
-          Available: <span className="text-grey-90 font-semibold">{balance.toFixed(2)} USDT</span> on Polygon
+          Available: <span className="text-grey-90 font-semibold">{balance.toFixed(2)} {selectedToken}</span> on Polygon
         </p>
       )}
       <div className="flex items-center gap-2">
@@ -136,19 +148,19 @@ const WalletDeposit: React.FC<WalletDepositProps> = ({ address, platformAddress,
             onChange={(e) => setAmount(Math.max(1, Number(e.target.value)))}
           />
         </div>
-        <span className="text-caption-13 text-grey-60 flex-none">USDT</span>
+        <span className="text-caption-13 text-grey-60 flex-none">{selectedToken}</span>
       </div>
       {insufficient && (
         <p className="text-caption-12 text-red-400">
-          Insufficient balance. You have {balance?.toFixed(2)} USDT on Polygon.
+          Insufficient balance. You have {balance?.toFixed(2)} {selectedToken} on Polygon.
         </p>
       )}
       {error && <p className="text-caption-12 text-red-400">{error}</p>}
       <Button
         className="w-full"
-        title={isSending ? { en: 'Sending…' } : { en: `Deposit ${amount} USDT` }}
+        title={isSending ? { en: 'Sending…' } : { en: `Deposit ${amount} ${selectedToken}` }}
         size={40}
-        disabled={isSending || insufficient || amount < 1}
+        disabled={isSending || insufficient || amount < 1 || !aaWalletClient}
         onClick={handleDeposit}
       />
       {!aaWalletClient && (
@@ -235,13 +247,13 @@ const ManualSend: React.FC<ManualSendProps> = ({ platformAddress, userAddress, o
   return (
     <div className="space-y-3">
       <Warning
-        text={{ en: 'Send USDT on Polygon only. Not USDT on Ethereum or other chains — funds may be lost.' }}
+        text={{ en: 'Send USDC or USDT on Polygon only — not on Ethereum or other chains.' }}
       />
       <ol className="bg-bg-l3 rounded-md text-caption-13 divide-y divide-grey-20">
         <li className="flex items-start gap-3 py-3 px-2">
           <span className="flex-none flex items-center justify-center size-6 rounded-md bg-brand-50 text-caption-12 font-semibold text-black">1</span>
           <p className="text-grey-60 leading-5">
-            Buy <strong className="text-grey-90">USDT</strong> on Coinbase or Binance.
+            Buy <strong className="text-grey-90">USDC or USDT</strong> on Coinbase or Binance.
             Select <strong className="text-grey-90">Polygon</strong> as the withdrawal network.
           </p>
         </li>
@@ -425,11 +437,12 @@ const SportsDepositModal: ModalComponent = ({ closeModal }) => {
   const [ platformAddress, setPlatformAddress ] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/sports/deposit')
+    if (!address) return
+    fetch(`/api/user/deposit-address?address=${address}`)
       .then((r) => r.json())
       .then((d) => { if (d.depositAddress) setPlatformAddress(d.depositAddress) })
       .catch(() => {})
-  }, [])
+  }, [address])
 
   if (successBalance !== null) {
     return (
@@ -440,8 +453,8 @@ const SportsDepositModal: ModalComponent = ({ closeModal }) => {
           </div>
           <h3 className="text-heading-h2 font-bold text-grey-90">Deposit received!</h3>
           <p className="text-caption-14 text-grey-60">
-            Your new Sports balance is{' '}
-            <strong className="text-grey-90">${successBalance.toFixed(2)} USDT</strong>.
+            Your new balance is{' '}
+            <strong className="text-grey-90">${successBalance.toFixed(2)}</strong>.
           </p>
           <Button className="w-full mt-2" title={{ en: 'Done' }} size={40} onClick={() => closeModal()} />
         </div>
@@ -458,8 +471,8 @@ const SportsDepositModal: ModalComponent = ({ closeModal }) => {
   return (
     <PlainModal className="ds:max-w-[480px]" withCloseButton closeModal={closeModal}>
       <div className="mb-4">
-        <h3 className="text-heading-h2 font-bold text-grey-90">Add Funds — Sports</h3>
-        <p className="mt-1 text-caption-13 text-grey-60">Fund your Sports betting balance with USDT on Polygon.</p>
+        <h3 className="text-heading-h2 font-bold text-grey-90">Add Funds</h3>
+        <p className="mt-1 text-caption-13 text-grey-60">Deposit USDC or USDT on Polygon. One balance usable across Sports and Predikts.</p>
       </div>
 
       <div className="flex rounded-md bg-bg-l3 p-0.5 mb-4">

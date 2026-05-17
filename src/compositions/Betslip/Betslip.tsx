@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useBaseBetslip, useBetTokenBalance, useChain, useDetailedBetslip } from '@azuro-org/sdk'
+import { useBaseBetslip, useChain, useDetailedBetslip } from '@azuro-org/sdk'
 import { Message } from '@locmod/intl'
 import cx from 'classnames'
 import { openModal } from '@locmod/modal'
+import { useQuery } from '@tanstack/react-query'
 import { useWallet } from 'wallet'
 
 import { Icon } from 'components/ui'
@@ -72,21 +73,26 @@ type ContentProps = {
 }
 
 const Content: React.FC<ContentProps> = ({ openSettings }) => {
-  const { betToken, appChain } = useChain()
-  const { account, chainId, isAAWallet } = useWallet()
+  const { betToken } = useChain()
+  const { account } = useWallet()
   const { items, clear } = useBaseBetslip()
   const {
     odds, states, minBet, maxBet, disableReason, betAmount, selectedFreebet,
     isOddsFetching, isStatesFetching,
   } = useDetailedBetslip()
-  const { data, isLoading: isBalanceFetching } = useBetTokenBalance()
 
-  const { balance } = data || {}
+  const { data: balanceData, isLoading: isBalanceFetching } = useQuery<{ balance: number }>({
+    queryKey: [ 'platform-balance', account?.toLowerCase() ],
+    queryFn: () => fetch(`/api/predikts/balance?address=${account}`).then((r) => r.json()),
+    enabled: Boolean(account),
+    staleTime: 10_000,
+  })
+
+  const platformBalance = balanceData?.balance ?? 0
   const itemsLength = items.length
   const isSingle = itemsLength === 1
 
-  const isEnoughBalance = isBalanceFetching || !Boolean(+betAmount) ? true : Boolean(+balance! > +betAmount)
-  const isWrongNetwork = Boolean(account && chainId && chainId !== appChain.id && !isAAWallet)
+  const isEnoughBalance = isBalanceFetching || !Boolean(+betAmount) ? true : platformBalance >= +betAmount
   const shouldShowBalanceWarning = Boolean(account && !isBalanceFetching && !isEnoughBalance && +betAmount)
 
   return (
@@ -180,14 +186,6 @@ const Content: React.FC<ContentProps> = ({ openSettings }) => {
             )
           }
           {
-            isWrongNetwork && (
-              <Warning
-                className="mt-3"
-                text={messages.warnings.wrongNetwork}
-              />
-            )
-          }
-          {
             shouldShowBalanceWarning && (
               <div className="mt-3 space-y-2">
                 <Warning
@@ -195,18 +193,10 @@ const Content: React.FC<ContentProps> = ({ openSettings }) => {
                 />
                 <Button
                   className="w-full"
-                  title="Fund wallet"
+                  title="Deposit Funds"
                   size={32}
                   style="tertiary"
-                  onClick={() => {
-                    openModal('FundingModal', {
-                      initialTab: 'deposit',
-                      depositProps: {
-                        type: 'bet',
-                        toAmount: betAmount,
-                      },
-                    })
-                  }}
+                  onClick={() => openModal('SportsDepositModal')}
                 />
               </div>
             )

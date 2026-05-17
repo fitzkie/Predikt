@@ -45,43 +45,23 @@ export async function POST(request: Request) {
 
     const address = walletAddress.toLowerCase()
 
-    // Check sufficient balance
-    if (source === 'predikts') {
-      const user = await db.prediktsUser.findUnique({
-        where: { walletAddress: address },
-        select: { pUsdBalance: true },
-      })
+    // Unified balance — deduct regardless of source
+    const user = await db.prediktsUser.findUnique({
+      where: { walletAddress: address },
+      select: { usdBalance: true },
+    })
 
-      if (!user || Number(user.pUsdBalance) < amountUsd) {
-        return NextResponse.json(
-          { error: `Insufficient Predikts balance. Available: $${Number(user?.pUsdBalance ?? 0).toFixed(2)}` },
-          { status: 400 }
-        )
-      }
-
-      await db.prediktsUser.update({
-        where: { walletAddress: address },
-        data: { pUsdBalance: { decrement: amountUsd } },
-      })
+    if (!user || Number(user.usdBalance) < amountUsd) {
+      return NextResponse.json(
+        { error: `Insufficient balance. Available: $${Number(user?.usdBalance ?? 0).toFixed(2)}` },
+        { status: 400 }
+      )
     }
-    else if (source === 'sports') {
-      const user = await db.sportsUser.findUnique({
-        where: { walletAddress: address },
-        select: { usdtBalance: true },
-      })
 
-      if (!user || Number(user.usdtBalance) < amountUsd) {
-        return NextResponse.json(
-          { error: `Insufficient Sports balance. Available: $${Number(user?.usdtBalance ?? 0).toFixed(2)}` },
-          { status: 400 }
-        )
-      }
-
-      await db.sportsUser.update({
-        where: { walletAddress: address },
-        data: { usdtBalance: { decrement: amountUsd } },
-      })
-    }
+    await db.prediktsUser.update({
+      where: { walletAddress: address },
+      data: { usdBalance: { decrement: amountUsd } },
+    })
 
     const withdrawal = await db.withdrawal.create({
       data: {

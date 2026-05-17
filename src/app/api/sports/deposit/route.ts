@@ -1,50 +1,32 @@
 import { NextResponse } from 'next/server'
-import { db } from 'lib/db'
 import { getPlatformAddress } from 'lib/platform-wallet'
 
 export const dynamic = 'force-dynamic'
 
 
-// GET — returns the platform deposit address for USDT (same wallet as Predikts)
+// GET — returns the platform deposit address (same wallet for Sports and Predikts)
 export async function GET() {
   return NextResponse.json({ depositAddress: getPlatformAddress() })
 }
 
-// POST — credit a sports user's USDT balance after a confirmed deposit
-// Body: { userAddress, amountUsdt, txHash }
+// POST — proxies to unified /api/predikts/deposit
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { userAddress, amountUsdt, txHash } = body
-
-    if (!userAddress || !amountUsdt || !txHash) {
-      return NextResponse.json({ error: 'Missing required fields: userAddress, amountUsdt, txHash' }, { status: 400 })
+    // Map legacy amountUsdt → amountUsd
+    const normalized = {
+      ...body,
+      amountUsd: body.amountUsd ?? body.amountUsdt,
+      token: body.token ?? 'USDT',
     }
-
-    const normalizedAddress = userAddress.toLowerCase()
-
-    const existing = await db.sportsDeposit.findUnique({ where: { txHash } })
-
-    if (existing) {
-      return NextResponse.json({ error: 'Deposit already recorded.' }, { status: 409 })
-    }
-
-    const user = await db.sportsUser.upsert({
-      where: { walletAddress: normalizedAddress },
-      create: { walletAddress: normalizedAddress, usdtBalance: amountUsdt },
-      update: { usdtBalance: { increment: amountUsdt } },
+    const base = new URL(request.url)
+    const response = await fetch(`${base.origin}/api/predikts/deposit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(normalized),
     })
-
-    await db.sportsDeposit.create({
-      data: { userId: user.id, txHash, amountUsdt, status: 'confirmed' },
-    })
-
-    const updated = await db.sportsUser.findUnique({
-      where: { walletAddress: normalizedAddress },
-      select: { usdtBalance: true },
-    })
-
-    return NextResponse.json({ success: true, newBalance: Number(updated?.usdtBalance ?? 0) })
+    const data = await response.json()
+    return NextResponse.json(data, { status: response.status })
   }
   catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })
