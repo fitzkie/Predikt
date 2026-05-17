@@ -241,6 +241,17 @@ export default function PrediktsAdminPage() {
           </div>
 
           <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">D2 — Approve CTF (conditional tokens) from deposit wallet <span className="text-yellow-400">⚠ Required to sell shares</span></p>
+            <p className="text-caption-11 text-grey-50 mb-2">
+              Calls setApprovalForAll on the CTF ERC1155 contract so exchanges can move outcome shares when you sell. Run once after step C.
+            </p>
+            <button className={btn('Approve CTF')} onClick={() => run('dw-approve-ctf', 'POST', '/api/predikts/setup', { action: 'approve-ctf-from-deposit-wallet' })}>
+              Approve CTF Tokens
+            </button>
+            <ResultBox result={results['dw-approve-ctf'] ?? null} loading={!!loading['dw-approve-ctf']} />
+          </div>
+
+          <div>
             <p className="text-caption-12 text-grey-90 font-semibold mb-1">E — Register balance with CLOB</p>
             <p className="text-caption-11 text-grey-50 mb-2">
               After any wrap or transfer, tell the CLOB to re-read on-chain balances.

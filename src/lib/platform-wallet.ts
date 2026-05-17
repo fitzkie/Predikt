@@ -16,6 +16,8 @@ const USDC_E_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174' as `0x${stri
 const CTF_EXCHANGE_V2 = '0xE111180000d2663C0091e4f400237545B87B996B' as `0x${string}`
 const NEG_RISK_EXCHANGE_V2 = '0xe2222d279d744050d28e00520010520000310F59' as `0x${string}`
 const NEG_RISK_ADAPTER = '0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296' as `0x${string}`
+// Conditional Token Framework — ERC1155 outcome tokens (setApprovalForAll required to SELL)
+const CTF_CONTRACT = '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045' as `0x${string}`
 // CollateralOnramp: approve it for USDC, then call wrap(asset, to, amount) to mint pUSD 1:1
 const COLLATERAL_ONRAMP = '0x93070a847efEf7F70739046A929D47a521F5B8ee' as `0x${string}`
 
@@ -70,6 +72,16 @@ const ERC20_ABI = [
   },
 ] as const
 
+
+const ERC1155_ABI = [
+  {
+    name: 'setApprovalForAll',
+    type: 'function',
+    inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
 
 // CollateralOnramp: approve it for USDC, then call wrap(asset, to, amount) to mint pUSD 1:1
 const COLLATERAL_ONRAMP_ABI = [
@@ -271,6 +283,30 @@ export async function approveExchangesFromDepositWallet() {
     transactionId: response.transactionID,
     hash: response.transactionHash || null,
     spenders,
+  }
+}
+
+// Approve CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, and NEG_RISK_ADAPTER as ERC1155 operators
+// on the CTF contract from the deposit wallet. Required to SELL conditional tokens (outcome shares).
+// Separate from the pUSD ERC20 approvals — must also go through the Polymarket relayer.
+export async function approveCTFFromDepositWallet() {
+  const operators = [CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, NEG_RISK_ADAPTER] as const
+  const depositWalletAddress = getPlatformDepositWalletAddress()
+  const deadline = String(Math.floor(Date.now() / 1000) + 600)
+
+  const calls = operators.map((operator) => ({
+    target: CTF_CONTRACT,
+    value: '0',
+    data: encodeFunctionData({ abi: ERC1155_ABI, functionName: 'setApprovalForAll', args: [operator, true] }),
+  }))
+
+  const relayClient = createRelayClient()
+  const response = await relayClient.executeDepositWalletBatch(calls, depositWalletAddress, deadline)
+
+  return {
+    transactionId: response.transactionID,
+    hash: response.transactionHash || null,
+    operators,
   }
 }
 

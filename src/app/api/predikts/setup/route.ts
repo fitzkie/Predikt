@@ -8,6 +8,7 @@ import {
   getPlatformClobBalance,
   approveExchangeContracts,
   approveExchangesFromDepositWallet,
+  approveCTFFromDepositWallet,
   checkDepositWalletDeployed,
   deployPlatformDepositWallet,
   transferPusdFromEoaToDepositWallet,
@@ -113,6 +114,12 @@ export async function POST(request: Request) {
       const result = await approveExchangesFromDepositWallet()
 
       return NextResponse.json({ message: 'Exchange approvals submitted from deposit wallet.', ...result })
+    }
+
+    if (action === 'approve-ctf-from-deposit-wallet') {
+      const result = await approveCTFFromDepositWallet()
+
+      return NextResponse.json({ message: 'CTF setApprovalForAll submitted — required to sell outcome shares.', ...result })
     }
 
     if (action === 'transfer-pusd-to-deposit-wallet') {

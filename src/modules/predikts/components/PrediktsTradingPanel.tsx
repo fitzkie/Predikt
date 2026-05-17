@@ -238,13 +238,9 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
                   {outcome} {cents}
                 </button>
                 {owned > 0.01 && (
-                  <button
-                    className="text-caption-11 font-semibold text-grey-60 hover:text-grey-90 transition-colors text-center"
-                    onClick={handleSellPosition}
-                    type="button"
-                  >
-                    {owned.toFixed(2)} shares ({fmt(owned * (prices[index] ?? 0.5))}) · Sell
-                  </button>
+                  <div className="text-caption-11 text-grey-60 text-center">
+                    {owned.toFixed(2)} shares ({fmt(owned * (prices[index] ?? 0.5))})
+                  </div>
                 )}
               </div>
             )
