@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import cx from 'classnames'
@@ -12,7 +13,7 @@ type DbOrder = {
   tokenId: string
   marketQuestion: string | null
   side: string
-  amount: string
+  amount: string  // BUY → USD spent; SELL → shares sold
   price: number
   orderType: string
   status: string
@@ -23,16 +24,37 @@ type DbOrder = {
 const isMatchedStatus = (status: string) => status.toLowerCase() === 'matched'
 const isFailedStatus = (status: string) => status.toLowerCase() === 'failed'
 
-const statusLabel = (status: string) => {
-  if (isMatchedStatus(status)) return 'Filled'
-  if (isFailedStatus(status)) return 'Failed'
-  if (status.toLowerCase() === 'pending') return 'Pending'
-  return status
-}
-
 const marketTitle = (order: DbOrder) => {
   if (order.marketQuestion) return order.marketQuestion
   return `Market · ${order.tokenId.slice(0, 10)}…`
+}
+
+// Derive a smarter status label:
+// - BUY Filled + a subsequent SELL Filled exists for same tokenId → "Exited"
+// - BUY Filled with no sell → "Open"
+// - SELL Filled → "Sold"
+// - pending / failed → as-is
+const computeStatus = (order: DbOrder, allOrders: DbOrder[]): { label: string; color: 'green' | 'red' | 'grey' } => {
+  const matched = isMatchedStatus(order.status)
+  const failed = isFailedStatus(order.status)
+
+  if (failed) return { label: 'Failed', color: 'red' }
+
+  if (order.side === 'SELL') {
+    if (matched) return { label: 'Sold', color: 'green' }
+    return { label: 'Pending', color: 'grey' }
+  }
+
+  // BUY order
+  if (!matched) return { label: 'Pending', color: 'grey' }
+
+  // Check if this tokenId has a matched SELL — meaning they exited
+  const hasSold = allOrders.some(
+    (o) => o.tokenId === order.tokenId && o.side === 'SELL' && isMatchedStatus(o.status)
+  )
+
+  if (hasSold) return { label: 'Exited', color: 'grey' }
+  return { label: 'Open', color: 'green' }
 }
 
 const PrediktsBets: React.FC = () => {
@@ -42,14 +64,17 @@ const PrediktsBets: React.FC = () => {
     queryKey: [ 'predikts', 'orders', 'user', account?.toLowerCase() ],
     queryFn: async () => {
       const res = await fetch(`/api/predikts/orders?userAddress=${account}`)
-
       if (!res.ok) return []
-
       return res.json()
     },
     enabled: Boolean(account),
     staleTime: 15_000,
   })
+
+  const ordersWithStatus = useMemo(
+    () => orders.map((order) => ({ order, computed: computeStatus(order, orders) })),
+    [ orders ]
+  )
 
   if (isLoading) {
     return (
@@ -77,15 +102,15 @@ const PrediktsBets: React.FC = () => {
 
   return (
     <div className="space-y-2">
-      {orders.map((order) => {
-        const shares = Number(order.amount) / order.price
-        const isMatched = isMatchedStatus(order.status)
-        const isFailed = isFailedStatus(order.status)
+      {ordersWithStatus.map(({ order, computed }) => {
         const isBuy = order.side === 'BUY'
+        // BUY: amount = USD spent, shares = amount / price
+        // SELL: amount = shares sold, proceeds = shares × price
+        const buyShares = isBuy ? Number(order.amount) / order.price : 0
+        const sellProceeds = !isBuy ? Number(order.amount) * order.price : 0
 
         return (
           <div key={order.id} className="rounded-md bg-bg-l2 px-1">
-            {/* Order header */}
             <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center text-caption-13 gap-2">
                 <span className={cx('font-semibold uppercase', isBuy ? 'text-accent-green' : 'text-accent-red')}>
@@ -98,35 +123,55 @@ const PrediktsBets: React.FC = () => {
               </div>
               <span
                 className={cx('text-caption-12 font-semibold rounded-full px-2 py-0.5', {
-                  'bg-accent-green/15 text-accent-green': isMatched,
-                  'bg-accent-red/15 text-accent-red': isFailed,
-                  'bg-grey-20/30 text-grey-60': !isMatched && !isFailed,
+                  'bg-accent-green/15 text-accent-green': computed.color === 'green',
+                  'bg-accent-red/15 text-accent-red': computed.color === 'red',
+                  'bg-grey-20/30 text-grey-60': computed.color === 'grey',
                 })}
               >
-                {statusLabel(order.status)}
+                {computed.label}
               </span>
             </div>
 
-            {/* Market + stats */}
             <div className="mx-1 mb-1 rounded-sm bg-bg-l3 px-3 py-3">
               <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">
                 {marketTitle(order)}
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-caption-12">
-                <div>
-                  <div className="text-grey-60">Amount</div>
-                  <div className="mt-0.5 font-semibold text-grey-90">${Number(order.amount).toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="text-grey-60">Price</div>
-                  <div className="mt-0.5 font-semibold text-grey-90">{Math.round(order.price * 100)}¢</div>
-                </div>
-                <div>
-                  <div className="text-grey-60">{isBuy ? 'Est. win' : 'Proceeds'}</div>
-                  <div className={cx('mt-0.5 font-semibold', isMatched ? 'text-accent-green' : 'text-grey-90')}>
-                    {isBuy ? `$${shares.toFixed(2)}` : `$${(Number(order.amount) * order.price).toFixed(2)}`}
-                  </div>
-                </div>
+                {isBuy ? (
+                  <>
+                    <div>
+                      <div className="text-grey-60">Spent</div>
+                      <div className="mt-0.5 font-semibold text-grey-90">${Number(order.amount).toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-grey-60">Price</div>
+                      <div className="mt-0.5 font-semibold text-grey-90">{Math.round(order.price * 100)}¢</div>
+                    </div>
+                    <div>
+                      <div className="text-grey-60">Max win</div>
+                      <div className={cx('mt-0.5 font-semibold', computed.label === 'Open' ? 'text-accent-green' : 'text-grey-70')}>
+                        ${buyShares.toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <div className="text-grey-60">Shares</div>
+                      <div className="mt-0.5 font-semibold text-grey-90">{Number(order.amount).toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-grey-60">At</div>
+                      <div className="mt-0.5 font-semibold text-grey-90">{Math.round(order.price * 100)}¢</div>
+                    </div>
+                    <div>
+                      <div className="text-grey-60">Proceeds</div>
+                      <div className={cx('mt-0.5 font-semibold', isMatchedStatus(order.status) ? 'text-accent-green' : 'text-grey-70')}>
+                        ${sellProceeds.toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
