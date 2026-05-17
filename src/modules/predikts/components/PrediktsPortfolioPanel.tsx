@@ -1,67 +1,79 @@
 'use client'
 
-import { usePolymarketActivity, usePolymarketPositions } from 'providers/polymarket'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { useWallet } from 'wallet'
 
 
-const formatCurrency = (value?: number) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return '$0'
-  }
+type DbOrder = {
+  id: string
+  tokenId: string
+  marketQuestion: string | null
+  side: string
+  amount: string
+  price: number
+  orderType: string
+  status: string
+  polyOrderId: string | null
+  createdAt: string
+}
 
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
+const statusColor = (status: string) => {
+  if (status === 'MATCHED' || status === 'matched') return 'text-accent-green'
+  if (status === 'failed') return 'text-accent-red'
+  return 'text-grey-60'
 }
 
 const PrediktsPortfolioPanel: React.FC = () => {
   const { account } = useWallet()
-  const positionsQuery = usePolymarketPositions(account)
-  const activityQuery = usePolymarketActivity(account)
 
-  if (positionsQuery.isLoading || activityQuery.isLoading) {
+  const ordersQuery = useQuery<DbOrder[]>({
+    queryKey: [ 'predikts', 'orders', 'user', account?.toLowerCase() ],
+    queryFn: async () => {
+      const res = await fetch(`/api/predikts/orders?userAddress=${account}`)
+
+      if (!res.ok) return []
+
+      return res.json()
+    },
+    enabled: Boolean(account),
+    staleTime: 15_000,
+  })
+
+  if (ordersQuery.isLoading) {
     return null
   }
 
-  const positions = (positionsQuery.data || []).slice(0, 3)
-  const activity = (activityQuery.data || []).slice(0, 4)
+  const orders = (ordersQuery.data || []).slice(0, 6)
 
-  if (!positions.length && !activity.length) {
+  if (!orders.length) {
     return null
   }
 
   return (
-    <div className="space-y-2">
-      {positions.length ? (
-        <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Portfolio</div>
-          <div className="mt-4 space-y-3">
-            {positions.map((position) => (
-              <div key={`${position.conditionId}-${position.asset}`} className="rounded-md border border-white/10 px-3 py-3">
-                <div className="text-caption-13 font-semibold text-grey-90 line-clamp-2">{position.title}</div>
-                <div className="mt-2 flex items-center justify-between text-caption-12 text-grey-60">
-                  <span>{position.outcome}</span>
-                  <span>{formatCurrency(position.currentValue)}</span>
-                </div>
-              </div>
-            ))}
+    <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
+      <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">My Predikts</div>
+      <div className="mt-4 space-y-2">
+        {orders.map((order) => (
+          <div key={order.id} className="rounded-md border border-white/10 px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className={`text-caption-12 font-semibold uppercase ${order.side === 'BUY' ? 'text-accent-green' : 'text-accent-red'}`}>
+                {order.side}
+              </span>
+              <span className={`text-caption-12 font-semibold ${statusColor(order.status)}`}>
+                {order.status}
+              </span>
+            </div>
+            <div className="mt-1 text-caption-13 font-semibold text-grey-90 line-clamp-2">
+              {order.marketQuestion || order.tokenId}
+            </div>
+            <div className="mt-1 flex items-center justify-between text-caption-12 text-grey-60">
+              <span>${Number(order.amount).toFixed(2)} @ {(order.price * 100).toFixed(0)}¢</span>
+              <span>{dayjs(order.createdAt).format('MMM D, HH:mm')}</span>
+            </div>
           </div>
-        </div>
-      ) : null}
-      {activity.length ? (
-        <div className="rounded-lg border border-white/10 bg-bg-l2 p-5">
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Recent activity</div>
-          <div className="mt-4 space-y-3">
-            {activity.map((item) => (
-              <div key={`${item.transactionHash}-${item.timestamp}`} className="rounded-md border border-white/10 px-3 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-caption-13 font-semibold text-grey-90">{item.side || item.type}</div>
-                  <div className="text-caption-12 text-grey-60">{formatCurrency(item.usdcSize)}</div>
-                </div>
-                <div className="mt-2 text-caption-12 text-grey-60 line-clamp-2">{item.title || item.slug || item.conditionId}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+        ))}
+      </div>
     </div>
   )
 }
