@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAnalytics } from 'providers/analytics'
 import { useOptionalPrivy } from 'providers/auth'
 import { openModal } from '@locmod/modal'
-import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketOrderReadiness, usePolymarketTrading } from 'providers/polymarket'
+import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketMarket, usePolymarketOpenOrders, usePolymarketTrading } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
 import { Button, buttonMessages } from 'components/inputs'
@@ -16,10 +17,22 @@ type Props = {
   onOutcomeChange?: (index: number) => void
 }
 
+type DbOrder = {
+  id: string
+  tokenId: string
+  side: string
+  amount: string
+  price: number
+  status: string
+}
+
 const fmt = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 
 const INCREMENT_AMOUNTS = [ 1, 5, 10, 100 ]
+
+const isMatched = (status: string) =>
+  status === 'MATCHED' || status.toLowerCase() === 'matched'
 
 const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0, onOutcomeChange }) => {
   const { account } = useWallet()
@@ -38,6 +51,31 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const [ copied, setCopied ] = useState(false)
   const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
 
+  // Fetch the user's DB orders for this market so we can show their position
+  const positionQuery = useQuery<DbOrder[]>({
+    queryKey: [ 'predikts', 'position', account?.toLowerCase(), ...tokenIds ],
+    queryFn: async () => {
+      const params = new URLSearchParams({ userAddress: account! })
+      if (tokenIds.length) params.set('tokenIds', tokenIds.join(','))
+      const r = await fetch(`/api/predikts/orders?${params}`)
+      if (!r.ok) return []
+      return r.json()
+    },
+    enabled: Boolean(account) && tokenIds.length > 0,
+    staleTime: 15_000,
+  })
+
+  // Shares owned per tokenId: sum(amount/price) for matched BUY minus sum for matched SELL
+  const sharesOwnedByTokenId = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const order of positionQuery.data || []) {
+      if (!isMatched(order.status)) continue
+      const shares = Number(order.amount) / order.price
+      map[order.tokenId] = (map[order.tokenId] || 0) + (order.side === 'BUY' ? shares : -shares)
+    }
+    return map
+  }, [ positionQuery.data ])
+
   useEffect(() => {
     setSelectedOutcomeIndex(initialOutcomeIndex)
     setLimitPrice(String(prices[initialOutcomeIndex] || prices[0] || 0.5))
@@ -48,6 +86,8 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
   const numericAmount = Number(amount) || 0
   const numericLimitPrice = Number(limitPrice)
   const currentPrice = prices[selectedOutcomeIndex] ?? prices[0] ?? 0.5
+  const sharesOwned = selectedTokenId ? Math.max(0, sharesOwnedByTokenId[selectedTokenId] || 0) : 0
+  const positionValue = sharesOwned * currentPrice
 
   const limitShares = useMemo(() => {
     if (orderMode !== 'LIMIT' || !numericLimitPrice || numericLimitPrice <= 0) return 0
@@ -76,6 +116,12 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     })
   }
 
+  const handleSellPosition = () => {
+    if (sharesOwned <= 0) return
+    setSide('SELL')
+    setAmount(String(Math.round(sharesOwned * 100) / 100))
+  }
+
   const handleSubmitOrder = async () => {
     if (!selectedTokenId) return
     if (numericAmount <= 0) return
@@ -88,16 +134,17 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     if (orderMode === 'LIMIT') {
       if (numericLimitPrice <= 0 || numericLimitPrice >= 1) return
       if (limitShares <= 0) return
-      await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side })
+      await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side, marketQuestion: market.question })
     }
     else {
       const worstPrice = side === 'BUY'
         ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
         : Math.max(0.001, (currentPrice || 0.5) * 0.90)
-      await trading.placeMarketOrder({ tokenId: selectedTokenId, amount: numericAmount, side, price: worstPrice, orderType: 'FAK' })
+      await trading.placeMarketOrder({ tokenId: selectedTokenId, amount: numericAmount, side, price: worstPrice, orderType: 'FAK', marketQuestion: market.question })
     }
 
     await openOrdersQuery.refetch()
+    positionQuery.refetch()
   }
 
   const handleCopyAddress = () => {
@@ -167,43 +214,62 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           <p className="text-caption-13 leading-5 text-grey-60">{market.question}</p>
         )}
 
-        {/* Yes / No outcome buttons */}
+        {/* Yes / No outcome buttons with position overlay */}
         <div className="grid grid-cols-2 gap-2">
           {outcomes.map((outcome, index) => {
             const outcomePrice = prices[index]
             const cents = typeof outcomePrice === 'number' ? `${Math.round(outcomePrice * 1000) / 10}¢` : '--'
             const isYesOutcome = index === 0
             const isSelected = selectedOutcomeIndex === index
+            const tokenId = tokenIds[index]
+            const owned = tokenId ? Math.max(0, sharesOwnedByTokenId[tokenId] || 0) : 0
             return (
-              <button
-                key={`${market.id}-outcome-${index}`}
-                className={`rounded-xl px-3 py-3 text-caption-14 font-semibold transition ${isSelected ? '' : 'opacity-50 hover:opacity-75'}`}
-                onClick={() => handleSelectOutcome(index)}
-                style={
-                  isYesOutcome
-                    ? { backgroundColor: isSelected ? '#234f31' : '#1a3424', color: yesColor, ...(isSelected ? { boxShadow: `0 0 0 2px ${yesColor}` } : {}) }
-                    : { backgroundColor: isSelected ? '#4c2229' : '#2e1519', color: noColor, ...(isSelected ? { boxShadow: `0 0 0 2px ${noColor}` } : {}) }
-                }
-                type="button"
-              >
-                {outcome} {cents}
-              </button>
+              <div key={`${market.id}-outcome-${index}`} className="flex flex-col gap-1">
+                <button
+                  className={`rounded-xl px-3 py-3 text-caption-14 font-semibold transition ${isSelected ? '' : 'opacity-50 hover:opacity-75'}`}
+                  onClick={() => handleSelectOutcome(index)}
+                  style={
+                    isYesOutcome
+                      ? { backgroundColor: isSelected ? '#234f31' : '#1a3424', color: yesColor, ...(isSelected ? { boxShadow: `0 0 0 2px ${yesColor}` } : {}) }
+                      : { backgroundColor: isSelected ? '#4c2229' : '#2e1519', color: noColor, ...(isSelected ? { boxShadow: `0 0 0 2px ${noColor}` } : {}) }
+                  }
+                  type="button"
+                >
+                  {outcome} {cents}
+                </button>
+                {owned > 0.01 && (
+                  <button
+                    className="text-caption-11 font-semibold text-grey-60 hover:text-grey-90 transition-colors text-center"
+                    onClick={handleSellPosition}
+                    type="button"
+                  >
+                    {owned.toFixed(2)} shares ({fmt(owned * (prices[index] ?? 0.5))}) · Sell
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>
 
-        {/* Amount */}
+        {/* Amount / shares input */}
         <div>
           <div className="flex items-center justify-between text-caption-12 text-grey-60 mb-2">
-            <span className="font-medium text-grey-90 text-caption-13">Amount</span>
-            {account && (
+            <span className="font-medium text-grey-90 text-caption-13">
+              {side === 'SELL' ? 'Shares to sell' : 'Amount'}
+            </span>
+            {account && side === 'BUY' && (
               <button className="text-grey-50 hover:text-grey-90 transition-colors" onClick={() => setShowDepositInfo((v) => !v)} type="button">
                 {fmt(balance)} cash
               </button>
             )}
+            {account && side === 'SELL' && sharesOwned > 0 && (
+              <button className="text-grey-50 hover:text-grey-90 transition-colors" onClick={handleSellPosition} type="button">
+                Max {sharesOwned.toFixed(2)} shares
+              </button>
+            )}
           </div>
           <div className="flex items-center rounded-xl border border-white/15 bg-bg-l3 px-4 py-3">
-            <span className="mr-1 text-[1.4rem] font-semibold text-grey-60">$</span>
+            {side === 'BUY' && <span className="mr-1 text-[1.4rem] font-semibold text-grey-60">$</span>}
             <input
               className="min-w-0 flex-1 bg-transparent text-[1.6rem] font-semibold text-grey-90 outline-none leading-none"
               min="0"
@@ -213,18 +279,20 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
-          <div className="mt-2 flex gap-1.5">
-            {INCREMENT_AMOUNTS.map((add) => (
-              <button
-                key={add}
-                className="flex-1 rounded-lg border border-white/10 py-1.5 text-caption-12 font-semibold text-grey-60 transition hover:border-white/20 hover:text-grey-90"
-                onClick={() => handleAddAmount(add)}
-                type="button"
-              >
-                +${add}
-              </button>
-            ))}
-          </div>
+          {side === 'BUY' && (
+            <div className="mt-2 flex gap-1.5">
+              {INCREMENT_AMOUNTS.map((add) => (
+                <button
+                  key={add}
+                  className="flex-1 rounded-lg border border-white/10 py-1.5 text-caption-12 font-semibold text-grey-60 transition hover:border-white/20 hover:text-grey-90"
+                  onClick={() => handleAddAmount(add)}
+                  type="button"
+                >
+                  +${add}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Limit price (LIMIT mode only) */}
@@ -240,18 +308,31 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           </div>
         )}
 
-        {/* To win */}
-        {numericAmount > 0 && estimatedPayout > 0 && (
+        {/* To win / proceeds */}
+        {numericAmount > 0 && (
           <div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-caption-13 text-grey-60">To win 💵</span>
-              <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">{fmt(estimatedPayout)}</span>
-            </div>
-            <div className="mt-1 text-caption-12 text-grey-50">Avg. Price {avgPriceCents}¢</div>
+            {side === 'BUY' && estimatedPayout > 0 && (
+              <>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-caption-13 text-grey-60">To win 💵</span>
+                  <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">{fmt(estimatedPayout)}</span>
+                </div>
+                <div className="mt-1 text-caption-12 text-grey-50">Avg. Price {avgPriceCents}¢</div>
+              </>
+            )}
+            {side === 'SELL' && (
+              <>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-caption-13 text-grey-60">Estimated proceeds</span>
+                  <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">{fmt(numericAmount * currentPrice)}</span>
+                </div>
+                <div className="mt-1 text-caption-12 text-grey-50">@ {Math.round(currentPrice * 100)}¢ per share</div>
+              </>
+            )}
           </div>
         )}
 
-        {/* Deposit info panel — shown when user taps balance or has insufficient funds */}
+        {/* Deposit info panel */}
         {showDepositInfo && trading.platformAddress && (
           <div className="rounded-lg border border-brand-50/20 bg-brand-50/5 p-3 space-y-2">
             <div className="text-caption-12 font-semibold text-grey-90">Deposit USDC to trade</div>
@@ -306,7 +387,7 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
           )}
         </div>
 
-        {/* Open orders */}
+        {/* Open orders from Polymarket */}
         {(openOrdersQuery.data?.length || openOrdersQuery.isLoading) ? (
           <div className="border-t border-white/10 pt-4">
             <div className="flex items-center justify-between text-caption-12 text-grey-60 mb-3">

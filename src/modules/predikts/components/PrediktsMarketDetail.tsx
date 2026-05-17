@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketEvent, type PolymarketMarket, usePolymarketActivity, usePolymarketEventBySlug, usePolymarketMarketBySlug, usePolymarketOpenOrders, usePolymarketOrderBook, usePolymarketOrderBookStream } from 'providers/polymarket'
+import { useQuery } from '@tanstack/react-query'
+import { parsePolymarketOutcomePrices, parsePolymarketOutcomes, parsePolymarketTokenIds, type PolymarketEvent, type PolymarketMarket, usePolymarketEventBySlug, usePolymarketMarketBySlug, usePolymarketOpenOrders, usePolymarketOrderBook, usePolymarketOrderBookStream } from 'providers/polymarket'
 import { useWallet } from 'wallet'
 
 import { Href } from 'components/navigation'
@@ -142,85 +143,93 @@ const OrderBookPanel: React.FC<{ market: PolymarketMarket }> = ({ market }) => {
   )
 }
 
+type DbOrder = {
+  id: string
+  tokenId: string
+  side: string
+  amount: string
+  price: number
+  orderType: string
+  status: string
+  polyOrderId: string | null
+  createdAt: string
+}
+
+const statusColor = (status: string) => {
+  const s = status.toLowerCase()
+  if (s === 'matched') return 'text-accent-green'
+  if (s === 'failed') return 'text-accent-red'
+  return 'text-grey-60'
+}
+
+const statusLabel = (status: string) => {
+  const s = status.toLowerCase()
+  if (s === 'matched') return 'Filled'
+  if (s === 'failed') return 'Failed'
+  if (s === 'pending') return 'Pending'
+  return status
+}
+
 const MarketExecutionPanel: React.FC<{ market: PolymarketMarket }> = ({ market }) => {
   const { account } = useWallet()
   const tokenIds = parsePolymarketTokenIds(market)
-  const openOrdersQuery = usePolymarketOpenOrders(tokenIds)
-  const activityQuery = usePolymarketActivity(account)
-  const fills = (activityQuery.data || [])
-    .filter((item) => item.slug === market.slug || (item.asset && tokenIds.includes(item.asset)))
-    .slice(0, 6)
 
-  if (!account) {
-    return null
-  }
+  const dbOrdersQuery = useQuery<DbOrder[]>({
+    queryKey: [ 'predikts', 'orders', 'market', account?.toLowerCase(), ...tokenIds ],
+    queryFn: async () => {
+      const params = new URLSearchParams({ userAddress: account! })
+      if (tokenIds.length) params.set('tokenIds', tokenIds.join(','))
+      const r = await fetch(`/api/predikts/orders?${params}`)
+      if (!r.ok) return []
+      return r.json()
+    },
+    enabled: Boolean(account) && tokenIds.length > 0,
+    staleTime: 15_000,
+  })
 
-  const hasOpenOrders = Boolean(openOrdersQuery.data?.length)
-  const hasFills = fills.length > 0
-
-  if (!openOrdersQuery.isLoading && !activityQuery.isLoading && !hasOpenOrders && !hasFills) {
+  if (!account || (!dbOrdersQuery.isLoading && !dbOrdersQuery.data?.length)) {
     return null
   }
 
   return (
     <div className="rounded-[1.35rem] border border-white/10 bg-[#161616] p-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 mb-5">
         <div>
-          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Orders and fills</div>
-          <div className="mt-2 text-caption-13 text-grey-70">Open orders and recent fills for the selected contract.</div>
+          <div className="text-caption-12 uppercase tracking-[0.18em] text-grey-60">Your orders</div>
+          <div className="mt-1 text-caption-13 text-grey-70">Your trades on this market.</div>
         </div>
         <button
           className="rounded-full border border-white/10 bg-[#0f0f10] px-3 py-2 text-caption-12 font-semibold text-grey-60 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={openOrdersQuery.isFetching || activityQuery.isFetching || !account}
-          onClick={() => {
-            void Promise.all([ openOrdersQuery.refetch(), activityQuery.refetch() ])
-          }}
+          disabled={dbOrdersQuery.isFetching}
+          onClick={() => { void dbOrdersQuery.refetch() }}
           type="button"
         >
-          {openOrdersQuery.isFetching || activityQuery.isFetching ? 'Refreshing...' : 'Refresh'}
+          {dbOrdersQuery.isFetching ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
-
-      <div className="mt-5 grid gap-4 ds:grid-cols-2">
-        <div>
-          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Open orders</div>
-          <div className="space-y-2">
-            {openOrdersQuery.data?.length ? openOrdersQuery.data.map((order) => (
-              <div key={order.id} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-grey-90">{order.side} {order.outcome}</span>
-                  <span className="text-grey-60">{order.status}</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
-                  <span>@ {order.price}</span>
-                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                </div>
+      <div className="space-y-2">
+        {dbOrdersQuery.isLoading ? (
+          <div className="text-caption-13 text-grey-60">Loading...</div>
+        ) : dbOrdersQuery.data?.map((order) => {
+          const shares = Number(order.amount) / order.price
+          return (
+            <div key={order.id} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
+              <div className="flex items-center justify-between gap-3">
+                <span className={`font-semibold uppercase text-caption-12 ${order.side === 'BUY' ? 'text-accent-green' : 'text-accent-red'}`}>
+                  {order.side}
+                </span>
+                <span className={`text-caption-12 font-semibold ${statusColor(order.status)}`}>
+                  {statusLabel(order.status)}
+                </span>
               </div>
-            )) : (
-              <div className="text-caption-13 text-grey-60">No open orders for this contract.</div>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-3 text-caption-12 uppercase tracking-[0.14em] text-grey-60">Recent fills</div>
-          <div className="space-y-2">
-            {fills.length ? fills.map((fill) => (
-              <div key={`${fill.transactionHash}-${fill.timestamp}`} className="rounded-xl bg-[#0f0f10] px-3 py-3 text-caption-13">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-grey-90">{fill.side || fill.type} {fill.outcome || ''}</span>
-                  <span className="text-grey-60">{formatVolume(fill.usdcSize)}</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
-                  <span>{typeof fill.price === 'number' ? `@ ${fill.price}` : fill.type}</span>
-                  <span>{formatTimestamp(fill.timestamp)}</span>
-                </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-caption-12 text-grey-60">
+                <span>${Number(order.amount).toFixed(2)} @ {Math.round(order.price * 100)}¢</span>
+                <span>{shares.toFixed(2)} shares</span>
+                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
               </div>
-            )) : (
-              <div className="text-caption-13 text-grey-60">No recent fills for this contract.</div>
-            )}
-          </div>
-        </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
