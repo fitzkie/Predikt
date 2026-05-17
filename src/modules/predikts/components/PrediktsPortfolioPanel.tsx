@@ -11,6 +11,7 @@ type DbOrder = {
   id: string
   tokenId: string
   marketQuestion: string | null
+  marketSlug: string | null
   side: string
   amount: string
   price: number
@@ -69,10 +70,10 @@ const PrediktsPortfolioPanel: React.FC = () => {
           const isMatched = isMatchedStatus(order.status)
           const isFailed = isFailedStatus(order.status)
           const isBuy = order.side === 'BUY'
-          const shares = Number(order.amount) / order.price
+          const cardClass = 'block rounded-md border border-white/10 bg-bg-l1 px-3 py-2.5'
 
-          return (
-            <div key={order.id} className="rounded-md border border-white/10 bg-bg-l1 px-3 py-2.5">
+          const inner = (
+            <>
               <div className="flex items-center justify-between gap-2">
                 <span className={cx('text-caption-12 font-bold uppercase', isBuy ? 'text-accent-green' : 'text-accent-red')}>
                   {order.side}
@@ -94,6 +95,16 @@ const PrediktsPortfolioPanel: React.FC = () => {
                 <span>${Number(order.amount).toFixed(2)} @ {Math.round(order.price * 100)}¢</span>
                 <span>{dayjs(order.createdAt).format('MMM D, HH:mm')}</span>
               </div>
+            </>
+          )
+
+          return order.marketSlug ? (
+            <Href key={order.id} className={cx(cardClass, 'hover:border-white/25 transition-colors')} to={`/predikts/${order.marketSlug}`}>
+              {inner}
+            </Href>
+          ) : (
+            <div key={order.id} className={cardClass}>
+              {inner}
             </div>
           )
         })}

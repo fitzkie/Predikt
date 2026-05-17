@@ -208,7 +208,7 @@ const Content: React.FC = () => {
       openModal('PrediktsDepositModal')
     }
     else {
-      openModal('FundingModal')
+      openModal('SportsDepositModal')
     }
   }
 
@@ -274,7 +274,7 @@ const Balance: React.FC = () => {
       openModal('PrediktsDepositModal')
     }
     else {
-      openModal('FundingModal')
+      openModal('SportsDepositModal')
     }
   }
 

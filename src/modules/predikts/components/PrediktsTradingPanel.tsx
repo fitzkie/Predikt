@@ -65,13 +65,19 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
     staleTime: 15_000,
   })
 
-  // Shares owned per tokenId: sum(amount/price) for matched BUY minus sum for matched SELL
+  // Shares owned per tokenId.
+  // BUY orders: amount = USD spent → shares = amount / price
+  // SELL orders: amount = shares sold directly
   const sharesOwnedByTokenId = useMemo(() => {
     const map: Record<string, number> = {}
     for (const order of positionQuery.data || []) {
       if (!isMatched(order.status)) continue
-      const shares = Number(order.amount) / order.price
-      map[order.tokenId] = (map[order.tokenId] || 0) + (order.side === 'BUY' ? shares : -shares)
+      if (order.side === 'BUY') {
+        map[order.tokenId] = (map[order.tokenId] || 0) + Number(order.amount) / order.price
+      }
+      else {
+        map[order.tokenId] = (map[order.tokenId] || 0) - Number(order.amount)
+      }
     }
     return map
   }, [ positionQuery.data ])
@@ -91,8 +97,10 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
 
   const limitShares = useMemo(() => {
     if (orderMode !== 'LIMIT' || !numericLimitPrice || numericLimitPrice <= 0) return 0
-    return numericAmount / numericLimitPrice
-  }, [ numericAmount, numericLimitPrice, orderMode ])
+    // BUY: amount = USD to spend → convert to shares
+    // SELL: amount already is shares
+    return side === 'SELL' ? numericAmount : numericAmount / numericLimitPrice
+  }, [ numericAmount, numericLimitPrice, orderMode, side ])
 
   const estimatedShares = orderMode === 'LIMIT'
     ? limitShares
@@ -133,14 +141,15 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
 
     if (orderMode === 'LIMIT') {
       if (numericLimitPrice <= 0 || numericLimitPrice >= 1) return
-      if (limitShares <= 0) return
-      await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side, marketQuestion: market.question })
+      if (side === 'BUY' && limitShares <= 0) return
+      if (side === 'SELL' && numericAmount <= 0) return
+      await trading.placeLimitOrder({ tokenId: selectedTokenId, price: numericLimitPrice, size: limitShares, side, marketQuestion: market.question, marketSlug: market.slug })
     }
     else {
       const worstPrice = side === 'BUY'
         ? Math.min(0.999, (currentPrice || 0.5) * 1.10)
         : Math.max(0.001, (currentPrice || 0.5) * 0.90)
-      await trading.placeMarketOrder({ tokenId: selectedTokenId, amount: numericAmount, side, price: worstPrice, orderType: 'FAK', marketQuestion: market.question })
+      await trading.placeMarketOrder({ tokenId: selectedTokenId, amount: numericAmount, side, price: worstPrice, orderType: 'FAK', marketQuestion: market.question, marketSlug: market.slug })
     }
 
     await openOrdersQuery.refetch()
@@ -320,9 +329,13 @@ const PrediktsTradingPanel: React.FC<Props> = ({ market, initialOutcomeIndex = 0
               <>
                 <div className="flex items-baseline justify-between">
                   <span className="text-caption-13 text-grey-60">Estimated proceeds</span>
-                  <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">{fmt(numericAmount * currentPrice)}</span>
+                  <span className="text-[1.8rem] font-bold leading-none text-[#7ef0a5]">
+                    {fmt(numericAmount * (orderMode === 'LIMIT' ? numericLimitPrice : currentPrice))}
+                  </span>
                 </div>
-                <div className="mt-1 text-caption-12 text-grey-50">@ {Math.round(currentPrice * 100)}¢ per share</div>
+                <div className="mt-1 text-caption-12 text-grey-50">
+                  @ {Math.round((orderMode === 'LIMIT' ? numericLimitPrice : currentPrice) * 100)}¢ per share
+                </div>
               </>
             )}
           </div>

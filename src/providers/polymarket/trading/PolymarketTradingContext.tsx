@@ -45,8 +45,8 @@ type PolymarketTradingContextValue = {
   createOrDeriveApiKey: () => Promise<null>
   checkOrderReadiness: (input: { tokenId: string; side: string; orderMode: string; price?: number; size?: number; amount?: number }) => Promise<PolymarketOrderReadiness | null>
   fixAllowance: () => Promise<boolean>
-  placeLimitOrder: (input: { tokenId: string; price: number; size: number; side: 'BUY' | 'SELL'; marketQuestion?: string }) => Promise<any>
-  placeMarketOrder: (input: { tokenId: string; amount: number; side: 'BUY' | 'SELL'; price?: number; orderType?: string; marketQuestion?: string }) => Promise<any>
+  placeLimitOrder: (input: { tokenId: string; price: number; size: number; side: 'BUY' | 'SELL'; marketQuestion?: string; marketSlug?: string }) => Promise<any>
+  placeMarketOrder: (input: { tokenId: string; amount: number; side: 'BUY' | 'SELL'; price?: number; orderType?: string; marketQuestion?: string; marketSlug?: string }) => Promise<any>
   getOpenOrders: (assetIds?: string[]) => Promise<PolymarketOpenOrder[]>
   cancelOrder: (orderId: string) => Promise<boolean>
 }
@@ -140,7 +140,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     }
   }, [ userBalance ])
 
-  const placeMarketOrder = useCallback(async (input: { tokenId: string; amount: number; side: 'BUY' | 'SELL'; price?: number; orderType?: string; marketQuestion?: string }) => {
+  const placeMarketOrder = useCallback(async (input: { tokenId: string; amount: number; side: 'BUY' | 'SELL'; price?: number; orderType?: string; marketQuestion?: string; marketSlug?: string }) => {
     if (!userAddress) {
       setExecutionError('Connect a wallet to place orders.')
 
@@ -164,6 +164,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
           price: currentPrice,
           orderType: 'MARKET',
           marketQuestion: input.marketQuestion,
+          marketSlug: input.marketSlug,
         }),
       })
 
@@ -178,7 +179,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       const statusMsg = data.status === 'matched'
         ? 'Order filled!'
         : data.status === 'delayed'
-          ? 'Order queued — will fill when matched.'
+          ? 'Sell order posted to book — no buyers right now. It will fill when a buyer appears, or when the market resolves.'
           : `Order submitted (status: ${data.status || 'pending'}).`
 
       setLastExecutionMessage(statusMsg)
@@ -206,7 +207,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
     }
   }, [ userAddress, analytics, invalidateTradingQueries ])
 
-  const placeLimitOrder = useCallback(async (input: { tokenId: string; price: number; size: number; side: 'BUY' | 'SELL'; marketQuestion?: string }) => {
+  const placeLimitOrder = useCallback(async (input: { tokenId: string; price: number; size: number; side: 'BUY' | 'SELL'; marketQuestion?: string; marketSlug?: string }) => {
     if (!userAddress) {
       setExecutionError('Connect a wallet to place orders.')
 
@@ -225,11 +226,14 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
           userAddress,
           tokenId: input.tokenId,
           side: input.side,
-          amount: input.price * input.size,
+          // BUY: amount = USD (price × shares); SELL: amount = shares directly
+          // Trade API computes proceeds = amount × price for SELL orders
+          amount: input.side === 'SELL' ? input.size : input.price * input.size,
           price: input.price,
           size: input.size,
           orderType: 'LIMIT',
           marketQuestion: input.marketQuestion,
+          marketSlug: input.marketSlug,
         }),
       })
 

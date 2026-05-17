@@ -38,6 +38,7 @@ const registry = {
   QuickTourModal: dynamic(() => import('compositions/modals/QuickTourModal/QuickTourModal'), { loading }),
   FundingModal: dynamic(() => import('compositions/funding/FundingModal/FundingModal'), { loading }),
   PrediktsDepositModal: dynamic(() => import('compositions/funding/PrediktsDepositModal/PrediktsDepositModal'), { loading }),
+  SportsDepositModal: dynamic(() => import('compositions/funding/SportsDepositModal/SportsDepositModal'), { loading }),
   PrediktsExchangeModal: dynamic(() => import('compositions/funding/PrediktsExchangeModal/PrediktsExchangeModal'), { loading }),
   FiatProviderModal: dynamic(() => import('compositions/funding/FiatProviderModal/FiatProviderModal'), { loading }),
   FundingExchangeModal: dynamic(() => import('compositions/funding/FundingExchangeModal/FundingExchangeModal'), { loading }),

@@ -458,6 +458,8 @@ type OrderResult = {
   errorMsg?: string
 }
 
+const NO_MATCH_PATTERN = /no orders found/i
+
 // Place an order on Polymarket using the platform wallet.
 export async function placePlatformOrder(input: PlaceOrderInput): Promise<OrderResult> {
   const client = createClobClient(true)
@@ -467,16 +469,58 @@ export async function placePlatformOrder(input: PlaceOrderInput): Promise<OrderR
       ? Math.min(0.999, input.price * 1.10)
       : Math.max(0.001, input.price * 0.90)
 
-    const raw = await client.createAndPostMarketOrder({
-      tokenID: input.tokenId,
-      amount: input.amount,
-      price: worstPrice,
-      side: input.side === 'BUY' ? Side.BUY : Side.SELL,
-      orderType: OrderType.FAK,
-    }, undefined, OrderType.FAK) as any
+    let raw: any
+    let noMatchFailed = false
 
-    if (raw?.success === false) {
-      return { success: false, status: 'failed', errorMsg: raw.errorMsg || 'Order rejected by Polymarket.' }
+    try {
+      raw = await client.createAndPostMarketOrder({
+        tokenID: input.tokenId,
+        amount: input.amount,
+        price: worstPrice,
+        side: input.side === 'BUY' ? Side.BUY : Side.SELL,
+        orderType: OrderType.FAK,
+      }, undefined, OrderType.FAK) as any
+
+      if (raw?.success === false) {
+        const msg: string = raw.errorMsg || ''
+
+        if (input.side === 'SELL' && NO_MATCH_PATTERN.test(msg)) {
+          noMatchFailed = true
+        }
+        else {
+          return { success: false, status: 'failed', errorMsg: msg || 'Order rejected by Polymarket.' }
+        }
+      }
+    }
+    catch (err: any) {
+      const msg = String(err)
+
+      if (input.side === 'SELL' && NO_MATCH_PATTERN.test(msg)) {
+        noMatchFailed = true
+      }
+      else {
+        throw err
+      }
+    }
+
+    // No immediate buyers — post a GTC limit sell so it rests on the book
+    if (noMatchFailed) {
+      const gtcRaw = await client.createAndPostOrder({
+        tokenID: input.tokenId,
+        price: worstPrice,
+        size: input.amount, // amount = shares to sell
+        side: Side.SELL,
+      }, undefined, OrderType.GTC) as any
+
+      if (gtcRaw?.success === false) {
+        return { success: false, status: 'failed', errorMsg: gtcRaw.errorMsg || 'Order rejected by Polymarket.' }
+      }
+
+      return {
+        success: true,
+        orderId: gtcRaw?.orderID,
+        status: 'delayed', // resting on book; will fill when a buyer appears
+      }
     }
 
     return {

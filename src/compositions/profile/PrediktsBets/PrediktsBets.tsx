@@ -6,12 +6,14 @@ import dayjs from 'dayjs'
 import cx from 'classnames'
 import { useWallet } from 'wallet'
 import EmptyContent from 'compositions/EmptyContent/EmptyContent'
+import { Href } from 'components/navigation'
 
 
 type DbOrder = {
   id: string
   tokenId: string
   marketQuestion: string | null
+  marketSlug: string | null
   side: string
   amount: string  // BUY → USD spent; SELL → shares sold
   price: number
@@ -48,13 +50,17 @@ const computeStatus = (order: DbOrder, allOrders: DbOrder[]): { label: string; c
   // BUY order
   if (!matched) return { label: 'Pending', color: 'grey' }
 
-  // Check if this tokenId has a matched SELL — meaning they exited
-  const hasSold = allOrders.some(
-    (o) => o.tokenId === order.tokenId && o.side === 'SELL' && isMatchedStatus(o.status)
-  )
+  // Net shares: total bought minus total sold
+  const totalBought = allOrders
+    .filter((o) => o.tokenId === order.tokenId && o.side === 'BUY' && isMatchedStatus(o.status))
+    .reduce((sum, o) => sum + Number(o.amount) / o.price, 0)
+  const totalSold = allOrders
+    .filter((o) => o.tokenId === order.tokenId && o.side === 'SELL' && isMatchedStatus(o.status))
+    .reduce((sum, o) => sum + Number(o.amount), 0)
+  const netShares = totalBought - totalSold
 
-  if (hasSold) return { label: 'Exited', color: 'grey' }
-  return { label: 'Open', color: 'green' }
+  if (netShares > 0.05) return { label: 'Open', color: 'green' }
+  return { label: 'Exited', color: 'grey' }
 }
 
 const PrediktsBets: React.FC = () => {
@@ -109,8 +115,8 @@ const PrediktsBets: React.FC = () => {
         const buyShares = isBuy ? Number(order.amount) / order.price : 0
         const sellProceeds = !isBuy ? Number(order.amount) * order.price : 0
 
-        return (
-          <div key={order.id} className="rounded-md bg-bg-l2 px-1">
+        const cardContent = (
+          <>
             <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center text-caption-13 gap-2">
                 <span className={cx('font-semibold uppercase', isBuy ? 'text-accent-green' : 'text-accent-red')}>
@@ -174,6 +180,16 @@ const PrediktsBets: React.FC = () => {
                 )}
               </div>
             </div>
+          </>
+        )
+
+        return order.marketSlug ? (
+          <Href key={order.id} className="block rounded-md bg-bg-l2 px-1 hover:bg-bg-l3 transition-colors" to={`/predikts/${order.marketSlug}`}>
+            {cardContent}
+          </Href>
+        ) : (
+          <div key={order.id} className="rounded-md bg-bg-l2 px-1">
+            {cardContent}
           </div>
         )
       })}

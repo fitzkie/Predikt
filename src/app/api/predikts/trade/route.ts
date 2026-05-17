@@ -14,12 +14,13 @@ type TradeRequest = {
   orderType: 'MARKET' | 'LIMIT'
   size?: number
   marketQuestion?: string
+  marketSlug?: string
 }
 
 export async function POST(request: Request) {
   try {
     const body: TradeRequest = await request.json()
-    const { userAddress, tokenId, side, amount, price, orderType, size, marketQuestion } = body
+    const { userAddress, tokenId, side, amount, price, orderType, size, marketQuestion, marketSlug } = body
 
     if (!userAddress || !tokenId || !side || !amount || !price) {
       return NextResponse.json({ error: 'Missing required fields: userAddress, tokenId, side, amount, price' }, { status: 400 })
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
         userId: user.id,
         tokenId,
         marketQuestion,
+        marketSlug,
         side,
         amount,
         price,
