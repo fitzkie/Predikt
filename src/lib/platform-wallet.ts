@@ -1,12 +1,11 @@
 // SERVER-ONLY — never import this from client components.
 // Contains the platform private key used for all Polymarket trades.
 
-import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, createPublicClient } from 'viem'
+import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, createPublicClient, pad } from 'viem'
 import { polygon } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket/clob-client-v2'
-import { RelayClient, deriveDepositWallet } from '@polymarket/builder-relayer-client'
-import { BuilderConfig } from '@polymarket/builder-signing-sdk'
+import { deriveDepositWallet } from '@polymarket/builder-relayer-client'
 
 
 // Contract addresses on Polygon for Polymarket V2
@@ -25,8 +24,6 @@ const DEPOSIT_WALLET_IMPLEMENTATION = '0x58CA52ebe0DadfdF531Cde7062e76746de4Db1e
 
 // The Amsterdam proxy bypasses Polymarket's geo-block on Railway's US IP.
 const CLOB_HOST = 'http://188.166.103.169:3001'
-const RELAYER_URL = 'https://relayer-v2.polymarket.com'
-const POLYGON_CHAIN_ID = 137
 
 // Set POLYGON_RPC_URL in Railway to a dedicated Alchemy/QuickNode endpoint.
 // Falls back through several truly-free public RPCs if not set.
@@ -66,6 +63,59 @@ const ERC20_ABI = [
     inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
+  },
+] as const
+
+// DepositWalletFactory: deploy(address[] owners, bytes32[] ids) — CREATE2 via Solady LibClone
+const DEPOSIT_WALLET_FACTORY_ABI = [
+  {
+    name: 'deploy',
+    type: 'function',
+    inputs: [
+      { name: '_owners', type: 'address[]' },
+      { name: '_ids', type: 'bytes32[]' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
+// DepositWallet proxy: execute((wallet,nonce,deadline,Call[]),sig)
+// Verifies EOA owner signed the EIP-712 Batch, then executes calls from the wallet.
+const DEPOSIT_WALLET_ABI = [
+  {
+    name: 'nonce',
+    type: 'function',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    name: 'execute',
+    type: 'function',
+    inputs: [
+      {
+        name: 'batch',
+        type: 'tuple',
+        components: [
+          { name: 'wallet', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+          {
+            name: 'calls',
+            type: 'tuple[]',
+            components: [
+              { name: 'target', type: 'address' },
+              { name: 'value', type: 'uint256' },
+              { name: 'data', type: 'bytes' },
+            ],
+          },
+        ],
+      },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
 ] as const
 
@@ -130,19 +180,6 @@ export function getPlatformDepositWalletAddress(): string {
   return deriveDepositWallet(account.address, DEPOSIT_WALLET_FACTORY, DEPOSIT_WALLET_IMPLEMENTATION)
 }
 
-function createRelayClient(): RelayClient {
-  const walletClient = getPlatformWalletClient()
-  const creds = getClobCredentials()
-
-  // Builder auth headers (POLY_BUILDER_API_KEY etc.) are required by the relayer.
-  // They use the same CLOB credentials already set in Railway.
-  const builderConfig = creds
-    ? new BuilderConfig({ localBuilderCreds: { key: creds.key, secret: creds.secret, passphrase: creds.passphrase } })
-    : undefined
-
-  return new RelayClient(RELAYER_URL, POLYGON_CHAIN_ID, walletClient as any, builderConfig)
-}
-
 function getClobCredentials() {
   const key = process.env.PLATFORM_CLOB_KEY
   const secret = process.env.PLATFORM_CLOB_SECRET
@@ -191,52 +228,124 @@ export async function derivePlatformCredentials() {
 }
 
 // Check whether the platform deposit wallet is deployed on-chain.
+// Reads bytecode at the deterministic address — non-empty = deployed.
 export async function checkDepositWalletDeployed(): Promise<boolean> {
-  const relayClient = createRelayClient()
-  const depositWalletAddress = getPlatformDepositWalletAddress()
+  const publicClient = getPublicClient()
+  const depositWalletAddress = getPlatformDepositWalletAddress() as `0x${string}`
+  const code = await publicClient.getCode({ address: depositWalletAddress })
 
-  return relayClient.getDeployed(depositWalletAddress)
+  return !!code && code !== '0x'
 }
 
-// Deploy the platform deposit wallet via Polymarket's relayer.
-// One-time setup — safe to call multiple times (no-op if already deployed).
+// Deploy the platform deposit wallet by calling the factory directly on-chain.
+// One-time setup. The walletId is bytes32(owner) = owner address left-padded to 32 bytes.
 export async function deployPlatformDepositWallet() {
-  const relayClient = createRelayClient()
-  const response = await relayClient.deployDepositWallet()
-  const result = await response.wait()
+  const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
+  const account = getPlatformAccount()
+  const depositWalletAddress = getPlatformDepositWalletAddress()
 
-  return {
-    transactionId: response.transactionID,
-    status: result?.state ?? response.state,
-    hash: result?.transactionHash ?? response.transactionHash,
-    depositWalletAddress: getPlatformDepositWalletAddress(),
+  const already = await checkDepositWalletDeployed()
+
+  if (already) {
+    return { hash: null, status: 'success', deployed: true, depositWalletAddress, note: 'Already deployed' }
   }
+
+  // walletId = bytes32(owner) = left-pad owner address to 32 bytes
+  const walletId = pad(account.address as `0x${string}`, { dir: 'left', size: 32 }) as `0x${string}`
+
+  const hash = await walletClient.writeContract({
+    address: DEPOSIT_WALLET_FACTORY,
+    abi: DEPOSIT_WALLET_FACTORY_ABI,
+    functionName: 'deploy',
+    args: [[account.address], [walletId]],
+    account,
+    chain: polygon,
+  })
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
+  const deployed = await checkDepositWalletDeployed()
+
+  return { hash, status: receipt.status, deployed, depositWalletAddress }
+}
+
+// Signs an EIP-712 Batch and calls execute() directly on the deposit wallet.
+// No relayer needed — the EOA is the wallet's owner and its signature is sufficient.
+async function executeDepositWalletBatch(calls: { target: `0x${string}`; value: bigint; data: `0x${string}` }[]) {
+  const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
+  const account = getPlatformAccount()
+  const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
+
+  const nonce = await publicClient.readContract({
+    address: depositWallet,
+    abi: DEPOSIT_WALLET_ABI,
+    functionName: 'nonce',
+  })
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 600)
+
+  const signature = await walletClient.signTypedData({
+    account,
+    domain: {
+      name: 'DepositWallet',
+      version: '1',
+      chainId: 137,
+      verifyingContract: depositWallet,
+    },
+    types: {
+      Call: [
+        { name: 'target', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'data', type: 'bytes' },
+      ],
+      Batch: [
+        { name: 'wallet', type: 'address' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+        { name: 'calls', type: 'Call[]' },
+      ],
+    },
+    primaryType: 'Batch',
+    message: {
+      wallet: depositWallet,
+      nonce: BigInt(nonce),
+      deadline,
+      calls,
+    },
+  })
+
+  const hash = await walletClient.writeContract({
+    address: depositWallet,
+    abi: DEPOSIT_WALLET_ABI,
+    functionName: 'execute',
+    args: [
+      { wallet: depositWallet, nonce: BigInt(nonce), deadline, calls },
+      signature,
+    ],
+    account,
+    chain: polygon,
+  })
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
+
+  return { hash, status: receipt.status }
 }
 
 // Approve CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, and NEG_RISK_ADAPTER to spend pUSD
 // from the DEPOSIT WALLET (required after April 2026 — EOA approvals are no longer accepted).
 export async function approveExchangesFromDepositWallet() {
-  const relayClient = createRelayClient()
-  const depositWalletAddress = getPlatformDepositWalletAddress()
-  const deadline = String(Math.floor(Date.now() / 1000) + 600) // 10-minute window
-
   const spenders = [CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, NEG_RISK_ADAPTER] as const
 
   const calls = spenders.map((spender) => ({
     target: PUSD_ADDRESS,
-    value: '0',
+    value: 0n,
     data: encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, maxUint256] }),
   }))
 
-  const response = await relayClient.executeDepositWalletBatch(calls, depositWalletAddress, deadline)
-  const result = await response.wait()
+  const result = await executeDepositWalletBatch(calls)
 
-  return {
-    transactionId: response.transactionID,
-    status: result?.state ?? response.state,
-    hash: result?.transactionHash ?? response.transactionHash,
-    spenders,
-  }
+  return { ...result, spenders }
 }
 
 // Transfer any pUSD sitting on the EOA to the deposit wallet.
