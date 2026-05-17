@@ -113,6 +113,10 @@ export const PrediktUserProvider: React.FC<React.PropsWithChildren> = ({ childre
         [normalizedAccount]: createDefaultProfile(normalizedAccount),
       }
     })
+
+    // Ensure a unique custodial deposit address exists for this user.
+    // Fire-and-forget — also prefunds with MATIC on first creation.
+    fetch(`/api/user/deposit-address?address=${normalizedAccount}`).catch(() => {})
   }, [ isHydrated, normalizedAccount ])
 
   useEffect(() => {

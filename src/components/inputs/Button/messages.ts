@@ -3,7 +3,7 @@ export default {
     en: 'Ok',
   },
   connectWallet: {
-    en: 'Connect wallet',
+    en: 'Sign Up / Login',
   },
   changeNetwork: {
     en: 'Change network',
