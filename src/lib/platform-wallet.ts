@@ -70,8 +70,40 @@ const ERC20_ABI = [
   },
 ] as const
 
-// DepositWallet proxy: execute((wallet,nonce,deadline,Call[]),sig)
-// Verifies EOA owner signed the EIP-712 Batch, then executes calls from the wallet.
+// DepositWalletFactory: executeBatch(Batch[], bytes[]) — permissionless, verifies EIP-712 signatures.
+// The deposit wallet's execute() only accepts calls from the factory, so we must route through here.
+const DEPOSIT_WALLET_FACTORY_EXECUTE_ABI = [
+  {
+    name: 'executeBatch',
+    type: 'function',
+    inputs: [
+      {
+        name: '_batches',
+        type: 'tuple[]',
+        components: [
+          { name: 'wallet', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+          {
+            name: 'calls',
+            type: 'tuple[]',
+            components: [
+              { name: 'target', type: 'address' },
+              { name: 'value', type: 'uint256' },
+              { name: 'data', type: 'bytes' },
+            ],
+          },
+        ],
+      },
+      { name: '_signatures', type: 'bytes[]' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
+// DepositWallet proxy: nonce() — read current nonce for EIP-712 signing.
+// execute() on the wallet itself is only callable by the factory (enforced on-chain).
 const DEPOSIT_WALLET_ABI = [
   {
     name: 'nonce',
@@ -287,8 +319,9 @@ export async function deployPlatformDepositWallet() {
   }
 }
 
-// Signs an EIP-712 Batch and calls execute() directly on the deposit wallet.
-// No relayer needed — the EOA is the wallet's owner and its signature is sufficient.
+// Signs an EIP-712 Batch and submits via factory.executeBatch().
+// The deposit wallet's execute() only accepts calls FROM the factory (enforced on-chain),
+// so we must route through factory.executeBatch([batch], [sig]) — permissionless, just verifies sigs.
 async function executeDepositWalletBatch(calls: { target: `0x${string}`; value: bigint; data: `0x${string}` }[]) {
   const walletClient = getPlatformWalletClient()
   const publicClient = getPublicClient()
@@ -333,14 +366,13 @@ async function executeDepositWalletBatch(calls: { target: `0x${string}`; value: 
     },
   })
 
+  const batch = { wallet: depositWallet, nonce: BigInt(nonce), deadline, calls }
+
   const hash = await walletClient.writeContract({
-    address: depositWallet,
-    abi: DEPOSIT_WALLET_ABI,
-    functionName: 'execute',
-    args: [
-      { wallet: depositWallet, nonce: BigInt(nonce), deadline, calls },
-      signature,
-    ],
+    address: DEPOSIT_WALLET_FACTORY,
+    abi: DEPOSIT_WALLET_FACTORY_EXECUTE_ABI,
+    functionName: 'executeBatch',
+    args: [[batch], [signature]],
     account,
     chain: polygon,
   })
