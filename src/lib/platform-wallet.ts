@@ -1,11 +1,12 @@
 // SERVER-ONLY — never import this from client components.
 // Contains the platform private key used for all Polymarket trades.
 
-import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, createPublicClient, pad } from 'viem'
+import { createWalletClient, http, fallback, encodeFunctionData, maxUint256, createPublicClient } from 'viem'
 import { polygon } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
 import { ClobClient, Chain, SignatureTypeV2, OrderType, Side } from '@polymarket/clob-client-v2'
-import { deriveDepositWallet } from '@polymarket/builder-relayer-client'
+import { RelayClient, deriveDepositWallet } from '@polymarket/builder-relayer-client'
+import { BuilderConfig } from '@polymarket/builder-signing-sdk'
 
 
 // Contract addresses on Polygon for Polymarket V2
@@ -21,6 +22,9 @@ const COLLATERAL_ONRAMP = '0x93070a847efEf7F70739046A929D47a521F5B8ee' as `0x${s
 // Polymarket deposit wallet contracts on Polygon (required since CTF Exchange V2, April 2026)
 const DEPOSIT_WALLET_FACTORY = '0x00000000000Fb5C9ADea0298D729A0CB3823Cc07' as `0x${string}`
 const DEPOSIT_WALLET_IMPLEMENTATION = '0x58CA52ebe0DadfdF531Cde7062e76746de4Db1eB' as `0x${string}`
+
+const RELAYER_URL = 'https://relayer-v2.polymarket.com'
+const POLYGON_CHAIN_ID = 137
 
 // The Amsterdam proxy bypasses Polymarket's geo-block on Railway's US IP.
 const CLOB_HOST = 'http://188.166.103.169:3001'
@@ -63,20 +67,6 @@ const ERC20_ABI = [
     inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
-  },
-] as const
-
-// DepositWalletFactory: deploy(address[] owners, bytes32[] ids) — CREATE2 via Solady LibClone
-const DEPOSIT_WALLET_FACTORY_ABI = [
-  {
-    name: 'deploy',
-    type: 'function',
-    inputs: [
-      { name: '_owners', type: 'address[]' },
-      { name: '_ids', type: 'bytes32[]' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
   },
 ] as const
 
@@ -192,6 +182,31 @@ function getClobCredentials() {
   return { key, secret, passphrase }
 }
 
+function getBuilderCredentials() {
+  const key = process.env.PLATFORM_BUILDER_KEY
+  const secret = process.env.PLATFORM_BUILDER_SECRET
+  const passphrase = process.env.PLATFORM_BUILDER_PASSPHRASE
+
+  if (!key || !secret || !passphrase) return undefined
+  return { key, secret, passphrase }
+}
+
+function createRelayClient() {
+  const walletClient = getPlatformWalletClient()
+  const creds = getBuilderCredentials()
+
+  if (!creds) {
+    throw new Error(
+      'Builder credentials not configured. In the admin panel, run "Create Builder API Key" and add '
+      + 'PLATFORM_BUILDER_KEY, PLATFORM_BUILDER_SECRET, PLATFORM_BUILDER_PASSPHRASE to your Railway env vars, then redeploy.',
+    )
+  }
+
+  const builderConfig = new BuilderConfig({ localBuilderCreds: creds })
+
+  return new RelayClient(RELAYER_URL, POLYGON_CHAIN_ID, walletClient as any, builderConfig)
+}
+
 // Uses POLY_1271 signature type with deposit wallet as funder — required since April 2026.
 function createClobClient(withCredentials = true) {
   const walletClient = getPlatformWalletClient()
@@ -227,6 +242,17 @@ export async function derivePlatformCredentials() {
   return { key: creds.key, secret: creds.secret, passphrase: creds.passphrase }
 }
 
+// Create a builder API key for the platform wallet via the CLOB API.
+// Builder credentials are separate from CLOB credentials and are required to authenticate
+// with the Polymarket relayer when deploying the deposit wallet.
+// Call this once, then store PLATFORM_BUILDER_KEY/SECRET/PASSPHRASE in Railway.
+export async function createBuilderApiKey() {
+  const client = createClobClient(true)
+  const result = await (client as any).createBuilderApiKey()
+
+  return { key: result.key, secret: result.secret, passphrase: result.passphrase }
+}
+
 // Check whether the platform deposit wallet is deployed on-chain.
 // Reads bytecode at the deterministic address — non-empty = deployed.
 export async function checkDepositWalletDeployed(): Promise<boolean> {
@@ -237,36 +263,28 @@ export async function checkDepositWalletDeployed(): Promise<boolean> {
   return !!code && code !== '0x'
 }
 
-// Deploy the platform deposit wallet by calling the factory directly on-chain.
-// One-time setup. The walletId is bytes32(owner) = owner address left-padded to 32 bytes.
+// Deploy the platform deposit wallet via Polymarket's relayer.
+// Requires PLATFORM_BUILDER_KEY/SECRET/PASSPHRASE — run "Create Builder API Key" in the admin panel first.
+// One-time setup — safe to call multiple times (no-op if already deployed).
 export async function deployPlatformDepositWallet() {
-  const walletClient = getPlatformWalletClient()
-  const publicClient = getPublicClient()
-  const account = getPlatformAccount()
   const depositWalletAddress = getPlatformDepositWalletAddress()
-
   const already = await checkDepositWalletDeployed()
 
   if (already) {
-    return { hash: null, status: 'success', deployed: true, depositWalletAddress, note: 'Already deployed' }
+    return { transactionId: null, hash: null, deployed: true, depositWalletAddress, note: 'Already deployed' }
   }
 
-  // walletId = bytes32(owner) = left-pad owner address to 32 bytes
-  const walletId = pad(account.address as `0x${string}`, { dir: 'left', size: 32 }) as `0x${string}`
+  const relayClient = createRelayClient()
+  const response = await relayClient.deployDepositWallet()
 
-  const hash = await walletClient.writeContract({
-    address: DEPOSIT_WALLET_FACTORY,
-    abi: DEPOSIT_WALLET_FACTORY_ABI,
-    functionName: 'deploy',
-    args: [[account.address], [walletId]],
-    account,
-    chain: polygon,
-  })
-
-  const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
-  const deployed = await checkDepositWalletDeployed()
-
-  return { hash, status: receipt.status, deployed, depositWalletAddress }
+  // Return immediately — don't wait for confirmation (relayer can take 30–60s).
+  // The admin panel "Check Status" button calls checkDepositWalletDeployed() to verify.
+  return {
+    transactionId: response.transactionID,
+    hash: response.transactionHash || null,
+    deployed: false,
+    depositWalletAddress,
+  }
 }
 
 // Signs an EIP-712 Batch and calls execute() directly on the deposit wallet.

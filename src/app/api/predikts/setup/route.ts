@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import {
   derivePlatformCredentials,
+  createBuilderApiKey,
   getPlatformAddress,
   getPlatformDepositWalletAddress,
   getPlatformOnChainBalances,
@@ -73,6 +74,17 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         message: 'Credentials derived. Add these as Railway env vars: PLATFORM_CLOB_KEY, PLATFORM_CLOB_SECRET, PLATFORM_CLOB_PASSPHRASE',
+        key: creds.key,
+        secret: creds.secret,
+        passphrase: creds.passphrase,
+      })
+    }
+
+    if (action === 'create-builder-api-key') {
+      const creds = await createBuilderApiKey()
+
+      return NextResponse.json({
+        message: 'Builder API key created. Add these as Railway env vars: PLATFORM_BUILDER_KEY, PLATFORM_BUILDER_SECRET, PLATFORM_BUILDER_PASSPHRASE, then redeploy.',
         key: creds.key,
         secret: creds.secret,
         passphrase: creds.passphrase,

@@ -184,12 +184,27 @@ export default function PrediktsAdminPage() {
       <Section title="Deposit Wallet Setup (one-time, required for trading)">
         <p className="text-caption-12 text-grey-60 leading-5">
           This is <strong className="text-grey-90">your platform&apos;s single trading proxy</strong> on Polymarket — one wallet shared by all users.
-          Polymarket requires it since April 2026. Run A → D once, then ignore forever.
+          Polymarket requires it since April 2026. Run A → E once, then ignore forever.
         </p>
 
         <div className="space-y-3">
           <div>
-            <p className="text-caption-12 text-grey-90 font-semibold mb-1">A — Deploy the platform deposit wallet</p>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">A — Create builder API key (relayer auth)</p>
+            <p className="text-caption-11 text-grey-50 mb-2">
+              The Polymarket relayer needs separate builder credentials to deploy the deposit wallet.
+              Click once, copy the three values, and add them as Railway env vars:
+              <strong className="text-grey-90"> PLATFORM_BUILDER_KEY</strong>,{' '}
+              <strong className="text-grey-90">PLATFORM_BUILDER_SECRET</strong>,{' '}
+              <strong className="text-grey-90">PLATFORM_BUILDER_PASSPHRASE</strong>. Then redeploy and continue to step B.
+            </p>
+            <button className={btn('Create Key')} onClick={() => run('builder-key', 'POST', '/api/predikts/setup', { action: 'create-builder-api-key' })}>
+              Create Builder API Key
+            </button>
+            <ResultBox result={results['builder-key'] ?? null} loading={!!loading['builder-key']} />
+          </div>
+
+          <div>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">B — Deploy the platform deposit wallet</p>
             <p className="text-caption-11 text-grey-50 mb-2">Check first. If <code>deployed: false</code>, click Deploy. Takes 30–60s to confirm on-chain.</p>
             <div className="flex gap-2">
               <button className={btn('Check')} onClick={() => run('dw-check', 'POST', '/api/predikts/setup', { action: 'check-deposit-wallet' })}>
@@ -204,7 +219,7 @@ export default function PrediktsAdminPage() {
           </div>
 
           <div>
-            <p className="text-caption-12 text-grey-90 font-semibold mb-1">B — Approve exchange contracts from deposit wallet</p>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">C — Approve exchange contracts from deposit wallet</p>
             <p className="text-caption-11 text-grey-50 mb-2">
               Approves CTF Exchange V2, NegRisk Exchange V2, and NegRisk Adapter to spend pUSD from the deposit wallet.
             </p>
@@ -215,7 +230,7 @@ export default function PrediktsAdminPage() {
           </div>
 
           <div>
-            <p className="text-caption-12 text-grey-90 font-semibold mb-1">C — Migrate existing EOA pUSD to deposit wallet (one-time)</p>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">D — Migrate existing EOA pUSD to deposit wallet (one-time)</p>
             <p className="text-caption-11 text-grey-50 mb-2">
               If the EOA has pUSD from before the deposit-wallet switch, transfer it here.
             </p>
@@ -226,7 +241,7 @@ export default function PrediktsAdminPage() {
           </div>
 
           <div>
-            <p className="text-caption-12 text-grey-90 font-semibold mb-1">D — Register balance with CLOB</p>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">E — Register balance with CLOB</p>
             <p className="text-caption-11 text-grey-50 mb-2">
               After any wrap or transfer, tell the CLOB to re-read on-chain balances.
             </p>
