@@ -81,8 +81,16 @@ export async function POST(request: Request) {
 
     if (action === 'deploy-deposit-wallet') {
       const result = await deployPlatformDepositWallet()
+      // Re-check on-chain status after relay confirms (or times out)
+      const deployed = await checkDepositWalletDeployed().catch(() => null)
 
-      return NextResponse.json({ message: 'Deposit wallet deployed.', ...result })
+      return NextResponse.json({
+        message: deployed
+          ? 'Deposit wallet deployed and confirmed on-chain.'
+          : 'Deploy submitted — may still be confirming. Click Check Status in 30s.',
+        deployed,
+        ...result,
+      })
     }
 
     if (action === 'check-deposit-wallet') {

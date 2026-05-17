@@ -181,15 +181,16 @@ export default function PrediktsAdminPage() {
       </Section>
 
       {/* Deposit Wallet Setup (new, required) */}
-      <Section title="Deposit Wallet Setup (required for trading)">
+      <Section title="Deposit Wallet Setup (one-time, required for trading)">
         <p className="text-caption-12 text-grey-60 leading-5">
-          Polymarket requires all trades to go through a per-account <strong className="text-grey-90">Deposit Wallet</strong> (ERC-1967 proxy).
-          Run steps A → D once. After that, wrap + auto-wrap handles ongoing funds.
+          This is <strong className="text-grey-90">your platform&apos;s single trading proxy</strong> on Polymarket — one wallet shared by all users.
+          Polymarket requires it since April 2026. Run A → D once, then ignore forever.
         </p>
 
         <div className="space-y-3">
           <div>
-            <p className="text-caption-12 text-grey-90 font-semibold mb-1">A — Check / deploy deposit wallet</p>
+            <p className="text-caption-12 text-grey-90 font-semibold mb-1">A — Deploy the platform deposit wallet</p>
+            <p className="text-caption-11 text-grey-50 mb-2">Check first. If <code>deployed: false</code>, click Deploy. Takes 30–60s to confirm on-chain.</p>
             <div className="flex gap-2">
               <button className={btn('Check')} onClick={() => run('dw-check', 'POST', '/api/predikts/setup', { action: 'check-deposit-wallet' })}>
                 Check Status
@@ -198,7 +199,8 @@ export default function PrediktsAdminPage() {
                 Deploy Wallet
               </button>
             </div>
-            <ResultBox result={results['dw-check'] ?? results['dw-deploy'] ?? null} loading={!!(loading['dw-check'] || loading['dw-deploy'])} />
+            <ResultBox result={results['dw-check'] ?? null} loading={!!loading['dw-check']} />
+            <ResultBox result={results['dw-deploy'] ?? null} loading={!!loading['dw-deploy']} />
           </div>
 
           <div>
