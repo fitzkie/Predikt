@@ -6,9 +6,12 @@ import { useEffect, useState } from 'react'
 type Result = Record<string, any>
 
 type PrediktsStats = {
+  platformMaticBalance: number | null
   platformPUsdBalance: number | null
   platformUsdcBalance: number | null
+  platformUsdceBalance: number | null
   depositWalletPusdBalance: number | null
+  totalUserLiabilities: number
   totalBetters: number
   totalOrders: number
   totalBetAmount: number
@@ -110,7 +113,10 @@ export default function PrediktsAdminPage() {
 
   const depositWalletPusd = prediktsStats?.depositWalletPusdBalance ?? null
   const eoaUsdc = prediktsStats?.platformUsdcBalance ?? null
+  const eoaUsdce = prediktsStats?.platformUsdceBalance ?? null
+  const maticBalance = prediktsStats?.platformMaticBalance ?? null
   const unwrappedPending = eoaUsdc !== null && eoaUsdc >= 1
+  const maticLow = maticBalance !== null && maticBalance < 0.1
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-4">
@@ -127,6 +133,17 @@ export default function PrediktsAdminPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
               <StatCard
+                label="MATIC (gas)"
+                value={maticBalance !== null ? `${fmt(maticBalance, 4)} MATIC` : null}
+                sub={maticLow ? 'Top up needed!' : 'Platform wallet gas'}
+                warn={maticLow}
+              />
+              <StatCard
+                label="Total user liabilities"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalUserLiabilities)} USD` : null}
+                sub="What we owe users"
+              />
+              <StatCard
                 label="Deposit wallet pUSD"
                 value={depositWalletPusd !== null ? `$${fmt(depositWalletPusd)} pUSD` : null}
                 sub="Trading collateral"
@@ -136,6 +153,11 @@ export default function PrediktsAdminPage() {
                 value={eoaUsdc !== null ? `$${fmt(eoaUsdc)} USDC` : null}
                 sub={unwrappedPending ? 'Run auto-wrap!' : 'On platform EOA'}
                 warn={unwrappedPending}
+              />
+              <StatCard
+                label="EOA USDC.e"
+                value={eoaUsdce !== null ? `$${fmt(eoaUsdce)} USDC.e` : null}
+                sub="Bridged USDC on EOA"
               />
               <StatCard
                 label="Total betters"
@@ -157,9 +179,18 @@ export default function PrediktsAdminPage() {
                 sub="SELL orders processed"
               />
             </div>
-            <button className={btn('Refresh')} onClick={loadStats}>
-              Refresh Stats
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <button className={btn('Refresh')} onClick={loadStats}>
+                Refresh Stats
+              </button>
+              <button
+                className={btn('Settle Sports Bets')}
+                onClick={() => run('settle-sports', 'POST', '/api/sports/settle')}
+              >
+                Settle Sports Bets
+              </button>
+            </div>
+            <ResultBox result={results['settle-sports'] ?? null} loading={!!loading['settle-sports']} />
           </div>
         )}
       </Section>

@@ -337,7 +337,8 @@ export async function getPlatformOnChainBalances() {
   const account = getPlatformAccount()
   const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
 
-  const [usdcBalance, usdceBalance, eoaPusdBalance, depositWalletPusdBalance] = await Promise.all([
+  const [maticWei, usdcBalance, usdceBalance, eoaPusdBalance, depositWalletPusdBalance] = await Promise.all([
+    publicClient.getBalance({ address: account.address }),
     publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
     publicClient.readContract({ address: USDC_E_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
     publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
@@ -345,11 +346,36 @@ export async function getPlatformOnChainBalances() {
   ])
 
   return {
+    maticBalance: Number(maticWei) / 1e18,
     usdcBalance: Number(usdcBalance) / 1e6,
     usdceBalance: Number(usdceBalance) / 1e6,
     pUsdBalance: Number(eoaPusdBalance) / 1e6,
     depositWalletPusdBalance: Number(depositWalletPusdBalance) / 1e6,
   }
+}
+
+const NATIVE_USDT_ADDRESS = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' as `0x${string}`
+
+// Send USDC or USDT from the platform EOA to a user's wallet. Used for withdrawals.
+// Waits for 1 confirmation and returns the txHash.
+export async function sendTokenToUser(toAddress: string, amountUsd: number, token: 'USDC' | 'USDT' = 'USDC'): Promise<string> {
+  const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
+  const account = getPlatformAccount()
+
+  const tokenAddress = token === 'USDT' ? NATIVE_USDT_ADDRESS : NATIVE_USDC_ADDRESS
+  const amountRaw = BigInt(Math.floor(amountUsd * 1e6))
+
+  const data = encodeFunctionData({
+    abi: ERC20_ABI,
+    functionName: 'transfer',
+    args: [toAddress as `0x${string}`, amountRaw],
+  })
+
+  const txHash = await walletClient.sendTransaction({ account, to: tokenAddress, data, chain: polygon })
+  await publicClient.waitForTransactionReceipt({ hash: txHash, confirmations: 1 })
+
+  return txHash
 }
 
 // Approve all three exchange contracts to spend pUSD from the platform EOA wallet.

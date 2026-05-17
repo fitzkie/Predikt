@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from 'lib/db'
-import { generateDepositWallet } from 'lib/deposit-wallet'
+import { generateDepositWallet, prefundDepositWallet } from 'lib/deposit-wallet'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +40,9 @@ export async function GET(request: Request) {
         data: { walletAddress, depositAddress, depositPrivKey: encryptedPrivKey },
       })
     }
+
+    // Fire-and-forget: send MATIC so the deposit wallet can pay gas for sweeps
+    prefundDepositWallet(depositAddress as `0x${string}`).catch(console.error)
 
     return NextResponse.json({ depositAddress })
   }

@@ -12,6 +12,7 @@ export async function GET() {
       totalOrders,
       amountAgg,
       payoutAgg,
+      totalUserBalances,
       onChain,
     ] = await Promise.all([
       db.prediktsUser.count(),
@@ -20,18 +21,22 @@ export async function GET() {
         _sum: { amount: true },
         where: { status: { not: 'failed' } },
       }),
-      // Payouts = SELL orders that went through (user sold shares back)
       db.prediktsOrder.aggregate({
         _sum: { amount: true },
         where: { side: 'SELL', status: { not: 'failed' } },
       }),
+      // Sum of all user USD balances — what we owe users in total
+      db.prediktsUser.aggregate({ _sum: { usdBalance: true } }),
       getPlatformOnChainBalances().catch(() => null),
     ])
 
     return NextResponse.json({
+      platformMaticBalance: onChain?.maticBalance ?? null,
       platformPUsdBalance: onChain?.pUsdBalance ?? null,
       platformUsdcBalance: onChain?.usdcBalance ?? null,
+      platformUsdceBalance: onChain?.usdceBalance ?? null,
       depositWalletPusdBalance: onChain?.depositWalletPusdBalance ?? null,
+      totalUserLiabilities: Number(totalUserBalances._sum.usdBalance ?? 0),
       totalBetters,
       totalOrders,
       totalBetAmount: Number(amountAgg._sum.amount ?? 0),

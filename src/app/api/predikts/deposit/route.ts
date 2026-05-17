@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from 'lib/db'
-import { getPlatformAddress } from 'lib/platform-wallet'
+import { getPlatformAddress, autoWrapIfNeeded } from 'lib/platform-wallet'
+import { sweepDepositWallet } from 'lib/deposit-wallet'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,8 +44,14 @@ export async function POST(request: Request) {
 
     const updated = await db.prediktsUser.findUnique({
       where: { id: user.id },
-      select: { usdBalance: true },
+      select: { usdBalance: true, depositAddress: true, depositPrivKey: true },
     })
+
+    // Sweep deposited funds from user's unique wallet → platform trading wallet
+    if (updated?.depositAddress && updated?.depositPrivKey) {
+      sweepDepositWallet(updated.depositAddress, updated.depositPrivKey).catch(console.error)
+    }
+    autoWrapIfNeeded().catch(console.error)
 
     return NextResponse.json({ success: true, newBalance: Number(updated?.usdBalance ?? 0) })
   }

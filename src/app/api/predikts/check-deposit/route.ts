@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { parseAbiItem } from 'viem'
 import { db } from 'lib/db'
 import { getPublicClient, autoWrapIfNeeded } from 'lib/platform-wallet'
+import { sweepDepositWallet } from 'lib/deposit-wallet'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
     const user = await db.prediktsUser.findUnique({
       where: { walletAddress: userAddress },
-      select: { id: true, depositAddress: true, usdBalance: true },
+      select: { id: true, depositAddress: true, depositPrivKey: true, usdBalance: true },
     })
 
     if (!user?.depositAddress) {
@@ -89,6 +90,10 @@ export async function GET(request: Request) {
     }
 
     if (totalCredited > 0) {
+      // Sweep deposited funds from user's unique wallet → platform trading wallet
+      if (user.depositAddress && user.depositPrivKey) {
+        sweepDepositWallet(user.depositAddress, user.depositPrivKey).catch(console.error)
+      }
       autoWrapIfNeeded().catch(console.error)
     }
 
