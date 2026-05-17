@@ -21,11 +21,12 @@ const Content: React.FC = () => {
   useFreezeBodyScroll()
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
+  const isProfile = pathname.startsWith('/profile')
 
   return (
     <div className="fixed top-[54px] bottom-0 left-0 nr:w-[22.5rem] mb:w-full bg-bg-l0 overflow-auto no-scrollbar">
       {
-        isPredikts ? (
+        isProfile ? null : isPredikts ? (
           <PrediktsSidebar />
         ) : (
           <>

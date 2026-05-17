@@ -14,6 +14,7 @@ import PrediktsSidebar from 'compositions/app/PrediktsSidebar/PrediktsSidebar'
 const LeftSidebar: React.FC = () => {
   const pathname = usePathname()
   const isPredikts = pathname.startsWith('/predikts')
+  const isProfile = pathname.startsWith('/profile')
 
   return (
     <div className="h-full">
@@ -21,18 +22,20 @@ const LeftSidebar: React.FC = () => {
         <Logo className="h-6" />
         <AppModeTabs className="mt-5" />
       </div>
-      <div className="overflow-auto wd:h-[calc(100vh_-_4rem)] no-scrollbar">
-        {
-          isPredikts ? (
-            <PrediktsSidebar />
-          ) : (
-            <>
-              <LiveSwitcher />
-              <Navigation className="mt-2" />
-            </>
-          )
-        }
-      </div>
+      {!isProfile && (
+        <div className="overflow-auto wd:h-[calc(100vh_-_4rem)] no-scrollbar">
+          {
+            isPredikts ? (
+              <PrediktsSidebar />
+            ) : (
+              <>
+                <LiveSwitcher />
+                <Navigation className="mt-2" />
+              </>
+            )
+          }
+        </div>
+      )}
     </div>
   )
 }

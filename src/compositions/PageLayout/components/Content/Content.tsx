@@ -18,12 +18,14 @@ const Content: React.CFC = ({ children }) => {
   const pathname = usePathname()
   const isMarketingPage = pathname === '/'
   const isPrediktsDetail = pathname.startsWith('/predikts/')
+  const isProfile = pathname.startsWith('/profile')
+  const showRightSidebar = !isPrediktsDetail && !isProfile
 
   const rootClassName = cx('h-full flex flex-col wd:flex-row min-h-screen mx-auto wd:px-2 wd:pb-2', ws.root)
   const mainClassName = cx(ns.main, ws.main,
     'mx-auto flex-1 w-full wd:h-auto',
     {
-      [ws.withRightSidebar]: !isPrediktsDetail,
+      [ws.withRightSidebar]: showRightSidebar,
     }
   )
   const sidebarClassName = 'sticky top-0 z-[100] shrink-0 no-scrollbar'
@@ -53,7 +55,7 @@ const Content: React.CFC = ({ children }) => {
         </div>
       </main>
       {
-        !isPrediktsDetail && (
+        showRightSidebar && (
           <Media className={cx('h-[calc(100vh_-_0.5rem)]', ws.rightSidebar, sidebarClassName)} wide>
             <RightSidebar />
           </Media>

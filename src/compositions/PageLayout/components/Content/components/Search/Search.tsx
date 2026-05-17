@@ -68,10 +68,23 @@ const Search: React.FC = () => {
   const isPredikts = pathname.startsWith('/predikts')
   const isPrediktsDetail = pathname.startsWith('/predikts/')
 
+  const isProfile = pathname.startsWith('/profile')
+
   if (isPredikts) {
     // On detail pages the right sidebar (which normally holds Controls) is hidden,
     // so surface the wallet controls here in the top bar instead.
     return <PrediktsSearch showControls={isPrediktsDetail} />
+  }
+
+  if (isProfile) {
+    return (
+      <div className="h-16 w-full flex items-center justify-between py-3 px-6 bg-bg-l0 border-b border-white/5">
+        <div className="text-caption-12 font-medium uppercase tracking-[0.18em] text-grey-60">
+          Profile
+        </div>
+        <Controls />
+      </div>
+    )
   }
 
   return (
