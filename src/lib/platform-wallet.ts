@@ -70,76 +70,6 @@ const ERC20_ABI = [
   },
 ] as const
 
-// DepositWalletFactory: executeBatch(Batch[], bytes[]) — permissionless, verifies EIP-712 signatures.
-// The deposit wallet's execute() only accepts calls from the factory, so we must route through here.
-const DEPOSIT_WALLET_FACTORY_EXECUTE_ABI = [
-  {
-    name: 'executeBatch',
-    type: 'function',
-    inputs: [
-      {
-        name: '_batches',
-        type: 'tuple[]',
-        components: [
-          { name: 'wallet', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' },
-          {
-            name: 'calls',
-            type: 'tuple[]',
-            components: [
-              { name: 'target', type: 'address' },
-              { name: 'value', type: 'uint256' },
-              { name: 'data', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-      { name: '_signatures', type: 'bytes[]' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const
-
-// DepositWallet proxy: nonce() — read current nonce for EIP-712 signing.
-// execute() on the wallet itself is only callable by the factory (enforced on-chain).
-const DEPOSIT_WALLET_ABI = [
-  {
-    name: 'nonce',
-    type: 'function',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    name: 'execute',
-    type: 'function',
-    inputs: [
-      {
-        name: 'batch',
-        type: 'tuple',
-        components: [
-          { name: 'wallet', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'deadline', type: 'uint256' },
-          {
-            name: 'calls',
-            type: 'tuple[]',
-            components: [
-              { name: 'target', type: 'address' },
-              { name: 'value', type: 'uint256' },
-              { name: 'data', type: 'bytes' },
-            ],
-          },
-        ],
-      },
-      { name: 'signature', type: 'bytes' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const
 
 // CollateralOnramp: approve it for USDC, then call wrap(asset, to, amount) to mint pUSD 1:1
 const COLLATERAL_ONRAMP_ABI = [
@@ -319,83 +249,29 @@ export async function deployPlatformDepositWallet() {
   }
 }
 
-// Signs an EIP-712 Batch and submits via factory.executeBatch().
-// The deposit wallet's execute() only accepts calls FROM the factory (enforced on-chain),
-// so we must route through factory.executeBatch([batch], [sig]) — permissionless, just verifies sigs.
-async function executeDepositWalletBatch(calls: { target: `0x${string}`; value: bigint; data: `0x${string}` }[]) {
-  const walletClient = getPlatformWalletClient()
-  const publicClient = getPublicClient()
-  const account = getPlatformAccount()
-  const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
-
-  const nonce = await publicClient.readContract({
-    address: depositWallet,
-    abi: DEPOSIT_WALLET_ABI,
-    functionName: 'nonce',
-  })
-
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 600)
-
-  const signature = await walletClient.signTypedData({
-    account,
-    domain: {
-      name: 'DepositWallet',
-      version: '1',
-      chainId: 137,
-      verifyingContract: depositWallet,
-    },
-    types: {
-      Call: [
-        { name: 'target', type: 'address' },
-        { name: 'value', type: 'uint256' },
-        { name: 'data', type: 'bytes' },
-      ],
-      Batch: [
-        { name: 'wallet', type: 'address' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-        { name: 'calls', type: 'Call[]' },
-      ],
-    },
-    primaryType: 'Batch',
-    message: {
-      wallet: depositWallet,
-      nonce: BigInt(nonce),
-      deadline,
-      calls,
-    },
-  })
-
-  const batch = { wallet: depositWallet, nonce: BigInt(nonce), deadline, calls }
-
-  const hash = await walletClient.writeContract({
-    address: DEPOSIT_WALLET_FACTORY,
-    abi: DEPOSIT_WALLET_FACTORY_EXECUTE_ABI,
-    functionName: 'executeBatch',
-    args: [[batch], [signature]],
-    account,
-    chain: polygon,
-  })
-
-  const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
-
-  return { hash, status: receipt.status }
-}
 
 // Approve CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, and NEG_RISK_ADAPTER to spend pUSD
 // from the DEPOSIT WALLET (required after April 2026 — EOA approvals are no longer accepted).
+// Must go through the Polymarket relayer — factory.executeBatch() also requires DEPLOYER_ROLE.
 export async function approveExchangesFromDepositWallet() {
   const spenders = [CTF_EXCHANGE_V2, NEG_RISK_EXCHANGE_V2, NEG_RISK_ADAPTER] as const
+  const depositWalletAddress = getPlatformDepositWalletAddress()
+  const deadline = String(Math.floor(Date.now() / 1000) + 600)
 
   const calls = spenders.map((spender) => ({
     target: PUSD_ADDRESS,
-    value: 0n,
+    value: '0',
     data: encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [spender, maxUint256] }),
   }))
 
-  const result = await executeDepositWalletBatch(calls)
+  const relayClient = createRelayClient()
+  const response = await relayClient.executeDepositWalletBatch(calls, depositWalletAddress, deadline)
 
-  return { ...result, spenders }
+  return {
+    transactionId: response.transactionID,
+    hash: response.transactionHash || null,
+    spenders,
+  }
 }
 
 // Transfer any pUSD sitting on the EOA to the deposit wallet.
