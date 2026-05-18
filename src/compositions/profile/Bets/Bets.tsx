@@ -1,379 +1,64 @@
 'use client'
 
-import { useChain, useRedeemBet, BetType, type Bet, type BetOutcome, usePrecalculatedCashouts, useBets, useLegacyBets, type UseBetsProps, type UseLegacyBetsProps } from '@azuro-org/sdk'
-import { GameState, OrderDirection } from '@azuro-org/toolkit'
+import { BetType } from '@azuro-org/sdk'
 import { Message } from '@locmod/intl'
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect } from 'react'
 import dayjs from 'dayjs'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import cx from 'classnames'
-import { openModal } from '@locmod/modal'
-import { useEntry } from '@locmod/intersection-observer'
-import { type InfiniteData, type UseInfiniteQueryResult } from '@tanstack/react-query'
 import { useWallet } from 'wallet'
-import { toLocaleString } from 'helpers'
-import { getGameDateTime } from 'helpers/getters'
 
-import { Icon, type IconName } from 'components/ui'
-import { OpponentLogo } from 'components/dataDisplay'
-import { Href } from 'components/navigation'
-import { Button } from 'components/inputs'
-import BetStatus from 'compositions/BetStatus/BetStatus'
+import { Icon } from 'components/ui'
 import EmptyContent from 'compositions/EmptyContent/EmptyContent'
-import OddsValue from 'compositions/OddsValue/OddsValue'
 
-import ConnectButtonWrapper from 'compositions/ConnectButtonWrapper/ConnectButtonWrapper'
-import { useBetHistorySource } from 'modules/bet/hooks'
-import HistoryBetsFallback from 'modules/bet/components/profile/HistoryBetsFallback'
 import messages from './messages'
 
 
-type OutcomeProps = {
-  outcome: BetOutcome
-  isCombo: boolean
+type DbSportsBet = {
+  id: string
+  conditionId: string
+  outcomeId: string
+  marketName: string | null
+  amount: number
+  potentialPayout: number
+  odds: number
+  status: string
+  txHash: string | null
+  azuroBetId: string | null
+  createdAt: string
 }
 
-const Outcome: React.FC<OutcomeProps> = ({ outcome, isCombo }) => {
-  const { odds, marketName, game, selectionName, isWin, isLose, isLive } = outcome
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'text-yellow-400',
+  won: 'text-accent-green',
+  lost: 'text-grey-50',
+  refunded: 'text-grey-60',
+  failed: 'text-accent-red',
+}
 
-  const {
-    title,
-    state: gameState,
-    gameId,
-    participants,
-    startsAt,
-    sport,
-    league,
-    country,
-  } = game || {}
-
-  const sportSlug = sport?.slug
-
-  const leagueName = league?.name
-  const leagueSlug = league?.slug
-
-  const countryName = country?.name
-  const countrySlug = country?.slug
-
-  const isUnique = sportSlug === 'unique'
-  const withResult = isWin !== null || isLose !== null
-  const { date, time } = getGameDateTime(+(startsAt || 0) * 1000)
-
-  const marketBoxClassName = 'text-caption-13 mb:flex mb:items-center mb:justify-between'
-  const marketClassName = cx('font-semibold', { 'text-grey-40': gameState === GameState.Stopped })
+const DbBet: React.FC<{ bet: DbSportsBet }> = ({ bet }) => {
+  const statusColor = STATUS_COLORS[bet.status] ?? 'text-grey-60'
+  const date = dayjs(bet.createdAt).format('DD.MM.YYYY, HH:mm')
 
   return (
-    <div className="rounded-sm overflow-hidden">
-      <div className="bg-bg-l3 flex items-center justify-between py-2 ds:px-3 mb:px-2 relative">
-        {
-          Boolean(game) ? (
-            <div className="flex items-center text-caption-12">
-              <Icon className="size-4 mr-2 text-grey-70" name={`sport/${sportSlug}` as IconName} />
-              {
-                isUnique ? (
-                  <Message className="text-grey-70" value={messages.unique} />
-                ) : (
-                  <>
-                    <span className="text-grey-70">{countryName}</span>
-                    <div className="size-1 flex-none bg-grey-40 rounded-full mx-2" />
-                    <span>{leagueName}</span>
-                  </>
-                )
-              }
-            </div>
-          ) : (
-            <div className="h-4 w-40 bone rounded-sm" />
-          )
-        }
-        {
-          isLive && (
-            <>
-              <div className="absolute h-full w-[30%] top-0 right-0 bg-live-bet-shadow z-10" />
-              <div className="flex items-center text-accent-red z-20">
-                <Icon className="size-4 mr-1" name="interface/live" />
-                <Message className="text-caption-12 font-semibold uppercase" value={messages.live} />
-              </div>
-            </>
-          )
-        }
+    <div className="rounded-md bg-bg-l2 px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between text-caption-13">
+        <span className="font-semibold text-grey-90 truncate pr-4">
+          {bet.marketName ?? `Condition ${bet.conditionId}`}
+        </span>
+        <span className={`flex-none font-semibold capitalize ${statusColor}`}>{bet.status}</span>
       </div>
-      <div
-        className={
-          cx('mt-px flex ds:items-center ds:justify-between p-3 mb:px-2 mb:flex-col', {
-            'bg-bet-game-won': isWin,
-            'bg-bet-game-lost': isLose,
-            'bg-bg-l3': !isWin && !isLose,
-          })
-        }
-      >
-        {
-          Boolean(game) ? (
-            <Href
-              to={`/${sportSlug}/${countrySlug}/${leagueSlug}/${gameId}`}
-              className="flex items-center group/link"
-            >
-              {
-                !isUnique && participants.map(({ name, image }, index) => (
-                  <OpponentLogo className={cx({ '-mt-2': !index, '-mb-2 -ml-2 z-20': !!index })} key={name} image={image} />
-                ))
-              }
-              <div className={cx({ 'ml-3': !isUnique })}>
-                <div className="text-caption-12 flex items-center">
-                  <span className="text-grey-70 font-medium">{date}</span>
-                  <span className="text-grey-60 ml-1">{time}</span>
-                  {
-                    isCombo && (
-                      <>
-                        {
-                          [ GameState.Stopped, GameState.Live ].includes(gameState) && (
-                            <div className="size-1 flex-none bg-grey-40 rounded-full mx-2" />
-                          )
-                        }
-                        {
-                          gameState === GameState.Stopped && (
-                            <div className="flex items-center text-grey-60">
-                              <Icon className="size-4 mr-[2px]" name="interface/declined" />
-                              <Message className="font-semibold" value={messages.gameState.stopped} />
-                            </div>
-                          )
-                        }
-                        {
-                          gameState === GameState.Live && (
-                            <Message className="font-semibold text-accent-red" value={messages.gameState.live} />
-                          )
-                        }
-                        {
-                          Boolean(gameState === GameState.Finished && withResult) && (
-                            <>
-                              <div className="size-1 flex-none bg-grey-40 rounded-full mx-2" />
-                              <Message
-                                className={
-                                  cx('font-semibold', {
-                                    'text-accent-green': isWin,
-                                    'text-accent-red': isLose,
-                                  })
-                                }
-                                value={isWin ? messages.gameState.win : messages.gameState.lose}
-                              />
-                            </>
-                          )
-                        }
-                      </>
-                    )
-                  }
-                </div>
-                <div className="text-caption-13 font-semibold mt-0.5 group-hover/link:underline">{title}</div>
-              </div>
-            </Href>
-          ) : (
-            <div className="h-8 w-52 bone rounded-sm" />
-          )
-        }
-        <div className="ds:grid ds:grid-cols-3 ds:gap-4 w-full ds:max-w-[50%] mb:space-y-2 mb:pt-2 mb:border-t mb:border-t-grey-20 mb:mt-2">
-          <div className={marketBoxClassName}>
-            <Message className="text-grey-60" value={messages.market} />
-            <div className={marketClassName}>
-              {marketName}
-            </div>
-          </div>
-          <div className={marketBoxClassName}>
-            <Message className="text-grey-60" value={messages.outcome} />
-            <div className={marketClassName}>
-              {selectionName}
-            </div>
-          </div>
-          <div className={marketBoxClassName}>
-            <Message className="text-grey-60" value={messages.odds} />
-            <OddsValue className={marketClassName} odds={odds} />
-          </div>
-        </div>
+      <div className="flex items-center justify-between text-caption-12 text-grey-60">
+        <span>{date}</span>
+        <span>Odds: {bet.odds.toFixed(2)}</span>
       </div>
-    </div>
-  )
-}
-
-type BetProps = {
-  bet: Bet
-}
-
-const Bet: React.FC<BetProps> = ({ bet }) => {
-  const {
-    createdAt, status: graphBetStatus, amount, outcomes, orderState,
-    payout, cashout, possibleWin, freebetId, txHash,
-    isWin, isLose, isCanceled, isRedeemed, isCashedOut,
-  } = bet
-
-  const { betToken, appChain } = useChain()
-  const { submit, isPending, isProcessing } = useRedeemBet()
-
-  const isFreeBet = Boolean(freebetId)
-
-  const { data: cashoutData } = usePrecalculatedCashouts({
-    bet,
-    query: {
-      enabled: !isCashedOut || !isFreeBet,
-    },
-  })
-
-  const { cashoutAmount, isAvailable: isCashoutAvailable } = cashoutData || {}
-
-  const isCombo = outcomes.length > 1
-  const isLoading = isPending || isProcessing
-  const withButton = !isRedeemed && !isCashedOut && (isWin || (isCanceled && !isFreeBet))
-
-  const games = useMemo(() => {
-    return outcomes.map(({ game }) => game).filter(Boolean)
-  }, [ outcomes ])
-
-  const { resultTitle, resultAmount } = useMemo(() => {
-    if (isCashedOut) {
-      return {
-        resultTitle: messages.cashedOut,
-        resultAmount: `${toLocaleString(cashout!, { digits: 2 })} ${betToken.symbol}`,
-      }
-    }
-
-    if (isWin) {
-      return {
-        resultTitle: messages.winning,
-        resultAmount: `${toLocaleString(payout || possibleWin, { digits: 2 })} ${betToken.symbol}`,
-      }
-    }
-
-    if (isLose) {
-      return {
-        resultTitle: messages.loss,
-        resultAmount: `-${toLocaleString(amount, { digits: 2 })} ${betToken.symbol}`,
-      }
-    }
-
-    if (isCanceled) {
-      return {
-        resultTitle: messages.possibleWin,
-        resultAmount: '––',
-      }
-    }
-
-    return {
-      resultTitle: messages.possibleWin,
-      resultAmount: `${toLocaleString(possibleWin, { digits: 2 })} ${betToken.symbol}`,
-    }
-  }, [ isCashedOut ])
-
-  const handleRedeem = async () => {
-    try {
-      await submit({ bets: [ bet ] })
-    }
-    catch {}
-  }
-
-  return (
-    <div className="rounded-md bg-bg-l2 px-1">
-      <div className="flex items-center justify-between py-2 px-3">
-        <div className="flex items-center text-caption-13">
-          <Message className="font-semibold" value={isCombo ? messages.combo : messages.single} />
-          <div className="size-1 flex-none bg-grey-20 rounded-full mx-2" />
-          <a
-            className="flex items-center text-grey-60 hover:text-grey-90 hover:underline"
-            href={`${appChain.blockExplorers!.default.url}/tx/${txHash}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <span>{dayjs(+createdAt * 1000).format('DD.MM.YYYY, HH:mm')}</span>
-            <Icon className="size-4 ml-1" name="interface/external_link" />
-          </a>
-        </div>
-        {
-          Boolean(games.length) && (
-            <BetStatus
-              graphBetStatus={graphBetStatus}
-              orderState={orderState}
-              games={games}
-              isWin={isWin}
-              isCashedOut={isCashedOut}
-            />
-          )
-        }
-      </div>
-      <div className="space-y-1">
-        {
-          outcomes.map((outcome) => (
-            <Outcome
-              key={`${outcome.outcomeId}-${outcome.conditionId}`}
-              outcome={outcome}
-              isCombo={isCombo}
-            />
-          ))
-        }
-      </div>
-      <div
-        className={
-          cx('ds:px-3 mb:px-2 flex ds:items-center ds:justify-between mb:flex-col mb:space-y-2', {
-            'ds:py-2 mb:py-2': withButton,
-            'ds:py-4 mb:py-2': !withButton,
-          })
-        }
-      >
-        <div className="flex items-center text-caption-13 mb:justify-between">
-          {
-            isFreeBet ? (
-              <div className="flex items-center text-accent-green mr-2">
-                <Icon className="size-4" name="interface/gift" />
-                <Message className="font-semibold uppercase ml-1" value={messages.freebet} />
-              </div>
-            ) : (
-              <Message className="text-grey-70 mr-1" value={messages.betAmount} />
-            )
-          }
-          <span>{amount} {betToken.symbol}</span>
-        </div>
-        <div className="flex ds:items-center mb:flex-col mb:space-y-3">
-          <div className="flex items-center text-caption-13 mb:justify-between">
-            <Message className="text-grey-70 mr-1" value={resultTitle} />
-            <span
-              className={
-                cx('font-semibold', {
-                  'text-grey-70': isLose || isCanceled || isCashedOut,
-                  'text-accent-green': isWin && !isCashedOut,
-                })
-              }
-            >{resultAmount}
-            </span>
-          </div>
-          {
-            isCashoutAvailable && (
-              <Button
-                className="ds:ml-3"
-                style="tertiary"
-                title={
-                  {
-                    ...messages.cashout,
-                    values: {
-                      amount: toLocaleString(cashoutAmount!, { digits: 2 }),
-                      symbol: betToken.symbol,
-                    },
-                  }
-                }
-                size={32}
-                onClick={() => openModal('CashoutModal', { bet })}
-              />
-            )
-          }
-          {
-            withButton && (
-              <ConnectButtonWrapper>
-                <Button
-                  className="ds:ml-3"
-                  style="secondary"
-                  title={isWin ? messages.redeem : messages.refund}
-                  size={32}
-                  loading={isLoading}
-                  onClick={handleRedeem}
-                />
-              </ConnectButtonWrapper>
-            )
-          }
-        </div>
+      <div className="flex items-center justify-between text-caption-13">
+        <span className="text-grey-60">
+          Stake: <span className="text-grey-90">${bet.amount.toFixed(2)}</span>
+        </span>
+        <span className="text-grey-60">
+          To win: <span className="text-grey-90">${bet.potentialPayout.toFixed(2)}</span>
+        </span>
       </div>
     </div>
   )
@@ -385,16 +70,8 @@ const tabs = [
     value: undefined,
   },
   {
-    title: messages.tabs.unredeemed,
-    value: BetType.Unredeemed,
-  },
-  {
     title: messages.tabs.accepted,
     value: BetType.Accepted,
-  },
-  {
-    title: messages.tabs.cashedOut,
-    value: BetType.CashedOut,
   },
   {
     title: messages.tabs.settled,
@@ -430,41 +107,47 @@ const Navbar: React.FC<NavbarProps> = ({ activeType, onClick }) => {
   )
 }
 
-type FetchMoreProps = {
-  fetch: () => void
-  skip: boolean
+const STATUS_BY_TAB: Record<string, string[]> = {
+  [BetType.Accepted]: [ 'pending' ],
+  [BetType.Settled]: [ 'won', 'lost', 'refunded' ],
 }
 
-const FetchMore: React.FC<FetchMoreProps> = ({ fetch, skip }) => {
-  const [ ref, entry ] = useEntry()
+type ContentProps = {
+  tab: BetType | undefined
+}
 
-  const isIntersecting = Boolean(entry?.isIntersecting)
+const Content: React.FC<ContentProps> = ({ tab }) => {
+  const { account: address } = useWallet()
+  const [ bets, setBets ] = React.useState<DbSportsBet[]>([])
+  const [ loading, setLoading ] = React.useState(false)
 
   useEffect(() => {
-    if (!skip && isIntersecting) {
-      fetch()
-    }
-  }, [ isIntersecting, skip, fetch ])
+    if (!address) return
 
-  return <div ref={ref} className="" />
-}
+    setLoading(true)
+    fetch(`/api/sports/bets?address=${address}`)
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d.bets)) setBets(d.bets) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [ address ])
 
-type BetsPagesProps = {
-  query: UseInfiniteQueryResult<InfiniteData<{
-    bets: Bet[];
-    nextPage: number | undefined;
-  }>>
-  withEmptyContent?: boolean
-}
+  const filtered = React.useMemo(() => {
+    if (!tab) return bets
+    const statuses = STATUS_BY_TAB[tab]
+    if (!statuses) return bets
+    return bets.filter((b) => statuses.includes(b.status))
+  }, [ bets, tab ])
 
-const BetsPages: React.FC<BetsPagesProps> = (props) => {
-  const { query, withEmptyContent = false } = props
-  const { data, isPlaceholderData, fetchNextPage, hasNextPage } = query
-  const { pages } = data || {}
+  if (loading) {
+    return (
+      <div className="py-20">
+        <Icon className="size-12 mx-auto" name="interface/spinner" />
+      </div>
+    )
+  }
 
-  const isFetching = query.isFetching && !query.isRefetching || query.isFetching && query.isPlaceholderData || query.isFetchingNextPage
-
-  if (withEmptyContent && !isFetching && (!pages?.length || !pages[0].bets.length)) {
+  if (!filtered.length) {
     return (
       <EmptyContent
         className="py-20"
@@ -476,92 +159,9 @@ const BetsPages: React.FC<BetsPagesProps> = (props) => {
   }
 
   return (
-    <>
-      <div className="space-y-2">
-        {
-          !isPlaceholderData && (
-            <>
-              {
-                pages?.map(({ bets, nextPage }) => {
-                  return (
-                    <React.Fragment key={`${nextPage}`}>
-                      {
-                        bets.map(bet => (
-                          <Bet key={`${bet.createdAt}-${bet.tokenId}`} bet={bet} />
-                        ))
-                      }
-                    </React.Fragment>
-                  )
-                })
-              }
-            </>
-          )
-        }
-        {
-          isFetching && (
-            <div className="py-20">
-              <Icon className="size-12 mx-auto" name="interface/spinner" />
-            </div>
-          )
-        }
-      </div>
-      {Boolean(pages && !isPlaceholderData) && <FetchMore fetch={fetchNextPage} skip={!hasNextPage} />}
-    </>
-  )
-}
-
-type ContentProps = {
-  tab: BetType
-}
-
-const Content: React.FC<ContentProps> = ({ tab }) => {
-  const { account: address } = useWallet()
-  const { historyQuery, historyBets } = useBetHistorySource()
-  const props: UseBetsProps = {
-    filter: {
-      bettor: address!,
-      type: tab,
-    },
-  }
-
-  const betsQuery = useBets(props)
-  const legacyBetsQuery = useLegacyBets({
-    ...props as UseLegacyBetsProps,
-    query: {
-      enabled: !betsQuery.isFetching && !betsQuery.hasNextPage,
-    },
-  })
-
-  const shouldShowHistoryFallback = Boolean(
-    !betsQuery.isFetching &&
-    !legacyBetsQuery.isFetching &&
-    !betsQuery.data?.pages?.[0]?.bets?.length &&
-    !legacyBetsQuery.data?.pages?.[0]?.bets?.length &&
-    historyBets.length
-  )
-
-  return (
-    <>
-      {
-        shouldShowHistoryFallback ? (
-          <HistoryBetsFallback bets={historyBets} tab={tab} />
-        ) : (
-          <>
-            <BetsPages
-              query={betsQuery}
-            />
-            {
-              Boolean(!betsQuery.hasNextPage && !betsQuery.isFetching) && (
-                <BetsPages
-                  query={legacyBetsQuery}
-                  withEmptyContent
-                />
-              )
-            }
-          </>
-        )
-      }
-    </>
+    <div className="space-y-2">
+      {filtered.map((bet) => <DbBet key={bet.id} bet={bet} />)}
+    </div>
   )
 }
 

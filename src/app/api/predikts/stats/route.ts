@@ -14,6 +14,8 @@ export async function GET() {
       payoutAgg,
       totalUserBalances,
       onChain,
+      totalSportsBets,
+      sportsBetAmountAgg,
     ] = await Promise.all([
       db.prediktsUser.count(),
       db.prediktsOrder.count({ where: { status: { not: 'failed' } } }),
@@ -28,6 +30,11 @@ export async function GET() {
       // Sum of all user USD balances — what we owe users in total
       db.prediktsUser.aggregate({ _sum: { usdBalance: true } }),
       getPlatformOnChainBalances().catch(() => null),
+      db.sportsBet.count({ where: { status: { not: 'failed' } } }),
+      db.sportsBet.aggregate({
+        _sum: { amount: true },
+        where: { status: { not: 'failed' } },
+      }),
     ])
 
     return NextResponse.json({
@@ -41,6 +48,8 @@ export async function GET() {
       totalOrders,
       totalBetAmount: Number(amountAgg._sum.amount ?? 0),
       totalPayouts: Number(payoutAgg._sum.amount ?? 0),
+      totalSportsBets,
+      totalSportsBetAmount: Number(sportsBetAmountAgg._sum.amount ?? 0),
     })
   }
   catch (error) {

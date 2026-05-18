@@ -16,6 +16,8 @@ type PrediktsStats = {
   totalOrders: number
   totalBetAmount: number
   totalPayouts: number
+  totalSportsBets: number
+  totalSportsBetAmount: number
 }
 
 type SportsStats = {
@@ -258,13 +260,22 @@ export default function PrediktsAdminPage() {
                 sub="Unique wallets"
               />
               <StatCard
-                label="Total bets placed"
+                label="Predikts orders"
                 value={prediktsStats ? prediktsStats.totalOrders : null}
-                sub="Orders submitted"
+                sub="Polymarket orders"
               />
               <StatCard
-                label="Total bet amount"
+                label="Sports bets placed"
+                value={prediktsStats ? prediktsStats.totalSportsBets : null}
+                sub="Azuro custodial bets"
+              />
+              <StatCard
+                label="Predikts bet amount"
                 value={prediktsStats ? `$${fmt(prediktsStats.totalBetAmount)} pUSD` : null}
+              />
+              <StatCard
+                label="Sports bet amount"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalSportsBetAmount)} pUSD` : null}
               />
               <StatCard
                 label="Total payouts"
