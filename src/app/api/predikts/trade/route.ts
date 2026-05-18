@@ -35,8 +35,7 @@ export async function POST(request: Request) {
       update: {},
     })
 
-    // BUY orders deduct from the user's pUSD balance.
-    // SELL orders credit back (simplified: credit the full amount × price).
+    // BUY: deduct upfront to prevent double-spend. SELL: credit after order confirms.
     if (side === 'BUY') {
       const cost = amount
       const currentBalance = Number(user.usdBalance)
@@ -47,9 +46,15 @@ export async function POST(request: Request) {
           balance: currentBalance,
         }, { status: 400 })
       }
+
+      // Deduct before placing to close the race window
+      await db.prediktsUser.update({
+        where: { id: user.id },
+        data: { usdBalance: { decrement: amount } },
+      })
     }
 
-    // Create a pending order record
+    // Create a pending order record — round amount to 6dp to match Decimal(18,6)
     const order = await db.prediktsOrder.create({
       data: {
         userId: user.id,
@@ -57,7 +62,7 @@ export async function POST(request: Request) {
         marketQuestion,
         marketSlug,
         side,
-        amount,
+        amount: parseFloat(amount.toFixed(6)),
         price,
         orderType,
         status: 'pending',
@@ -73,6 +78,14 @@ export async function POST(request: Request) {
         data: { status: 'failed', errorMessage: result.errorMsg, polyOrderId: result.orderId },
       })
 
+      // Refund BUY balance if order was rejected
+      if (side === 'BUY') {
+        await db.prediktsUser.update({
+          where: { id: user.id },
+          data: { usdBalance: { increment: amount } },
+        })
+      }
+
       return NextResponse.json({ error: result.errorMsg || 'Order failed.' }, { status: 400 })
     }
 
@@ -82,15 +95,9 @@ export async function POST(request: Request) {
       data: { status: result.status, polyOrderId: result.orderId },
     })
 
-    // Deduct cost from user balance for BUY; add estimated proceeds for SELL
-    if (side === 'BUY') {
-      await db.prediktsUser.update({
-        where: { id: user.id },
-        data: { usdBalance: { decrement: amount } },
-      })
-    }
-    else {
-      const proceeds = amount * price
+    // Credit SELL proceeds only after the order is confirmed on CLOB
+    if (side === 'SELL') {
+      const proceeds = parseFloat((amount * price).toFixed(6))
       await db.prediktsUser.update({
         where: { id: user.id },
         data: { usdBalance: { increment: proceeds } },

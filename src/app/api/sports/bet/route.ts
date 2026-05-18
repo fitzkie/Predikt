@@ -75,15 +75,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: betResult.error ?? 'Bet placement failed' }, { status: 502 })
     }
 
-    // 4. Record the bet
-    const potentialPayout = amount * currentOdds
+    // 4. Record the bet — round to 6dp to match Decimal(18,6) column, avoiding JS float noise
+    const potentialPayout = parseFloat((amount * currentOdds).toFixed(6))
     const sportsBet = await db.sportsBet.create({
       data: {
         userId: user.id,
         conditionId,
         outcomeId,
         odds: currentOdds,
-        amount,
+        amount: parseFloat(amount.toFixed(6)),
         potentialPayout,
         status: 'pending',
         txHash: betResult.txHash ?? null,

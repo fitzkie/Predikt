@@ -33,20 +33,23 @@ async function fetchMarketsByTokenIds(tokenIds: string[]): Promise<GammaMarket[]
 // Safe to run repeatedly — only touches orders with status 'matched'.
 export async function POST() {
   try {
+    // 'matched', 'submitted', 'delayed', 'live', 'open' are all live CLOB order statuses
+    const ACTIVE_STATUSES = ['matched', 'submitted', 'delayed', 'live', 'open']
+
     const buyOrders = await db.prediktsOrder.findMany({
-      where: { side: 'BUY', status: 'matched' },
+      where: { side: 'BUY', status: { in: ACTIVE_STATUSES } },
       select: { id: true, userId: true, tokenId: true, amount: true, price: true },
     })
 
     if (buyOrders.length === 0) {
-      return NextResponse.json({ message: 'No matched buy orders to settle', settled: 0 })
+      return NextResponse.json({ message: 'No active buy orders to settle', settled: 0 })
     }
 
     const tokenIds = [...new Set(buyOrders.map((o) => o.tokenId))]
 
     // Fetch corresponding SELL orders so we can subtract sold shares
     const sellOrders = await db.prediktsOrder.findMany({
-      where: { side: 'SELL', status: 'matched', tokenId: { in: tokenIds } },
+      where: { side: 'SELL', status: { in: ACTIVE_STATUSES }, tokenId: { in: tokenIds } },
       select: { userId: true, tokenId: true, amount: true },
     })
 
@@ -136,12 +139,12 @@ export async function POST() {
       })
     }
 
-    // Mark matched SELL orders on resolved markets settled too
+    // Mark all active SELL orders on resolved markets as settled too
     const resolvedTokenIds = [...tokenResults.keys()]
 
     if (resolvedTokenIds.length > 0) {
       await db.prediktsOrder.updateMany({
-        where: { side: 'SELL', status: 'matched', tokenId: { in: resolvedTokenIds } },
+        where: { side: 'SELL', status: { in: ACTIVE_STATUSES }, tokenId: { in: resolvedTokenIds } },
         data: { status: 'settled' },
       })
     }

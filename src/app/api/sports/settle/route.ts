@@ -3,7 +3,7 @@ import { db } from 'lib/db'
 
 export const dynamic = 'force-dynamic'
 
-const AZURO_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/azuro-protocol/azuro-protocol-polygon-v3'
+const AZURO_SUBGRAPH = 'https://thegraph.onchainfeed.org/subgraphs/name/azuro-protocol/azuro-api-polygon-v3'
 
 type AzuroCondition = {
   id: string
