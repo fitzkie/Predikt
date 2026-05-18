@@ -27,6 +27,9 @@ export async function POST(request: Request) {
     }
 
     const normalizedAddress = userAddress.toLowerCase()
+    // Round to 6dp immediately — JS floating-point (e.g. price * size = 4.999999999999999)
+    // exceeds Decimal(18,6) scale and causes Prisma P2000 on any write.
+    const roundedAmount = parseFloat(amount.toFixed(6))
 
     // Upsert the user record (creates on first trade)
     const user = await db.prediktsUser.upsert({
@@ -37,12 +40,11 @@ export async function POST(request: Request) {
 
     // BUY: deduct upfront to prevent double-spend. SELL: credit after order confirms.
     if (side === 'BUY') {
-      const cost = amount
       const currentBalance = Number(user.usdBalance)
 
-      if (currentBalance < cost) {
+      if (currentBalance < roundedAmount) {
         return NextResponse.json({
-          error: `Insufficient balance. You have $${currentBalance.toFixed(2)} but need $${cost.toFixed(2)}.`,
+          error: `Insufficient balance. You have $${currentBalance.toFixed(2)} but need $${roundedAmount.toFixed(2)}.`,
           balance: currentBalance,
         }, { status: 400 })
       }
@@ -50,11 +52,11 @@ export async function POST(request: Request) {
       // Deduct before placing to close the race window
       await db.prediktsUser.update({
         where: { id: user.id },
-        data: { usdBalance: { decrement: amount } },
+        data: { usdBalance: { decrement: roundedAmount } },
       })
     }
 
-    // Create a pending order record — round amount to 6dp to match Decimal(18,6)
+    // Create a pending order record
     const order = await db.prediktsOrder.create({
       data: {
         userId: user.id,
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
         marketQuestion,
         marketSlug,
         side,
-        amount: parseFloat(amount.toFixed(6)),
+        amount: roundedAmount,
         price,
         orderType,
         status: 'pending',
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
       if (side === 'BUY') {
         await db.prediktsUser.update({
           where: { id: user.id },
-          data: { usdBalance: { increment: amount } },
+          data: { usdBalance: { increment: roundedAmount } },
         })
       }
 
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
 
     // Credit SELL proceeds only after the order is confirmed on CLOB
     if (side === 'SELL') {
-      const proceeds = parseFloat((amount * price).toFixed(6))
+      const proceeds = parseFloat((roundedAmount * price).toFixed(6))
       await db.prediktsUser.update({
         where: { id: user.id },
         data: { usdBalance: { increment: proceeds } },

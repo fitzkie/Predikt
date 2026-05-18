@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     }
 
     const normalizedAddress = walletAddress.toLowerCase()
+    // Round to 6dp before any DB write — JS floats can produce e.g. 10.700000000000001
+    // which exceeds Decimal(18,6) scale and causes Prisma P2000.
+    const roundedAmount = parseFloat(amount.toFixed(6))
 
     // 1. Check user has sufficient balance
     const user = await db.prediktsUser.findUnique({
@@ -45,9 +48,9 @@ export async function POST(request: Request) {
 
     const currentBalance = Number(user.usdBalance)
 
-    if (currentBalance < amount) {
+    if (currentBalance < roundedAmount) {
       return NextResponse.json(
-        { error: `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Required: $${amount.toFixed(2)}` },
+        { error: `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Required: $${roundedAmount.toFixed(2)}` },
         { status: 400 }
       )
     }
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
     // 2. Optimistically deduct balance before placing (prevents double-spend)
     await db.prediktsUser.update({
       where: { id: user.id },
-      data: { usdBalance: { decrement: amount } },
+      data: { usdBalance: { decrement: roundedAmount } },
     })
 
     // 3. Place the bet via Azuro oracle
@@ -70,20 +73,20 @@ export async function POST(request: Request) {
       // Refund the deducted amount if the bet failed
       await db.prediktsUser.update({
         where: { id: user.id },
-        data: { usdBalance: { increment: amount } },
+        data: { usdBalance: { increment: roundedAmount } },
       })
       return NextResponse.json({ error: betResult.error ?? 'Bet placement failed' }, { status: 502 })
     }
 
-    // 4. Record the bet — round to 6dp to match Decimal(18,6) column, avoiding JS float noise
-    const potentialPayout = parseFloat((amount * currentOdds).toFixed(6))
+    // 4. Record the bet
+    const potentialPayout = parseFloat((roundedAmount * currentOdds).toFixed(6))
     const sportsBet = await db.sportsBet.create({
       data: {
         userId: user.id,
         conditionId,
         outcomeId,
         odds: currentOdds,
-        amount: parseFloat(amount.toFixed(6)),
+        amount: roundedAmount,
         potentialPayout,
         status: 'pending',
         txHash: betResult.txHash ?? null,
