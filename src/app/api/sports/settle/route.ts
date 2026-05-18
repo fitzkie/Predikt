@@ -4,17 +4,22 @@ import { db } from 'lib/db'
 export const dynamic = 'force-dynamic'
 
 const AZURO_SUBGRAPH = 'https://thegraph.onchainfeed.org/subgraphs/name/azuro-protocol/azuro-api-polygon-v3'
+// Polygon v3 core contract — conditions are indexed as {coreAddress}_{conditionId}
+const CORE_ADDRESS = '0xf9548be470a4e130c90cea8b179fcd66d2972ac7'
 
 type AzuroCondition = {
-  id: string
+  conditionId: string
   status: 'Created' | 'Resolved' | 'Canceled' | 'Paused'
   wonOutcomeIds: string[]
 }
 
 async function fetchConditions(conditionIds: string[]): Promise<AzuroCondition[]> {
+  // v3 subgraph uses composite id: {coreAddress}_{conditionId}
+  const compositeIds = conditionIds.map((id) => `${CORE_ADDRESS}_${id}`)
+
   const query = `{
-    conditions(where: { id_in: [${conditionIds.map((id) => `"${id}"`).join(',')}] }) {
-      id
+    v3Conditions(where: { id_in: [${compositeIds.map((id) => `"${id}"`).join(',')}] }) {
+      conditionId
       status
       wonOutcomeIds
     }
@@ -29,7 +34,7 @@ async function fetchConditions(conditionIds: string[]): Promise<AzuroCondition[]
 
   const json = await res.json()
 
-  return json?.data?.conditions ?? []
+  return json?.data?.v3Conditions ?? []
 }
 
 // POST /api/sports/settle
@@ -49,7 +54,7 @@ export async function POST() {
 
     const conditionIds = [...new Set(pendingBets.map((b) => b.conditionId))]
     const conditions = await fetchConditions(conditionIds)
-    const conditionMap = new Map(conditions.map((c) => [c.id, c]))
+    const conditionMap = new Map(conditions.map((c) => [c.conditionId, c]))
 
     let won = 0, lost = 0, canceled = 0, skipped = 0
 
