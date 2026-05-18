@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 
 type Result = Record<string, any>
@@ -64,12 +64,45 @@ const StatCard: React.FC<{ label: string; value: string | number | null; sub?: s
   </div>
 )
 
+type SettleResult = {
+  error?: string
+  message?: string
+  settled?: number
+  won?: number
+  lost?: number
+  skipped?: number
+  canceled?: number
+  totalCredited?: number
+  totalChecked?: number
+}
+
+type SettleHealth = {
+  predikts: SettleResult | null
+  sports: SettleResult | null
+  checkedAt: string | null
+  checking: boolean
+}
+
 export default function PrediktsAdminPage() {
   const [ results, setResults ] = useState<Record<string, Result | null>>({})
   const [ loading, setLoading ] = useState<Record<string, boolean>>({})
   const [ prediktsStats, setPrediktsStats ] = useState<PrediktsStats | null>(null)
   const [ sportsStats, setSportsStats ] = useState<SportsStats | null>(null)
   const [ statsLoading, setStatsLoading ] = useState(true)
+  const [ settleHealth, setSettleHealth ] = useState<SettleHealth>({
+    predikts: null, sports: null, checkedAt: null, checking: false,
+  })
+
+  const checkSettlement = useCallback(async () => {
+    setSettleHealth((s) => ({ ...s, checking: true }))
+    const [predikts, sports] = await Promise.all([
+      fetch('/api/predikts/settle', { method: 'POST' }).then((r) => r.json()).catch((e) => ({ error: String(e) })),
+      fetch('/api/sports/settle', { method: 'POST' }).then((r) => r.json()).catch((e) => ({ error: String(e) })),
+    ])
+    setSettleHealth({ predikts, sports, checkedAt: new Date().toLocaleTimeString(), checking: false })
+  }, [])
+
+  useEffect(() => { checkSettlement() }, [checkSettlement])
 
   const loadStats = () => {
     setStatsLoading(true)
@@ -124,6 +157,66 @@ export default function PrediktsAdminPage() {
         <h1 className="text-heading-h2 font-bold text-grey-90">Predikts Admin</h1>
         <p className="mt-1 text-caption-13 text-grey-60">Platform wallet management and trading setup.</p>
       </div>
+
+      {/* Settlement Health */}
+      <Section title="Settlement Health">
+        {(() => {
+          const { predikts, sports, checkedAt, checking } = settleHealth
+          const hasError = predikts?.error || sports?.error
+
+          const HealthRow: React.FC<{ label: string; result: SettleResult | null }> = ({ label, result }) => {
+            if (!result) return null
+            const isError = Boolean(result.error)
+            const isIdle = Boolean(result.message)
+            return (
+              <div className={`rounded-lg px-4 py-3 flex items-start justify-between gap-4 ${isError ? 'bg-red-500/10 ring-1 ring-red-500/30' : 'bg-bg-l3'}`}>
+                <div className="min-w-0">
+                  <p className="text-caption-12 font-semibold text-grey-90">{label}</p>
+                  {isError ? (
+                    <p className="text-caption-11 text-red-400 mt-0.5 break-all">{result.error}</p>
+                  ) : isIdle ? (
+                    <p className="text-caption-11 text-grey-50 mt-0.5">{result.message}</p>
+                  ) : (
+                    <p className="text-caption-11 text-grey-50 mt-0.5">
+                      {result.settled} settled · {result.won} won · {result.lost} lost
+                      {result.totalCredited ? ` · $${result.totalCredited} credited` : ''}
+                      {result.canceled ? ` · ${result.canceled} refunded` : ''}
+                      {result.skipped ? ` · ${result.skipped} skipped` : ''}
+                    </p>
+                  )}
+                </div>
+                <span className={`flex-none text-caption-11 font-semibold px-2 py-0.5 rounded-full ${isError ? 'bg-red-500/20 text-red-400' : 'bg-green-500/15 text-green-400'}`}>
+                  {isError ? 'ERROR' : 'OK'}
+                </span>
+              </div>
+            )
+          }
+
+          return (
+            <div className="space-y-2">
+              {checking ? (
+                <div className="text-caption-12 text-grey-50">Checking…</div>
+              ) : (
+                <>
+                  {hasError && (
+                    <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-caption-12 text-red-400">
+                      One or more settlement endpoints returned an error. Check Railway logs and the Gamma API / Azuro subgraph status.
+                    </div>
+                  )}
+                  <HealthRow label="Predikts (Polymarket)" result={predikts} />
+                  <HealthRow label="Sports (Azuro)" result={sports} />
+                  {checkedAt && (
+                    <p className="text-caption-11 text-grey-50">Last checked: {checkedAt}</p>
+                  )}
+                </>
+              )}
+              <button className={btn('Check Now')} onClick={checkSettlement} disabled={checking}>
+                {checking ? 'Checking…' : 'Check Now'}
+              </button>
+            </div>
+          )
+        })()}
+      </Section>
 
       {/* Platform Stats */}
       <Section title="Platform Stats — Predikt Markets">
