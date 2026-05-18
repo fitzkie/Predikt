@@ -278,9 +278,9 @@ export default function PrediktsAdminPage() {
                 value={prediktsStats ? `$${fmt(prediktsStats.totalSportsBetAmount)} pUSD` : null}
               />
               <StatCard
-                label="Total payouts"
+                label="SELL volume"
                 value={prediktsStats ? `$${fmt(prediktsStats.totalPayouts)} pUSD` : null}
-                sub="SELL orders processed"
+                sub="Total value of shares sold (not withdrawals)"
               />
             </div>
             <div className="flex gap-2 flex-wrap">
