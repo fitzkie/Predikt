@@ -117,6 +117,9 @@ export const PrediktUserProvider: React.FC<React.PropsWithChildren> = ({ childre
     // Ensure a unique custodial deposit address exists for this user.
     // Fire-and-forget — also prefunds with MATIC on first creation.
     fetch(`/api/user/deposit-address?address=${normalizedAccount}`).catch(() => {})
+
+    // Catch any deposits that arrived while the deposit modal was closed.
+    fetch(`/api/predikts/check-deposit?userAddress=${normalizedAccount}`).catch(() => {})
   }, [ isHydrated, normalizedAccount ])
 
   useEffect(() => {

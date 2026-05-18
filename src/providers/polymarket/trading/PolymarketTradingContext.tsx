@@ -83,7 +83,7 @@ export const PolymarketTradingBoundary: React.CFC = ({ children }) => {
       })
       .catch(() => {})
 
-    fetch('/api/predikts/deposit')
+    fetch(`/api/user/deposit-address?address=${userAddress}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.depositAddress) setPlatformAddress(data.depositAddress)

@@ -5,10 +5,10 @@ export default {
   errors: {
     insufficientBalance: {
       title: {
-        en: 'Fund wallet to place this bet',
+        en: 'Insufficient balance',
       },
       text: {
-        en: 'Predikt Sports uses Polygon USDT. Add more USDT to your connected wallet, then try again.',
+        en: 'Your Predikts account balance is too low for this bet. Deposit funds to continue.',
       },
     },
     staleOdds: {

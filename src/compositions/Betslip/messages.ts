@@ -30,7 +30,7 @@ export default {
   },
   warnings: {
     insufficientBalance: {
-      en: 'Your Polygon wallet does not have enough USDT for this bet. Fund the wallet, then try again.',
+      en: 'Insufficient balance. Deposit funds to your Predikts account to place this bet.',
     },
     approvalRequired: {
       en: 'Your USDT allowance must be approved before Predikt Sports can place this bet on Polygon.',
