@@ -127,72 +127,34 @@ const BalanceInfo: React.FC = () => {
   const { data: betsSummaryData, isLoading: isBetsSummaryFetching } = useBetsSummary({
     account: address!,
   })
-  const { data: usdcBalanceData, isLoading: isUsdcFetching } = useBalance({
-    address: address as `0x${string}` | undefined,
-    token: NATIVE_USDC_ADDRESS,
-    chainId: polygon.id,
-  })
+  const [pUsdBalance, setPUsdBalance] = React.useState<number | null>(null)
+  const [isPUsdLoading, setPUsdLoading] = React.useState(false)
 
-  const { inBets, toPayout } = betsSummaryData || {}
-  const { balance } = balanceData || {}
-  const { balance: nativeBalance } = nativeBalanceData || {}
-  const usdcBalance = usdcBalanceData ? Number(usdcBalanceData.formatted) : 0
+  React.useEffect(() => {
+    if (!address) return
+
+    setPUsdLoading(true)
+    fetch(`/api/predikts/balance?address=${address}`)
+      .then((r) => r.json())
+      .then((d) => setPUsdBalance(typeof d.balance === 'number' ? d.balance : 0))
+      .catch(() => setPUsdBalance(0))
+      .finally(() => setPUsdLoading(false))
+  }, [address])
 
   return (
     <div className="rounded-md bg-bg-l1 overflow-hidden">
-      <div className="py-2 px-3 border-b border-b-bg-l2">
+      <div className="py-2 px-3">
         <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.balance} />
         <div className="space-x-1">
-          {
-            Boolean(isBalanceFetching || isNativeBalanceFetching || isUsdcFetching) ? (
-              <div className="bone h-4 w-10 rounded-full" />
-            ) : (
-              <>
-                {isPredikts ? (
-                  <span className="text-caption-13 font-semibold">
-                    {toLocaleString(usdcBalance, { digits: 2 })} USDC
-                  </span>
-                ) : (
-                  <span className="text-caption-13 font-semibold">
-                    {toLocaleString(balance || 0, { digits: 2 })} {betToken.symbol}
-                  </span>
-                )}
-                <span className="text-caption-12 text-grey-60">
-                  + {toLocaleString(nativeBalance || 0, { digits: 2 })} {appChain.nativeCurrency.symbol}
-                </span>
-              </>
-            )
-          }
+          {isPUsdLoading ? (
+            <div className="bone h-4 w-10 rounded-full" />
+          ) : (
+            <span className="text-caption-13 font-semibold">
+              ${toLocaleString(pUsdBalance ?? 0, { digits: 2 })} pUSD
+            </span>
+          )}
         </div>
       </div>
-      {!isPredikts && (
-        <div className="flex items-center">
-          <div className="w-full py-2 px-3">
-            <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.inBets} tag="p" />
-            {
-              isBetsSummaryFetching ? (
-                <div className="bone h-4 w-10 rounded-full" />
-              ) : (
-                <div className="text-caption-13 font-semibold">
-                  {toLocaleString(inBets || 0, { digits: 2 })} {betToken.symbol}
-                </div>
-              )
-            }
-          </div>
-          <div className="w-full border-l border-l-bg-l2 py-2 px-3">
-            <Message className="text-caption-13 text-grey-60 mb-[2px]" value={messages.toRedeem} tag="p" />
-            {
-              isBetsSummaryFetching ? (
-                <div className="bone h-4 w-10 rounded-full" />
-              ) : (
-                <div className="text-caption-13 font-semibold">
-                  {toLocaleString(toPayout || 0, { digits: 2 })} {betToken.symbol}
-                </div>
-              )
-            }
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -212,9 +174,9 @@ const Content: React.FC = () => {
     }
   }
 
-  const handleExchangeClick = (event: React.MouseEvent) => {
+  const handleWithdrawClick = (event: React.MouseEvent) => {
     event.stopPropagation()
-    openModal('PrediktsExchangeModal')
+    openModal('PrediktsWithdrawModal')
   }
 
   return (
@@ -232,11 +194,11 @@ const Content: React.FC = () => {
         </button>
         <button
           className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md border border-grey-20 text-caption-13 font-semibold text-grey-90 hover:border-grey-40 transition-colors"
-          onClick={handleExchangeClick}
+          onClick={handleWithdrawClick}
           type="button"
         >
           <Icon className="size-4" name="interface/withdraw" />
-          Exchange
+          Withdraw
         </button>
       </div>
     </div>
@@ -244,28 +206,22 @@ const Content: React.FC = () => {
 }
 
 const Balance: React.FC = () => {
-  const { appChain } = useChain()
   const { account: address } = useWallet()
-  const { data: balanceData, isLoading: isBetTokenLoading } = useBetTokenBalance()
   const pathname = usePathname()
   const isPredikts = pathname?.startsWith('/predikts')
-  const [ prediktsBalance, setPrediktsBalance ] = React.useState<number | null>(null)
-  const [ isPrediktsLoading, setIsPrediktsLoading ] = React.useState(false)
+  const [pUsdBalance, setPUsdBalance] = React.useState<number | null>(null)
+  const [isLoading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
-    if (!isPredikts || !address) return
+    if (!address) return
 
-    setIsPrediktsLoading(true)
+    setLoading(true)
     fetch(`/api/predikts/balance?address=${address}`)
       .then((r) => r.json())
-      .then((d) => setPrediktsBalance(d.balance ?? 0))
-      .catch(() => setPrediktsBalance(0))
-      .finally(() => setIsPrediktsLoading(false))
-  }, [ isPredikts, address ])
-
-  const { balance } = balanceData || {}
-  const isLoading = isPredikts ? isPrediktsLoading : isBetTokenLoading
-  const displayBalance = isPredikts ? (prediktsBalance ?? 0) : (balance || 0)
+      .then((d) => setPUsdBalance(typeof d.balance === 'number' ? d.balance : 0))
+      .catch(() => setPUsdBalance(0))
+      .finally(() => setLoading(false))
+  }, [address])
 
   const handleDepositClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
@@ -290,19 +246,12 @@ const Balance: React.FC = () => {
     >
       <div className={rootClassName}>
         <div className="flex items-center">
-          <ChainCurrency
-            className="mr-2"
-            chainClassName="border-grey-10 bg-grey-10"
-            chainId={appChain.id}
-            size={5}
-            withGrayscale
-            currencyIconOverride={isPredikts ? 'currency/usdc' : undefined}
-          />
+          <Icon className="size-5 mr-1.5 text-grey-50" name="currency/usdc" />
           {
             isLoading ? (
               <div className="bone h-4 w-10 rounded-full" />
             ) : (
-              <div className="text-caption-13">{toLocaleString(displayBalance, { digits: 2 })}</div>
+              <div className="text-caption-13">${toLocaleString(pUsdBalance ?? 0, { digits: 2 })} <span className="text-grey-50 text-caption-11">pUSD</span></div>
             )
           }
           <Icon className="size-4 ui-open:rotate-180" name="interface/caret_down" />
