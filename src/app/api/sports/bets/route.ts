@@ -23,6 +23,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ bets: [] })
     }
 
+    // Run migration inline so the column always exists before querying
+    await db.$executeRaw`ALTER TABLE sports_bets ADD COLUMN IF NOT EXISTS "selectionName" TEXT`
+
     const bets = await db.sportsBet.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
