@@ -43,9 +43,11 @@ export async function placeCustodialBet(params: {
     const feeData = await getBetFee(CHAIN_ID)
 
     // 2. Calculate minOdds with slippage using toolkit helper
+    // calcMinOdds may return a decimal string like "1.070000000000" depending on
+    // toolkit version — convert via float → round → BigInt to handle both formats.
     const slippage = params.slippagePct ?? 10
     const minOddsStr = calcMinOdds({ odds: params.currentOdds, slippage })
-    const minOddsRaw = BigInt(minOddsStr)
+    const minOddsRaw = BigInt(Math.round(parseFloat(minOddsStr) * 10 ** ODDS_DECIMALS))
 
     // 3. Amount in USDT smallest units (6 decimals)
     const amountRaw = parseUnits(params.amountUsd.toFixed(6), USDT_DECIMALS)
