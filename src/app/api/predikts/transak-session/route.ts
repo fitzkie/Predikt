@@ -29,7 +29,8 @@ export async function POST(request: Request) {
       ? 'https://api-gateway.transak.com/api/v2/auth/session'
       : 'https://api-gateway-stg.transak.com/api/v2/auth/session'
 
-    const referrerDomain = process.env.NEXT_PUBLIC_APP_URL ?? 'predikt.railway.app'
+    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'predikt.railway.app'
+    const referrerDomain = rawAppUrl.replace(/^https?:\/\//, '')
 
     const res = await fetch(sessionApiUrl, {
       method: 'POST',
