@@ -44,7 +44,10 @@ export async function POST() {
       )
     `
 
-    return NextResponse.json({ success: true, message: 'Tables created (or already exist).' })
+    // Additive column migrations — safe to re-run
+    await db.$executeRaw`ALTER TABLE sports_bets ADD COLUMN IF NOT EXISTS "selectionName" TEXT`
+
+    return NextResponse.json({ success: true, message: 'Tables created (or already exist). Columns migrated.' })
   }
   catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })

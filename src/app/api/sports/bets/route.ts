@@ -31,6 +31,7 @@ export async function GET(request: Request) {
         conditionId: true,
         outcomeId: true,
         marketName: true,
+        selectionName: true,
         amount: true,
         potentialPayout: true,
         odds: true,

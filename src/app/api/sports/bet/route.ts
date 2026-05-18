@@ -11,6 +11,7 @@ type BetRequest = {
   amount: number       // USD amount (human-readable)
   currentOdds: number  // e.g. 1.85
   marketName?: string
+  selectionName?: string
 }
 
 // POST /api/sports/bet
@@ -18,7 +19,7 @@ type BetRequest = {
 export async function POST(request: Request) {
   try {
     const body: BetRequest = await request.json()
-    const { walletAddress, conditionId, outcomeId, amount, currentOdds, marketName } = body
+    const { walletAddress, conditionId, outcomeId, amount, currentOdds, marketName, selectionName } = body
 
     if (!walletAddress || !conditionId || !outcomeId || !amount || !currentOdds) {
       return NextResponse.json(
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
         txHash: betResult.txHash ?? null,
         azuroBetId: betResult.azuroBetId ?? null,
         marketName: marketName ?? null,
+        selectionName: selectionName ?? null,
       },
     })
 

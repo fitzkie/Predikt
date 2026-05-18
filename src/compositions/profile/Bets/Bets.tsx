@@ -19,6 +19,7 @@ type DbSportsBet = {
   conditionId: string
   outcomeId: string
   marketName: string | null
+  selectionName: string | null
   amount: number
   potentialPayout: number
   odds: number
@@ -38,27 +39,26 @@ const STATUS_COLORS: Record<string, string> = {
 
 const DbBet: React.FC<{ bet: DbSportsBet }> = ({ bet }) => {
   const statusColor = STATUS_COLORS[bet.status] ?? 'text-grey-60'
-  const date = dayjs(bet.createdAt).format('DD.MM.YYYY, HH:mm')
+  const date = dayjs(bet.createdAt).format('DD MMM, HH:mm')
 
   return (
-    <div className="rounded-md bg-bg-l2 px-4 py-3 space-y-2">
-      <div className="flex items-center justify-between text-caption-13">
-        <span className="font-semibold text-grey-90 truncate pr-4">
-          {bet.marketName ?? `Condition ${bet.conditionId}`}
+    <div className="rounded-md bg-bg-l2 px-4 py-3 space-y-1">
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-semibold text-caption-13 text-grey-90 leading-snug">
+          {bet.marketName ?? `Condition ${bet.conditionId.slice(0, 16)}…`}
         </span>
-        <span className={`flex-none font-semibold capitalize ${statusColor}`}>{bet.status}</span>
+        <span className={`flex-none text-caption-12 font-semibold capitalize ${statusColor}`}>{bet.status}</span>
       </div>
-      <div className="flex items-center justify-between text-caption-12 text-grey-60">
+      {bet.selectionName && (
+        <div className="text-caption-12 text-grey-60">{bet.selectionName}</div>
+      )}
+      <div className="flex items-center justify-between text-caption-12 text-grey-60 pt-1">
         <span>{date}</span>
-        <span>Odds: {bet.odds.toFixed(2)}</span>
+        <span>@{bet.odds.toFixed(2)}</span>
       </div>
-      <div className="flex items-center justify-between text-caption-13">
-        <span className="text-grey-60">
-          Stake: <span className="text-grey-90">${bet.amount.toFixed(2)}</span>
-        </span>
-        <span className="text-grey-60">
-          To win: <span className="text-grey-90">${bet.potentialPayout.toFixed(2)}</span>
-        </span>
+      <div className="flex items-center justify-between text-caption-13 pt-0.5">
+        <span className="text-grey-60">Stake <span className="text-grey-90 font-semibold">${bet.amount.toFixed(2)}</span></span>
+        <span className="text-grey-60">To win <span className={bet.status === 'won' ? 'text-accent-green font-semibold' : 'text-grey-90 font-semibold'}>${bet.potentialPayout.toFixed(2)}</span></span>
       </div>
     </div>
   )

@@ -78,7 +78,8 @@ const BetButton: React.FC<BetButtonProps> = () => {
           outcomeId: item.outcomeId,
           amount: numericBetAmount,
           currentOdds: Number(currentOdds),
-          marketName: (item as any).game?.name ?? undefined,
+          marketName: item.game?.title ?? undefined,
+          selectionName: `${item.marketName ? item.marketName + ' — ' : ''}${item.selectionName ?? ''}`,
         }),
       })
 
