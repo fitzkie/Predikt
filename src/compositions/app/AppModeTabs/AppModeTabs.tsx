@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation'
 import cx from 'classnames'
 import { constants } from 'helpers'
-import { useWallet } from 'wallet'
 
 import { Href } from 'components/navigation'
 
@@ -21,12 +20,6 @@ const allItems = [
     matchers: [ '/predikts' ],
     requiresAuth: false,
   },
-  {
-    label: 'Profile',
-    href: '/profile',
-    matchers: [ '/profile' ],
-    requiresAuth: true,
-  },
 ]
 
 type AppModeTabsProps = {
@@ -35,16 +28,14 @@ type AppModeTabsProps = {
 
 const AppModeTabs: React.FC<AppModeTabsProps> = ({ className }) => {
   const pathname = usePathname()
-  const { account } = useWallet()
 
-  const items = allItems.filter((item) => !item.requiresAuth || Boolean(account))
-  const cols = items.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+  const cols = 'grid-cols-2'
 
   return (
     <div className={cx('rounded-lg border border-white/10 bg-bg-l2 p-1', className)}>
       <div className={cx('grid gap-1', cols)}>
         {
-          items.map((item) => {
+          allItems.map((item) => {
             const isActive = item.matchers.some((matcher) => pathname === matcher || pathname.startsWith(`${matcher}/`))
 
             return (

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useChain, useBets } from '@azuro-org/sdk'
+import { useChain } from '@azuro-org/sdk'
 import { useWallet } from 'wallet'
 
 
@@ -12,6 +12,14 @@ type DbOrder = {
   side: string
   amount: string
   price: number
+  status: string
+}
+
+type DbSportsBet = {
+  id: string
+  amount: number
+  potentialPayout: number
+  odds: number
   status: string
 }
 
@@ -30,11 +38,16 @@ const useProfileStats = () => {
   const { betToken } = useChain()
   const { account: address } = useWallet()
 
-  const { data } = useBets({
-    filter: {
-      bettor: address!,
+  const { data: sportsBets = [] } = useQuery<DbSportsBet[]>({
+    queryKey: [ 'sports', 'bets', 'user', address?.toLowerCase() ],
+    queryFn: async () => {
+      const r = await fetch(`/api/sports/bets?address=${address}`)
+      if (!r.ok) return []
+      const json = await r.json()
+      return json.bets ?? []
     },
-    itemsPerPage: 1000,
+    enabled: Boolean(address),
+    staleTime: 30_000,
   })
 
   const { data: prediktsOrders = [] } = useQuery<DbOrder[]>({
@@ -59,15 +72,14 @@ const useProfileStats = () => {
     staleTime: 30_000,
   })
 
-  const allBets = useMemo(() => data?.pages.flatMap((page) => page.bets) ?? [], [ data ])
-
   return useMemo(() => {
-    // Sports totals from Azuro (bet count + bet amount only; payout via withdrawals)
-    const sports = allBets.reduce((acc, bet) => {
+    // Sports totals from DB
+    const sports = sportsBets.reduce((acc, bet) => {
+      if (bet.status === 'failed') return acc
       acc.betsCount += 1
       acc.betAmount += Number(bet.amount ?? 0)
-      if (bet.isWin) acc.winsCount += 1
-      if (bet.isWin || bet.isLose) acc.settledCount += 1
+      if (bet.status === 'won') acc.winsCount += 1
+      if (bet.status === 'won' || bet.status === 'lost') acc.settledCount += 1
       return acc
     }, { betsCount: 0, betAmount: 0, winsCount: 0, settledCount: 0 })
 
@@ -93,7 +105,7 @@ const useProfileStats = () => {
       winRate,
       tokenSymbol: betToken.symbol,
     }
-  }, [ allBets, prediktsOrders, withdrawalData, betToken.symbol ])
+  }, [ sportsBets, prediktsOrders, withdrawalData, betToken.symbol ])
 }
 
 export default useProfileStats
