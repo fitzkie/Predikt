@@ -52,8 +52,9 @@ export async function placeCustodialBet(params: {
     // 3. Amount in USDT smallest units (6 decimals)
     const amountRaw = parseUnits(params.amountUsd.toFixed(6), USDT_DECIMALS)
 
-    // 4. Random nonce (the Core contract tracks used nonces to prevent replays)
-    const nonce = BigInt('0x' + crypto.randomBytes(16).toString('hex'))
+    // 4. Random nonce — must fit in Azuro oracle's bigint column (64-bit signed).
+    // 7 bytes = 56 bits, max value 72057594037927935 (17 digits, safely within int64).
+    const nonce = BigInt('0x' + crypto.randomBytes(7).toString('hex'))
 
     const clientData = {
       attention: ATTENTION,
