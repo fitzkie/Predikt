@@ -117,8 +117,9 @@ export async function POST(request: Request) {
     })
   }
   catch (error) {
-    console.error('[predikts/trade] error:', error)
-
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    const meta = (error as any)?.meta
+    console.error('[predikts/trade] error:', String(error), 'meta:', JSON.stringify(meta))
+    const msg = meta ? `${String(error)} | field: ${JSON.stringify(meta)}` : String(error)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
