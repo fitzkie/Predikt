@@ -34,8 +34,19 @@ const User: React.FC = () => {
   const pathname = usePathname()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [ isCopied, setCopied ] = useState(false)
+  const [ isDepositCopied, setDepositCopied ] = useState(false)
   const [ isReferralCopied, setReferralCopied ] = useState(false)
+  const [ depositAddress, setDepositAddress ] = useState<string | null>(null)
   const isMounted = useIsMounted()
+
+  React.useEffect(() => {
+    if (!address) return
+
+    fetch(`/api/user/deposit-address?address=${address}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.depositAddress) setDepositAddress(d.depositAddress) })
+      .catch(() => {})
+  }, [address])
 
   const activeTab = tabs.includes((searchParams.get('tab') || 'account') as typeof tabs[number])
     ? (searchParams.get('tab') as typeof tabs[number])
@@ -47,11 +58,14 @@ const User: React.FC = () => {
     router.replace(`${pathname}?tab=${nextTab}`, { scroll: false })
   }
 
-  const handleCopy = (value: string, type: 'address' | 'referral') => {
+  const handleCopy = (value: string, type: 'address' | 'deposit' | 'referral') => {
     copy(value)
 
     if (type === 'address') {
       setCopied(true)
+    }
+    else if (type === 'deposit') {
+      setDepositCopied(true)
     }
     else {
       setReferralCopied(true)
@@ -60,6 +74,7 @@ const User: React.FC = () => {
     setTimeout(() => {
       if (isMounted()) {
         setCopied(false)
+        setDepositCopied(false)
         setReferralCopied(false)
       }
     }, 1000)
@@ -112,10 +127,19 @@ const User: React.FC = () => {
             <div className="min-w-0">
               <div className="text-caption-12 uppercase tracking-[0.18em] text-brand-50">Profile</div>
               <h1 className="mt-2 text-heading-h2 font-semibold text-grey-90">{profile.displayName}</h1>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-caption-13 text-grey-60">
-                <span>{shortenAddress(address || '')}</span>
-                <span className="size-1 rounded-full bg-grey-40" />
-                <span>Member since {dayjs(profile.memberSince).format('MMM D, YYYY')}</span>
+              <div className="mt-3 space-y-2">
+                <div className="flex flex-wrap items-center gap-2 text-caption-13 text-grey-60">
+                  <span className="text-caption-11 uppercase tracking-[0.12em] text-grey-50 w-full">Login wallet (Privy)</span>
+                  <span className="font-mono">{shortenAddress(address || '')}</span>
+                  <span className="size-1 rounded-full bg-grey-40" />
+                  <span>Member since {dayjs(profile.memberSince).format('MMM D, YYYY')}</span>
+                </div>
+                {depositAddress && (
+                  <div className="flex flex-wrap items-center gap-2 text-caption-13 text-grey-60">
+                    <span className="text-caption-11 uppercase tracking-[0.12em] text-grey-50 w-full">Predikts deposit address</span>
+                    <span className="font-mono">{shortenAddress(depositAddress)}</span>
+                  </div>
+                )}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
@@ -123,8 +147,17 @@ const User: React.FC = () => {
                   onClick={() => address && handleCopy(address, 'address')}
                   type="button"
                 >
-                  {isCopied ? 'Address copied' : 'Copy wallet address'}
+                  {isCopied ? 'Login address copied' : 'Copy login address'}
                 </button>
+                {depositAddress && (
+                  <button
+                    className="rounded-full border border-white/10 px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
+                    onClick={() => handleCopy(depositAddress, 'deposit')}
+                    type="button"
+                  >
+                    {isDepositCopied ? 'Deposit address copied' : 'Copy deposit address'}
+                  </button>
+                )}
                 <a
                   className="rounded-full border border-white/10 px-3 py-1.5 text-caption-12 text-grey-60 transition hover:text-grey-90"
                   href={address ? `${appChain.blockExplorers!.default.url}/address/${address}` : undefined}

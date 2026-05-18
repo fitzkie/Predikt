@@ -59,7 +59,7 @@ export async function placeCustodialBet(params: {
       attention: ATTENTION,
       affiliate: affiliateAddress,
       core: CORE_ADDRESS,
-      expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      expiresAt: Math.floor(Date.now() / 1000) + 540,
       chainId: CHAIN_ID,
       relayerFeeAmount: feeData.relayerFeeAmount,
       isFeeSponsored: false,
