@@ -98,7 +98,7 @@ export async function placeCustodialBet(params: {
       bet: {
         conditionId: params.conditionId,
         outcomeId: Number(params.outcomeId),
-        minOdds: minOddsStr,
+        minOdds: String(minOddsRaw),
         amount: String(amountRaw),
         nonce: String(nonce),
       },
