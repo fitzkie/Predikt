@@ -184,12 +184,19 @@ export default function PrediktsAdminPage() {
                 Refresh Stats
               </button>
               <button
+                className={btn('Settle Predikts')}
+                onClick={() => run('settle-predikts', 'POST', '/api/predikts/settle')}
+              >
+                Settle Predikts
+              </button>
+              <button
                 className={btn('Settle Sports Bets')}
                 onClick={() => run('settle-sports', 'POST', '/api/sports/settle')}
               >
                 Settle Sports Bets
               </button>
             </div>
+            <ResultBox result={results['settle-predikts'] ?? null} loading={!!loading['settle-predikts']} />
             <ResultBox result={results['settle-sports'] ?? null} loading={!!loading['settle-sports']} />
           </div>
         )}
