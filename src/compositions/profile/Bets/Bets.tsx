@@ -60,6 +60,19 @@ const DbBet: React.FC<{ bet: DbSportsBet }> = ({ bet }) => {
         <span className="text-grey-60">Stake <span className="text-grey-90 font-semibold">${bet.amount.toFixed(2)}</span></span>
         <span className="text-grey-60">To win <span className={bet.status === 'won' ? 'text-accent-green font-semibold' : 'text-grey-90 font-semibold'}>${bet.potentialPayout.toFixed(2)}</span></span>
       </div>
+      {bet.txHash && (
+        <a
+          href={`https://polygonscan.com/tx/${bet.txHash}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-caption-11 text-grey-50 hover:text-grey-90 underline truncate block"
+        >
+          {bet.txHash.slice(0, 10)}…{bet.txHash.slice(-6)} ↗
+        </a>
+      )}
+      {!bet.txHash && bet.status === 'pending' && (
+        <span className="text-caption-11 text-accent-red">No tx hash — may not be on-chain</span>
+      )}
     </div>
   )
 }

@@ -337,12 +337,14 @@ export async function getPlatformOnChainBalances() {
   const account = getPlatformAccount()
   const depositWallet = getPlatformDepositWalletAddress() as `0x${string}`
 
-  const [maticWei, usdcBalance, usdceBalance, eoaPusdBalance, depositWalletPusdBalance] = await Promise.all([
+  const [maticWei, usdcBalance, usdceBalance, eoaPusdBalance, depositWalletPusdBalance, usdtBalance, usdtAzuroAllowance] = await Promise.all([
     publicClient.getBalance({ address: account.address }),
     publicClient.readContract({ address: NATIVE_USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
     publicClient.readContract({ address: USDC_E_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
     publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
     publicClient.readContract({ address: PUSD_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [depositWallet] }),
+    publicClient.readContract({ address: NATIVE_USDT_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [account.address] }),
+    publicClient.readContract({ address: NATIVE_USDT_ADDRESS, abi: ERC20_ABI, functionName: 'allowance', args: [account.address, AZURO_LP_ADDRESS] }),
   ])
 
   return {
@@ -351,10 +353,33 @@ export async function getPlatformOnChainBalances() {
     usdceBalance: Number(usdceBalance) / 1e6,
     pUsdBalance: Number(eoaPusdBalance) / 1e6,
     depositWalletPusdBalance: Number(depositWalletPusdBalance) / 1e6,
+    usdtBalance: Number(usdtBalance) / 1e6,
+    usdtAzuroAllowance: Number(usdtAzuroAllowance) / 1e6,
   }
 }
 
+// Approve USDT to the Azuro LP contract so the oracle can pull tokens when placing sports bets.
+// Run once from the admin panel whenever the platform wallet gets a new USDT balance.
+export async function approveUsdtForAzuro() {
+  const walletClient = getPlatformWalletClient()
+  const publicClient = getPublicClient()
+  const account = getPlatformAccount()
+
+  const data = encodeFunctionData({
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [AZURO_LP_ADDRESS, maxUint256],
+  })
+
+  const hash = await walletClient.sendTransaction({ account, to: NATIVE_USDT_ADDRESS, data, chain: polygon })
+  await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
+
+  return { hash, spender: AZURO_LP_ADDRESS }
+}
+
 const NATIVE_USDT_ADDRESS = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F' as `0x${string}`
+// Azuro Polygon v3 LP contract — must approve USDT to this address before placing sports bets
+const AZURO_LP_ADDRESS = '0x0FA7FB5407eA971694652E6E16C12A52625DE1b8' as `0x${string}`
 
 // Send USDC or USDT from the platform EOA to a user's wallet. Used for withdrawals.
 // Waits for 1 confirmation and returns the txHash.

@@ -14,6 +14,7 @@ import {
   transferPusdFromEoaToDepositWallet,
   wrapUsdcToPusd,
   updateClobBalance,
+  approveUsdtForAzuro,
 } from 'lib/platform-wallet'
 
 export const dynamic = 'force-dynamic'
@@ -149,6 +150,12 @@ export async function POST(request: Request) {
       const result = await updateClobBalance()
 
       return NextResponse.json({ message: 'CLOB balance updated.', result })
+    }
+
+    if (action === 'approve-usdt-for-azuro') {
+      const result = await approveUsdtForAzuro()
+
+      return NextResponse.json({ message: 'Max USDT approval granted to Azuro LP contract. Sports bets can now be placed.', ...result })
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

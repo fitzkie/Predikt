@@ -4,8 +4,20 @@ import { db } from 'lib/db'
 export const dynamic = 'force-dynamic'
 
 const AZURO_SUBGRAPH = 'https://thegraph.onchainfeed.org/subgraphs/name/azuro-protocol/azuro-api-polygon-v3'
-// Polygon v3 core contract — conditions are indexed as {coreAddress}_{conditionId}
 const CORE_ADDRESS = '0xf9548be470a4e130c90cea8b179fcd66d2972ac7'
+const AZURO_ORACLE_API = 'https://api.onchainfeed.org/api/v1/public'
+
+async function fetchOracleOrderStatus(orderId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${AZURO_ORACLE_API}/bet/orders/${orderId}`, { next: { revalidate: 0 } })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.state ?? null
+  }
+  catch {
+    return null
+  }
+}
 
 type AzuroCondition = {
   conditionId: string
@@ -45,7 +57,7 @@ export async function POST() {
   try {
     const pendingBets = await db.sportsBet.findMany({
       where: { status: 'pending' },
-      select: { id: true, userId: true, conditionId: true, outcomeId: true, amount: true, potentialPayout: true },
+      select: { id: true, userId: true, conditionId: true, outcomeId: true, amount: true, potentialPayout: true, azuroBetId: true },
     })
 
     if (pendingBets.length === 0) {
@@ -56,12 +68,26 @@ export async function POST() {
     const conditions = await fetchConditions(conditionIds)
     const conditionMap = new Map(conditions.map((c) => [c.conditionId, c]))
 
-    let won = 0, lost = 0, canceled = 0, skipped = 0
+    let won = 0, lost = 0, canceled = 0, rejected = 0, skipped = 0
 
     for (const bet of pendingBets) {
       const condition = conditionMap.get(bet.conditionId)
 
       if (!condition || condition.status === 'Created' || condition.status === 'Paused') {
+        // Check oracle API — if the bet was rejected, refund and mark failed
+        if (bet.azuroBetId) {
+          const oracleState = await fetchOracleOrderStatus(bet.azuroBetId)
+
+          if (oracleState === 'Rejected') {
+            await db.prediktsUser.update({
+              where: { id: bet.userId },
+              data: { usdBalance: { increment: Number(bet.amount) } },
+            })
+            await db.sportsBet.update({ where: { id: bet.id }, data: { status: 'failed' } })
+            rejected++
+            continue
+          }
+        }
         skipped++
         continue
       }
@@ -96,10 +122,11 @@ export async function POST() {
     }
 
     return NextResponse.json({
-      settled: won + lost + canceled,
+      settled: won + lost + canceled + rejected,
       won,
       lost,
       canceled,
+      rejected,
       skipped,
       totalChecked: pendingBets.length,
     })

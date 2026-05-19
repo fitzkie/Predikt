@@ -48,6 +48,8 @@ export async function GET() {
       platformUsdcBalance: onChain?.usdcBalance ?? null,
       platformUsdceBalance: onChain?.usdceBalance ?? null,
       depositWalletPusdBalance: onChain?.depositWalletPusdBalance ?? null,
+      platformUsdtBalance: onChain?.usdtBalance ?? null,
+      platformUsdtAzuroAllowance: onChain?.usdtAzuroAllowance ?? null,
       totalUserLiabilities: Number(totalUserBalances._sum.usdBalance ?? 0),
       totalBetters,
       totalOrders,

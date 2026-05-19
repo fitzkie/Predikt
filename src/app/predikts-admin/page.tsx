@@ -11,6 +11,8 @@ type PrediktsStats = {
   platformUsdcBalance: number | null
   platformUsdceBalance: number | null
   depositWalletPusdBalance: number | null
+  platformUsdtBalance: number | null
+  platformUsdtAzuroAllowance: number | null
   totalUserLiabilities: number
   totalBetters: number
   totalOrders: number
@@ -75,6 +77,7 @@ type SettleResult = {
   lost?: number
   skipped?: number
   canceled?: number
+  rejected?: number
   totalCredited?: number
   totalChecked?: number
 }
@@ -151,8 +154,12 @@ export default function PrediktsAdminPage() {
   const eoaUsdc = prediktsStats?.platformUsdcBalance ?? null
   const eoaUsdce = prediktsStats?.platformUsdceBalance ?? null
   const maticBalance = prediktsStats?.platformMaticBalance ?? null
+  const usdtBalance = prediktsStats?.platformUsdtBalance ?? null
+  const usdtAllowance = prediktsStats?.platformUsdtAzuroAllowance ?? null
   const unwrappedPending = eoaUsdc !== null && eoaUsdc >= 1
   const maticLow = maticBalance !== null && maticBalance < 0.1
+  const usdtLow = usdtBalance !== null && usdtBalance < 1
+  const usdtNotApproved = usdtAllowance !== null && usdtAllowance < 1
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 space-y-4">
@@ -184,6 +191,7 @@ export default function PrediktsAdminPage() {
                       {result.settled} settled · {result.won} won · {result.lost} lost
                       {result.totalCredited ? ` · $${result.totalCredited} credited` : ''}
                       {result.canceled ? ` · ${result.canceled} refunded` : ''}
+                      {result.rejected ? ` · ${result.rejected} oracle-rejected (refunded)` : ''}
                       {result.skipped ? ` · ${result.skipped} skipped` : ''}
                     </p>
                   )}
@@ -256,6 +264,18 @@ export default function PrediktsAdminPage() {
                 sub="Bridged USDC on EOA"
               />
               <StatCard
+                label="Sports wallet USDT"
+                value={usdtBalance !== null ? `$${fmt(usdtBalance)} USDT` : null}
+                sub={usdtLow ? 'Fund wallet — needed for Azuro bets!' : 'Azuro bet collateral'}
+                warn={usdtLow}
+              />
+              <StatCard
+                label="USDT → Azuro approval"
+                value={usdtAllowance !== null ? (usdtAllowance > 1e12 ? 'Max ✓' : usdtAllowance < 1 ? 'Not approved ✗' : `$${fmt(usdtAllowance)}`) : null}
+                sub={usdtNotApproved ? 'Run "Approve USDT" below!' : 'LP contract allowance'}
+                warn={usdtNotApproved}
+              />
+              <StatCard
                 label="Total betters"
                 value={prediktsStats ? prediktsStats.totalBetters : null}
                 sub="Unique wallets"
@@ -305,9 +325,16 @@ export default function PrediktsAdminPage() {
               >
                 Settle Sports Bets
               </button>
+              <button
+                className={btn('Approve USDT', false)}
+                onClick={() => run('approve-usdt', 'POST', '/api/predikts/setup', { action: 'approve-usdt-for-azuro' })}
+              >
+                Approve USDT for Azuro
+              </button>
             </div>
             <ResultBox result={results['settle-predikts'] ?? null} loading={!!loading['settle-predikts']} />
             <ResultBox result={results['settle-sports'] ?? null} loading={!!loading['settle-sports']} />
+            <ResultBox result={results['approve-usdt'] ?? null} loading={!!loading['approve-usdt']} />
           </div>
         )}
       </Section>
