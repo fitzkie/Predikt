@@ -15,9 +15,10 @@ type PrediktsStats = {
   totalBetters: number
   totalOrders: number
   totalBetAmount: number
-  totalPayouts: number
+  totalSellVolume: number
   totalSportsBets: number
   totalSportsBetAmount: number
+  totalWithdrawn: number
 }
 
 type SportsStats = {
@@ -279,8 +280,13 @@ export default function PrediktsAdminPage() {
               />
               <StatCard
                 label="SELL volume"
-                value={prediktsStats ? `$${fmt(prediktsStats.totalPayouts)} pUSD` : null}
-                sub="Total value of shares sold (not withdrawals)"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalSellVolume)}` : null}
+                sub="Total USD value of shares sold"
+              />
+              <StatCard
+                label="Total payouts"
+                value={prediktsStats ? `$${fmt(prediktsStats.totalWithdrawn)}` : null}
+                sub="Completed withdrawals to user wallets"
               />
             </div>
             <div className="flex gap-2 flex-wrap">

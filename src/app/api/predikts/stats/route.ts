@@ -16,6 +16,7 @@ export async function GET() {
       onChain,
       totalSportsBets,
       sportsBetAmountAgg,
+      withdrawalAgg,
     ] = await Promise.all([
       db.prediktsUser.count(),
       db.prediktsOrder.count({ where: { status: { not: 'failed' } } }),
@@ -35,6 +36,10 @@ export async function GET() {
         _sum: { amount: true },
         where: { status: { not: 'failed' } },
       }),
+      db.withdrawal.aggregate({
+        _sum: { amountUsd: true },
+        where: { status: 'completed' },
+      }),
     ])
 
     return NextResponse.json({
@@ -47,9 +52,10 @@ export async function GET() {
       totalBetters,
       totalOrders,
       totalBetAmount: Number(amountAgg._sum.amount ?? 0),
-      totalPayouts: Number(payoutAgg._sum.amount ?? 0),
+      totalSellVolume: Number(payoutAgg._sum.amount ?? 0),
       totalSportsBets,
       totalSportsBetAmount: Number(sportsBetAmountAgg._sum.amount ?? 0),
+      totalWithdrawn: Number(withdrawalAgg._sum.amountUsd ?? 0),
     })
   }
   catch (error) {
